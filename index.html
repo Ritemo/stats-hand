@@ -156,8 +156,7 @@ h2{font-size:23px;font-weight:700;margin:4px 2px 10px}
 <script>
 /* ============ CONFIGURATION ============ */
 const BASE = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQQZGLWbKFAw9z2IYBoIqk5LVGNu70HT-mFm3ukchTMOOAyKhEqKV8VTlrHBJEZljLVHzpGTNApMpGM/pub?output=csv";
-const GID = { joueurs: "2055642853", gardiens: "1898483188", clubs: "1741053301",
-              classement: "" };   // <- colle ici le gid de l'onglet Classement Général
+const GID = { joueurs: "2055642853", gardiens: "1898483188", clubs: "1741053301" };
 const MY_TEAM = "Pays Riolais HB";          // équipe mise en avant (orange) dans les classements
 const PLACEHOLDER = "non detaille";          // ligne du score J1, exclue des stats individuelles
 const LOGO_DIR = "logos/";                   // logos : logos/<nom-du-club>.png (voir LISTE-LOGOS.txt)
@@ -225,24 +224,17 @@ function build(raw){
     if(rawPA!==""){ pa=toNum(rawPA); if(pa>1) pa=pa/100; }   // % corrigé du Comparatif (journées avec arrêts saisis)
     return {name,marques:toNum(col(o,"buts marques")),encaisses:enc,arrets:arr,pctArret:pa,pctTir:pct(b,t),excl:toNum(col(o,"exclusions"))};
   });
-  let standings=[];
-  if(raw.classement){
-    const rows=raw.classement, h=rows.findIndex(r=>r.map(norm).includes("club")&&r.map(norm).includes("pts"));
-    if(h>=0){
-      const head=rows[h].map(norm), ix=k=>head.indexOf(k);
-      for(let i=h+1;i<rows.length;i++){
-        const r=rows[i], club=(r[ix("club")]||"").trim(); if(!club) break;
-        standings.push({club,rank:toNum(r[ix("rang")])||standings.length+1,pts:toNum(r[ix("pts")]),j:toNum(r[ix("j")]),v:toNum(r[ix("v")]),n:toNum(r[ix("n")]),d:toNum(r[ix("d")]),bp:toNum(r[ix("bp")]),bc:toNum(r[ix("bc")]),diff:toNum(r[ix("diff")])});
-      }
-    }
-  }
+  // Classement : colonnes Classement, J, V, N, D, BP, BC, Pts, Diff ajoutées au Comparatif Clubs
+  const standings=table(raw.clubs).filter(o=>o["club"]&&o["pts"]!==undefined&&o["pts"]!=="").map(o=>({
+    club:o["club"],rank:toNum(o["classement"]),pts:toNum(o["pts"]),j:toNum(o["j"]),v:toNum(o["v"]),n:toNum(o["n"]),d:toNum(o["d"]),bp:toNum(o["bp"]),bc:toNum(o["bc"]),diff:toNum(o["diff"])
+  })).sort((a,b)=>a.rank-b.rank);
   return {players,keepers,clubs,standings};
 }
 async function load(spin){
   setSpin(spin);
   try{
-    const [joueurs,gardiens,clubs,classement]=await Promise.all([fetchCSV(GID.joueurs),fetchCSV(GID.gardiens),fetchCSV(GID.clubs),GID.classement?fetchCSV(GID.classement).catch(()=>null):null]);
-    const raw={joueurs,gardiens,clubs,classement},built=build(raw);
+    const [joueurs,gardiens,clubs]=await Promise.all([fetchCSV(GID.joueurs),fetchCSV(GID.gardiens),fetchCSV(GID.clubs)]);
+    const raw={joueurs,gardiens,clubs},built=build(raw);
     if(!built.clubs.length) throw new Error("format");
     D={...built,at:Date.now(),offline:false}; store.set("hand-cache",{raw,at:D.at});
   }catch(e){
@@ -310,7 +302,6 @@ function pHome(){
       <button class="tile" data-go="buteurs">${IC.ball}<span><b>Classement buteurs</b><span class="d">Tous clubs et meilleur par club</span></span><span class="go">›</span></button>
       <button class="tile" data-go="gardiens">${IC.goal}<span><b>Classement gardiens</b><span class="d">Arrêts individuels et par club</span></span><span class="go">›</span></button>
     </div>
-    <a class="tile" href="https://www.ffhandball.fr/competitions/saison-2026-2027-22/regional/m003-honneur-masculine-32524/poule-191000/classements/" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;margin:-18px 0 26px">${IC.table}<span><b>Classement officiel</b><span class="d">Site de la FFHandball</span></span><span class="go">↗</span></a>
     <h2>Les équipes</h2>
     <div class="clubs-grid">${clubs.map(c=>`<button class="club-card${c.name===MY_TEAM?" mine":""}" data-go="club/${slug(c.name)}">${logoHTML(c.name,64)}<span>${esc(shortClub(c.name))}</span></button>`).join("")}</div>
     ${stamp()}
@@ -343,7 +334,7 @@ function pGeneral(){
     ${logoHTML(x.club,32)}<span class="who"><span class="n">${esc(x.club)}</span><span class="c">${x.j} J, ${x.v} V, ${x.n} N, ${x.d} D, diff. ${sign(x.diff)}</span>
     <span class="meter"><i style="width:${Math.round(100*x.pts/max)}%"></i></span></span>
     <span class="val"><span class="num">${x.pts}</span><span class="s">pts</span></span></button>`).join("")}</div>
-    <p class="note">Victoire 3 points, nul 2, défaite 1. À égalité de points, départage à la différence de buts puis aux buts marqués. Référence : classement officiel FFHandball.</p>${stamp()}</main>`;
+    <p class="note">Victoire 3 points, nul 2, défaite 1. À égalité de points, départage à la différence de buts puis aux buts marqués.</p>${stamp()}</main>`;
 }
 function pButeurs(){
   let h=seg("buteurs",[["champ","Championnat"],["club","Meilleur par club"]]);
