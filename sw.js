@@ -1,5 +1,5 @@
 // Change ce numéro à chaque mise à jour de l'appli pour forcer le rafraîchissement
-const VERSION = "v6";
+const VERSION = "v7";
 const SHELL = ["./", "index.html", "manifest.json", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", e => {
