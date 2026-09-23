@@ -57,8 +57,17 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--orange);outline-off
 .club-head .sub{font-size:13px;opacity:.7;margin-top:3px}
 .board{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-top:16px;border-radius:10px;overflow:hidden;background:#000}
 .board div{background:var(--black-2);padding:10px 12px}
-.board .num{font-size:46px;font-weight:700;line-height:1;color:var(--orange);font-variant-numeric:tabular-nums}
-.board .lbl{font-size:13px;opacity:.8}
+.board .ttl{font-family:"Barlow Condensed",sans-serif;font-size:19px;font-weight:600;line-height:1.1}
+.board .num{font-size:46px;font-weight:700;line-height:1.05;color:var(--orange);font-variant-numeric:tabular-nums}
+.board .lbl{font-size:12px;opacity:.7}
+.standing{display:flex;gap:14px;align-items:stretch;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--orange);border-radius:10px;padding:12px 14px;margin-bottom:22px}
+.standing .pos{display:flex;flex-direction:column;justify-content:center;padding-right:14px;border-right:1px solid var(--line)}
+.standing .pos .num{font-size:46px;font-weight:800;line-height:1;color:var(--orange)}
+.standing .pos .l{font-size:12px;color:var(--muted)}
+.standing .grid{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:6px 10px}
+.standing .grid .num{font-size:24px;font-weight:700;line-height:1.05}
+.standing .grid .l{font-size:12px;color:var(--muted)}
+.pts{font-family:"Barlow Condensed",sans-serif}
 .minis{position:relative;display:flex;gap:18px;margin-top:12px;font-size:13px;opacity:.95}
 .minis b{font-family:"Barlow Condensed",sans-serif;font-size:21px;font-weight:700;display:block;line-height:1.1}
 
@@ -147,7 +156,8 @@ h2{font-size:23px;font-weight:700;margin:4px 2px 10px}
 <script>
 /* ============ CONFIGURATION ============ */
 const BASE = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQQZGLWbKFAw9z2IYBoIqk5LVGNu70HT-mFm3ukchTMOOAyKhEqKV8VTlrHBJEZljLVHzpGTNApMpGM/pub?output=csv";
-const GID = { joueurs: "2055642853", gardiens: "1898483188", clubs: "1741053301" };
+const GID = { joueurs: "2055642853", gardiens: "1898483188", clubs: "1741053301",
+              classement: "" };   // <- colle ici le gid de l'onglet Classement Général
 const MY_TEAM = "Pays Riolais HB";          // équipe mise en avant (orange) dans les classements
 const PLACEHOLDER = "non detaille";          // ligne du score J1, exclue des stats individuelles
 const LOGO_DIR = "logos/";                   // logos : logos/<nom-du-club>.png (voir LISTE-LOGOS.txt)
@@ -211,15 +221,28 @@ function build(raw){
     const name=o["club"],ps=players.filter(p=>p.club===name);
     const b=ps.reduce((s,p)=>s+p.buts,0),t=ps.reduce((s,p)=>s+p.tirs,0);
     const arr=toNum(col(o,"arrets")),enc=toNum(col(o,"buts encaisses"));
-    return {name,marques:toNum(col(o,"buts marques")),encaisses:enc,arrets:arr,pctArret:pct(arr,arr+enc),pctTir:pct(b,t),excl:toNum(col(o,"exclusions"))};
+    const rawPA=col(o,"% arret"); let pa=null;
+    if(rawPA!==""){ pa=toNum(rawPA); if(pa>1) pa=pa/100; }   // % corrigé du Comparatif (journées avec arrêts saisis)
+    return {name,marques:toNum(col(o,"buts marques")),encaisses:enc,arrets:arr,pctArret:pa,pctTir:pct(b,t),excl:toNum(col(o,"exclusions"))};
   });
-  return {players,keepers,clubs};
+  let standings=[];
+  if(raw.classement){
+    const rows=raw.classement, h=rows.findIndex(r=>r.map(norm).includes("club")&&r.map(norm).includes("pts"));
+    if(h>=0){
+      const head=rows[h].map(norm), ix=k=>head.indexOf(k);
+      for(let i=h+1;i<rows.length;i++){
+        const r=rows[i], club=(r[ix("club")]||"").trim(); if(!club) break;
+        standings.push({club,rank:toNum(r[ix("rang")])||standings.length+1,pts:toNum(r[ix("pts")]),j:toNum(r[ix("j")]),v:toNum(r[ix("v")]),n:toNum(r[ix("n")]),d:toNum(r[ix("d")]),bp:toNum(r[ix("bp")]),bc:toNum(r[ix("bc")]),diff:toNum(r[ix("diff")])});
+      }
+    }
+  }
+  return {players,keepers,clubs,standings};
 }
 async function load(spin){
   setSpin(spin);
   try{
-    const [joueurs,gardiens,clubs]=await Promise.all([fetchCSV(GID.joueurs),fetchCSV(GID.gardiens),fetchCSV(GID.clubs)]);
-    const raw={joueurs,gardiens,clubs},built=build(raw);
+    const [joueurs,gardiens,clubs,classement]=await Promise.all([fetchCSV(GID.joueurs),fetchCSV(GID.gardiens),fetchCSV(GID.clubs),GID.classement?fetchCSV(GID.classement).catch(()=>null):null]);
+    const raw={joueurs,gardiens,clubs,classement},built=build(raw);
     if(!built.clubs.length) throw new Error("format");
     D={...built,at:Date.now(),offline:false}; store.set("hand-cache",{raw,at:D.at});
   }catch(e){
@@ -244,6 +267,7 @@ const IC={
   court:`<svg class="court" viewBox="0 0 200 200" fill="none" stroke="#FF6D00" stroke-width="3" aria-hidden="true"><path d="M200 40 A60 60 0 0 0 200 160"/><path d="M200 10 A90 90 0 0 0 200 190" stroke-dasharray="8 7"/><line x1="200" y1="85" x2="200" y2="115" stroke-width="8"/><line x1="132" y1="96" x2="132" y2="104"/></svg>`,
   table:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 20V11M12 20V5M19 20v-6"/></svg>`,
   ball:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3c-2.5 3-2.5 15 0 18M3.5 9h17M3.5 15h17"/></svg>`,
+  trophy:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v3M8 20h8M9 17h6"/></svg>`,
   goal:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20V6h18v14"/><path d="M3 10h18M8 6v14M16 6v14" stroke-dasharray="2 2.5"/></svg>`
 };
 const refreshBtn=`<button class="icon-btn" data-refresh aria-label="Actualiser les stats">${IC.refresh}</button>`;
@@ -281,10 +305,12 @@ function pHome(){
   <main>
     <h2>Classements généraux</h2>
     <div class="tiles">
-      <button class="tile" data-go="classement">${IC.table}<span><b>Classement des clubs</b><span class="d">Attaque, défense, tir, arrêts, discipline</span></span><span class="go">›</span></button>
+      ${D.standings.length?`<button class="tile" data-go="general">${IC.trophy}<span><b>Classement général</b><span class="d">Points, victoires, nuls, défaites</span></span><span class="go">›</span></button>`:""}
+      <button class="tile" data-go="classement">${IC.table}<span><b>Stats des clubs</b><span class="d">Attaque, défense, tir, arrêts, discipline</span></span><span class="go">›</span></button>
       <button class="tile" data-go="buteurs">${IC.ball}<span><b>Classement buteurs</b><span class="d">Tous clubs et meilleur par club</span></span><span class="go">›</span></button>
       <button class="tile" data-go="gardiens">${IC.goal}<span><b>Classement gardiens</b><span class="d">Arrêts individuels et par club</span></span><span class="go">›</span></button>
     </div>
+    <a class="tile" href="https://www.ffhandball.fr/competitions/saison-2026-2027-22/regional/m003-honneur-masculine-32524/poule-191000/classements/" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;margin:-18px 0 26px">${IC.table}<span><b>Classement officiel</b><span class="d">Site de la FFHandball</span></span><span class="go">↗</span></a>
     <h2>Les équipes</h2>
     <div class="clubs-grid">${clubs.map(c=>`<button class="club-card${c.name===MY_TEAM?" mine":""}" data-go="club/${slug(c.name)}">${logoHTML(c.name,64)}<span>${esc(shortClub(c.name))}</span></button>`).join("")}</div>
     ${stamp()}
@@ -294,7 +320,7 @@ const METRICS={
   marques:{l:"Attaque",get:c=>c.marques,desc:true,show:c=>c.marques,sub:c=>`${c.marques} buts marqués`},
   encaisses:{l:"Défense",get:c=>c.encaisses,desc:false,show:c=>c.encaisses,sub:c=>`${c.encaisses} buts encaissés`},
   pctTir:{l:"% tir",get:c=>c.pctTir||0,desc:true,show:c=>fmtPct(c.pctTir),sub:()=>`Hors J1 non détaillée`},
-  pctArret:{l:"% arrêt",get:c=>c.pctArret||0,desc:true,show:c=>fmtPct(c.pctArret),sub:c=>`${c.arrets} arrêts, ${c.encaisses} encaissés`},
+  pctArret:{l:"% arrêt",get:c=>c.pctArret||0,desc:true,show:c=>fmtPct(c.pctArret),sub:c=>`${c.arrets} arrêts, hors journées sans arrêts saisis`},
   arrets:{l:"Total arrêts",get:c=>c.arrets,desc:true,show:c=>c.arrets,sub:c=>`${fmtPct(c.pctArret)} d'arrêts`},
   excl:{l:"Discipline",get:c=>c.excl,desc:false,show:c=>c.excl,sub:c=>`${c.excl} exclusions 2 min`}
 };
@@ -303,12 +329,21 @@ function pClassement(){
   const m=METRICS[ui.metric];
   const cs=ranked([...D.clubs].sort((a,b)=>m.desc?m.get(b)-m.get(a):m.get(a)-m.get(b)),c=>m.get(c));
   const max=Math.max(...cs.map(m.get))||1;
-  return pageHead("Classement clubs")+`<main>${chips("metric",Object.entries(METRICS).map(([k,v])=>[k,v.l]))}
+  return pageHead("Stats des clubs")+`<main>${chips("metric",Object.entries(METRICS).map(([k,v])=>[k,v.l]))}
     <div class="list">${cs.map(c=>`<button class="row${c.name===MY_TEAM?" mine":""}" data-go="club/${slug(c.name)}"><span class="rank ${c.rank===1?"p1":""}">${c.rank}</span>
       ${logoHTML(c.name,32)}<span class="who"><span class="n">${esc(c.name)}</span><span class="c">${m.sub(c)}</span>
       <span class="meter"><i style="width:${Math.round(100*m.get(c)/max)}%"></i></span></span>
       <span class="val"><span class="num">${m.show(c)}</span></span></button>`).join("")}</div>
     <p class="note">${m.desc?"Du plus haut au plus bas.":"Moins, c'est mieux."} Touchez un club pour voir toutes ses stats.</p>${stamp()}</main>`;
+}
+const sign=n=>n>0?"+"+n:String(n);
+function pGeneral(){
+  const st=D.standings, max=Math.max(1,...st.map(x=>x.pts));
+  return pageHead("Classement général")+`<main><div class="list">${st.map(x=>`<button class="row${x.club===MY_TEAM?" mine":""}" data-go="club/${slug(x.club)}"><span class="rank ${x.rank===1?"p1":""}">${x.rank}</span>
+    ${logoHTML(x.club,32)}<span class="who"><span class="n">${esc(x.club)}</span><span class="c">${x.j} J, ${x.v} V, ${x.n} N, ${x.d} D, diff. ${sign(x.diff)}</span>
+    <span class="meter"><i style="width:${Math.round(100*x.pts/max)}%"></i></span></span>
+    <span class="val"><span class="num">${x.pts}</span><span class="s">pts</span></span></button>`).join("")}</div>
+    <p class="note">Victoire 3 points, nul 2, défaite 1. À égalité de points, départage à la différence de buts puis aux buts marqués. Référence : classement officiel FFHandball.</p>${stamp()}</main>`;
 }
 function pButeurs(){
   let h=seg("buteurs",[["champ","Championnat"],["club","Meilleur par club"]]);
@@ -336,22 +371,26 @@ function pGardiens(){
       ${logoHTML(c.name,32)}<span class="who"><span class="n">${esc(c.name)}</span><span class="c">${c.arrets} arrêts, ${c.encaisses} buts encaissés</span>
       <span class="meter"><i style="width:${Math.round(100*v/max)}%"></i></span></span>
       <span class="val"><span class="num">${byPct?fmtPct(c.pctArret):c.arrets}</span></span></button>`}).join("")}</div>
-      <p class="note">% d'arrêt équipe = arrêts ÷ (arrêts + buts encaissés).</p>`;
+      <p class="note">% d'arrêt équipe = arrêts ÷ (arrêts + buts encaissés), calculé uniquement sur les journées où les arrêts sont saisis.</p>`;
   }
   return pageHead("Gardiens")+`<main>${h}${stamp()}</main>`;
 }
 function pClub(s){
   const c=D.clubs.find(x=>slug(x.name)===s); if(!c) return pageHead("Club introuvable")+`<main><div class="empty">Ce club n'existe pas dans le fichier.</div></main>`;
   const ps=D.players.filter(p=>p.club===c.name).sort(scorerSort), ks=D.keepers.filter(k=>k.club===c.name).sort((a,b)=>b.arrets-a.arrets);
+  const st=D.standings.find(x=>x.club===c.name);
   const r=k=>clubRank(c,k), maxP=Math.max(1,...ps.map(p=>p.buts)), maxK=Math.max(1,...ks.map(k=>k.arrets));
   const rk=(k,l)=>{const v=r(k);return `<div class="rk${v===1?" best":""}"><div class="num">${ordM(v)}</div><div class="l">${l}</div></div>`;};
   return `<header class="top">${IC.court}<div class="bar-top">${backBtn}<div class="t"></div>${refreshBtn}</div>
     <div class="club-head">${logoHTML(c.name,72)}<div><h1>${esc(c.name)}</h1><div class="sub">Honneur masculine, poule A</div></div></div>
-    <div class="board"><div><div class="num">${c.marques}</div><div class="lbl">Buts marqués, ${ordF(r("marques"))} attaque</div></div>
-      <div><div class="num">${c.encaisses}</div><div class="lbl">Buts encaissés, ${ordF(r("encaisses"))} défense</div></div></div>
+    <div class="board"><div><div class="ttl">Buts marqués</div><div class="num">${c.marques}</div><div class="lbl">${ordF(r("marques"))} attaque de la poule</div></div>
+      <div><div class="ttl">Buts encaissés</div><div class="num">${c.encaisses}</div><div class="lbl">${ordF(r("encaisses"))} défense de la poule</div></div></div>
     <div class="minis"><div><b>${fmtPct(c.pctTir)}</b>Réussite au tir</div><div><b>${fmtPct(c.pctArret)}</b>Arrêts équipe</div><div><b>${c.excl}</b>Exclusions 2 min</div></div></header>
   <main>
-    <h2>Rang dans la poule</h2>
+    ${st?`<h2>Classement</h2><div class="standing"><div class="pos"><div class="num">${ordM(st.rank)}</div><div class="l">sur ${D.standings.length}</div></div>
+      <div class="grid"><div><div class="num">${st.pts}</div><div class="l">Points</div></div><div><div class="num">${sign(st.diff)}</div><div class="l">Goal average</div></div><div><div class="num">${st.j}</div><div class="l">Matchs joués</div></div>
+      <div><div class="num">${st.v}</div><div class="l">Victoires</div></div><div><div class="num">${st.n}</div><div class="l">Nuls</div></div><div><div class="num">${st.d}</div><div class="l">Défaites</div></div></div></div>`:""}
+    <h2>Rang par statistique</h2>
     <div class="ranks">${rk("marques","Attaque")}${rk("encaisses","Défense")}${rk("pctTir","% tir")}${rk("pctArret","% arrêt")}${rk("arrets","Total arrêts")}${rk("excl","Discipline")}</div>
     <h2>Joueurs</h2>
     ${ps.length?`<div class="list">${ps.map(p=>playerRow(p,{showClub:false,max:maxP})).join("")}</div>`:`<div class="empty">Aucun joueur saisi.</div>`}
@@ -365,7 +404,7 @@ function render(){
   if(!D){ app.innerHTML=`<header class="top">${IC.court}<div class="bar-top"><div class="t"><div class="page-title">Stats Hand</div></div>${refreshBtn}</div></header>
     <main>${loading?`<div class="empty">Chargement des stats…</div>`:`<div class="error"><b>Impossible de charger les stats</b>Vérifie ta connexion internet, puis appuie sur le bouton d'actualisation.</div>`}</main>`; return; }
   const {page,arg}=route();
-  app.innerHTML=({home:pHome,classement:pClassement,buteurs:pButeurs,gardiens:pGardiens,club:()=>pClub(arg)}[page]||pHome)();
+  app.innerHTML=({home:pHome,classement:pClassement,buteurs:pButeurs,gardiens:pGardiens,club:()=>pClub(arg),general:pGeneral}[page]||pHome)();
 }
 
 /* ============ FICHE JOUEUR ============ */
