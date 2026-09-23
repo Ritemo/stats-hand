@@ -1,0 +1,15 @@
+Logos des clubs : dépose chaque logo dans ce dossier logos/, au format PNG, avec exactement ce nom de fichier.
+Si un logo manque, l'appli affiche un badge avec les initiales du club.
+
+cs-vesulien-haute-saone-c.png   ->   CS Vésulien Haute-Saône (C)
+hbc-lure-villers-c.png   ->   HBC Lure Villers (C)
+pays-riolais-hb.png   ->   Pays Riolais HB
+ca-pontarlier-hb-b.png   ->   CA Pontarlier HB (B)
+hbc-franois-b.png   ->   HBC Franois (B)
+beex-va-pm-hb-c.png   ->   BEEX-VA PM HB (C)
+palente-besancon-hb-a.png   ->   Palente Besançon HB (A)
+doubs-central-hb.png   ->   Doubs Central HB
+ja-maiche.png   ->   JA Maiche
+hbc-danjoutin.png   ->   HBC Danjoutin
+hbc-gilley.png   ->   HBC Gilley
+hbc-des-monts-de-gy.png   ->   HBC des Monts de Gy
