@@ -3,171 +3,159 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1740B8">
+<meta name="theme-color" content="#1C1C1C">
 <title>Stats Hand HON M-A</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,600;0,700;0,800;1,800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-/* ============ CONFIGURATION DES COULEURS (à adapter aux couleurs du club) ============ */
+/* ============ COULEURS (logo Pays Riolais Handball) ============ */
 :root{
-  --club: #1740B8;        /* couleur principale */
-  --club-deep: #0E2A7A;   /* version foncée */
-  --ball: #F5C518;        /* accent (ballon, podium) */
-  --bg: #EEF1F6;
-  --surface: #FFFFFF;
-  --ink: #16203A;
-  --muted: #5E6A85;
-  --line: #D9DFEA;
-  --good: #1E8E5A;
-  --bad: #C8402F;
-  --mine: #E6ECFB;
+  --orange:#FF6D00;
+  --orange-soft:#FFE7D4;
+  --black:#1C1C1C;
+  --black-2:#2B2B2B;
+  --bg:#F2F1EF;
+  --surface:#FFFFFF;
+  --ink:#1C1C1C;
+  --muted:#6B6B6B;
+  --line:#E0DDD8;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --club:#5B82F0; --club-deep:#0B1A45; --ball:#F5C518;
-    --bg:#0F1524; --surface:#1A2236; --ink:#E8ECF5; --muted:#98A3BD;
-    --line:#2A3450; --mine:#1E2B4E; --good:#4CC38A; --bad:#F07A67;
+    --orange-soft:#3A2412; --bg:#121212; --surface:#1E1E1E; --ink:#F2F2F2; --muted:#A3A3A3; --line:#333;
   }
 }
 *{box-sizing:border-box;margin:0;padding:0}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-html,body{height:100%}
-body{font-family:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);font-size:16px;line-height:1.45;-webkit-tap-highlight-color:transparent}
-.num,h1,h2,.tabbar button,.seg button,.chip{font-family:"Barlow Condensed","Arial Narrow",sans-serif}
-button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
-button:focus-visible{outline:2px solid var(--ball);outline-offset:2px}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{font-family:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);font-size:16px;line-height:1.45;-webkit-tap-highlight-color:transparent;min-height:100vh}
+.num,h1,h2,h3,.seg button,.chip,.tile b,.club-card span{font-family:"Barlow Condensed","Arial Narrow",sans-serif}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-align:left}
+button:focus-visible,a:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
 
-/* ---------- En-tête terrain ---------- */
-.hero{position:relative;background:var(--club);color:#fff;padding:18px 18px 22px;overflow:hidden}
-.hero svg.court{position:absolute;right:-60px;top:-30px;width:260px;height:260px;opacity:.22;pointer-events:none}
-.hero-top{display:flex;justify-content:space-between;align-items:center;position:relative}
-.team-pick{display:flex;align-items:center;gap:6px;text-align:left}
-.team-pick h1{font-size:28px;font-weight:800;line-height:1.05;letter-spacing:.2px}
-.team-pick .caret{font-size:14px;opacity:.8}
-.sub{font-size:13px;opacity:.85;margin-top:2px}
-.refresh{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.15);display:grid;place-items:center;flex-shrink:0}
-.refresh svg{width:20px;height:20px}
-.refresh.spin svg{animation:spin 1s linear infinite}
+/* ---------- En-têtes ---------- */
+.top{position:relative;background:var(--black);color:#fff;padding:16px 16px 20px;overflow:hidden}
+.top svg.court{position:absolute;right:-70px;top:-40px;width:270px;height:270px;opacity:.35;pointer-events:none}
+.bar-top{position:relative;display:flex;align-items:center;gap:10px;min-height:40px}
+.bar-top .t{flex:1;min-width:0}
+.icon-btn{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.1);display:grid;place-items:center;flex-shrink:0}
+.icon-btn svg{width:20px;height:20px}
+.icon-btn.spin svg{animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.board{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-top:16px;background:rgba(0,0,0,.25);border-radius:10px;overflow:hidden}
-.board div{background:var(--club-deep);padding:10px 12px}
-.board .num{font-size:44px;font-weight:700;line-height:1;color:var(--ball);font-variant-numeric:tabular-nums}
-.board .lbl{font-size:13px;opacity:.85}
-.minis{display:flex;gap:18px;margin-top:12px;position:relative;font-size:13px}
-.minis b{font-family:"Barlow Condensed",sans-serif;font-size:20px;font-weight:700;display:block;line-height:1.1}
+.home-title{position:relative;margin-top:18px}
+.home-title h1{font-size:44px;font-weight:800;font-style:italic;line-height:.95;text-transform:none}
+.home-title h1 em{color:var(--orange);font-style:italic}
+.home-title p{opacity:.75;font-size:14px;margin-top:6px}
+.page-title{font-size:24px;font-weight:700;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.club-head{position:relative;display:flex;align-items:center;gap:14px;margin-top:14px}
+.club-head h1{font-size:30px;font-weight:800;line-height:1.02}
+.club-head .sub{font-size:13px;opacity:.7;margin-top:3px}
+.board{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-top:16px;border-radius:10px;overflow:hidden;background:#000}
+.board div{background:var(--black-2);padding:10px 12px}
+.board .num{font-size:46px;font-weight:700;line-height:1;color:var(--orange);font-variant-numeric:tabular-nums}
+.board .lbl{font-size:13px;opacity:.8}
+.minis{position:relative;display:flex;gap:18px;margin-top:12px;font-size:13px;opacity:.95}
+.minis b{font-family:"Barlow Condensed",sans-serif;font-size:21px;font-weight:700;display:block;line-height:1.1}
+
+/* ---------- Logos ---------- */
+.logo{border-radius:50%;background:#fff;display:grid;place-items:center;overflow:hidden;flex-shrink:0;position:relative}
+.logo img{width:100%;height:100%;object-fit:contain;padding:9%}
+.logo img[src$="pays-riolais-hb.png"]{padding:0}
+.logo .mono{font-family:"Barlow Condensed",sans-serif;font-weight:800;color:#fff;background:var(--black-2);width:100%;height:100%;display:grid;place-items:center;border:3px solid var(--orange);border-radius:50%}
+.logo.l64{width:64px;height:64px}.logo.l64 .mono{font-size:20px}
+.logo.l72{width:72px;height:72px}.logo.l72 .mono{font-size:22px}
+.logo.l32{width:32px;height:32px}.logo.l32 .mono{font-size:11px;border-width:2px}
 
 /* ---------- Contenu ---------- */
-main{padding:14px 14px 96px;max-width:640px;margin:0 auto}
-h2{font-size:22px;font-weight:700;margin:6px 2px 10px}
-.note{font-size:13px;color:var(--muted);margin:4px 2px 12px}
+main{padding:16px 14px 40px;max-width:640px;margin:0 auto}
+h2{font-size:23px;font-weight:700;margin:4px 2px 10px}
+.note{font-size:13px;color:var(--muted);margin:10px 2px 12px}
+.tiles{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:26px}
+.tile{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--orange);border-radius:10px;padding:14px 16px;width:100%}
+.tile svg{width:28px;height:28px;color:var(--orange);flex-shrink:0}
+.tile b{font-size:22px;font-weight:700;display:block;line-height:1.1}
+.tile span.d{font-size:13px;color:var(--muted)}
+.tile .go{margin-left:auto;color:var(--muted);font-size:22px}
+.clubs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.club-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 6px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;width:100%}
+.club-card span{font-size:15px;font-weight:600;line-height:1.1}
+.club-card.mine{border-color:var(--orange);box-shadow:inset 0 0 0 1px var(--orange)}
+
 .seg{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px;margin-bottom:12px}
-.seg button{flex:1;padding:8px 6px;border-radius:8px;font-size:16px;font-weight:600;color:var(--muted)}
-.seg button[aria-pressed="true"]{background:var(--club);color:#fff}
+.seg button{flex:1;text-align:center;padding:8px 6px;border-radius:8px;font-size:16px;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--black);color:#fff}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .seg button[aria-pressed="true"]{background:var(--orange);color:#1C1C1C}}
 .chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;scrollbar-width:none}
 .chip{white-space:nowrap;padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:var(--surface);font-size:15px;font-weight:600;color:var(--muted)}
-.chip[aria-pressed="true"]{border-color:var(--club);color:var(--club);background:var(--mine)}
+.chip[aria-pressed="true"]{border-color:var(--orange);color:var(--orange);background:var(--orange-soft)}
 
 .list{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-.row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-top:1px solid var(--line);width:100%;text-align:left}
+.row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-top:1px solid var(--line);width:100%}
 .row:first-child{border-top:0}
-.row.mine{background:var(--mine)}
+.row.mine{background:var(--orange-soft)}
 .rank{width:26px;font-family:"Barlow Condensed",sans-serif;font-size:20px;font-weight:700;color:var(--muted);text-align:center;flex-shrink:0}
-.rank.p1{color:#B8900A}.rank.p2{color:#8A94A6}.rank.p3{color:#A8683A}
-.avatar{width:38px;height:38px;border-radius:50%;background:var(--club);color:#fff;display:grid;place-items:center;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:16px;flex-shrink:0}
+.rank.p1{color:var(--orange)}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--black);color:#fff;display:grid;place-items:center;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:16px;flex-shrink:0}
 .who{flex:1;min-width:0;display:block}
-.who .n,.who .c,.bar,.val .num,.val .s{display:block}
+.who .n,.who .c,.meter,.val .num,.val .s{display:block}
 .who .n{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .who .n .ln{text-transform:uppercase;letter-spacing:.3px}
 .who .c{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .val{text-align:right;flex-shrink:0}
 .val .num{font-size:26px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
 .val .s{font-size:12px;color:var(--muted)}
-.bar{height:6px;border-radius:3px;background:var(--line);margin-top:6px;overflow:hidden}
-.bar i{display:block;height:100%;background:var(--club);border-radius:3px}
-.row.mine .bar i{background:var(--ball)}
+.meter{height:6px;border-radius:3px;background:var(--line);margin-top:6px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--black);border-radius:3px}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .meter i{background:#8A8A8A}}
+.row.mine .meter i{background:var(--orange)}
+
+.ranks{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:22px}
+.rk{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.rk .num{font-size:26px;font-weight:700;line-height:1.1}
+.rk .l{font-size:12px;color:var(--muted)}
+.rk.best .num{color:var(--orange)}
 
 .empty,.error{padding:28px 18px;text-align:center;color:var(--muted)}
-.error b{display:block;color:var(--bad);margin-bottom:6px}
-.stamp{font-size:12px;color:var(--muted);text-align:center;margin-top:16px}
+.error b{display:block;color:var(--orange);margin-bottom:6px}
+.stamp{font-size:12px;color:var(--muted);text-align:center;margin-top:18px}
 
-/* ---------- Barre d'onglets ---------- */
-.tabbar{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom,0px);z-index:5;backdrop-filter:blur(10px)}
-.tabbar button{flex:1;padding:8px 0 10px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:14px;font-weight:600;color:var(--muted)}
-.tabbar svg{width:24px;height:24px}
-.tabbar button[aria-selected="true"]{color:var(--club)}
-
-/* ---------- Fiche / sélecteur ---------- */
-.sheet-bg{position:fixed;inset:0;background:rgba(10,15,30,.45);display:none;z-index:10}
+/* ---------- Fiche joueur ---------- */
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:10}
 .sheet-bg.open{display:block}
 .sheet{position:fixed;left:0;right:0;bottom:0;max-height:85%;overflow:auto;background:var(--surface);border-radius:18px 18px 0 0;padding:10px 18px calc(22px + env(safe-area-inset-bottom,0px));transform:translateY(100%);transition:transform .25s ease;z-index:11;max-width:640px;margin:0 auto}
 .sheet.open{transform:none}
 .grip{width:40px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 14px}
-.sheet h3{font-family:"Barlow Condensed",sans-serif;font-size:26px;font-weight:700;line-height:1.1}
+.sheet h3{font-size:26px;font-weight:700;line-height:1.1}
 .sheet .c{color:var(--muted);font-size:14px;margin-bottom:14px}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .stat{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 .stat .num{font-size:32px;font-weight:700;line-height:1.05}
 .stat .l{font-size:13px;color:var(--muted)}
-.sheet .note{margin-top:14px}
-.pick{display:block;width:100%;text-align:left;padding:13px 4px;border-top:1px solid var(--line);font-weight:500}
-.pick[aria-current="true"]{color:var(--club);font-weight:700}
-@media (prefers-reduced-motion:reduce){.sheet{transition:none}.refresh.spin svg{animation:none}}
+@media (prefers-reduced-motion:reduce){.sheet{transition:none}.icon-btn.spin svg{animation:none}}
 </style>
 </head>
 <body>
-
-<header class="hero">
-  <svg class="court" viewBox="0 0 200 200" fill="none" stroke="#fff" stroke-width="3" aria-hidden="true">
-    <path d="M200 40 A60 60 0 0 0 200 160"/>
-    <path d="M200 10 A90 90 0 0 0 200 190" stroke-dasharray="8 7"/>
-    <line x1="200" y1="85" x2="200" y2="115" stroke-width="8"/>
-    <line x1="132" y1="96" x2="132" y2="104"/>
-  </svg>
-  <div class="hero-top">
-    <button class="team-pick" id="teamBtn" aria-label="Changer d'équipe">
-      <div>
-        <h1 id="teamName">Chargement…</h1>
-        <div class="sub">Honneur masculine, poule A <span class="caret">▾</span></div>
-      </div>
-    </button>
-    <button class="refresh" id="refreshBtn" aria-label="Actualiser les stats">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>
-    </button>
-  </div>
-  <div class="board" id="board"></div>
-  <div class="minis" id="minis"></div>
-</header>
-
-<main id="view" aria-live="polite"></main>
-
-<nav class="tabbar" role="tablist">
-  <button role="tab" data-tab="equipe" aria-selected="true">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.6c2.6.2 4.4 1.9 5 5"/></svg>Équipe</button>
-  <button role="tab" data-tab="buteurs" aria-selected="false">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3c-2.5 3-2.5 15 0 18M3.5 9h17M3.5 15h17"/></svg>Buteurs</button>
-  <button role="tab" data-tab="gardiens" aria-selected="false">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20V6h18v14"/><path d="M3 10h18M8 6v14M16 6v14" stroke-dasharray="2 2.5"/></svg>Gardiens</button>
-  <button role="tab" data-tab="clubs" aria-selected="false">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 20V11M12 20V5M19 20v-6"/></svg>Clubs</button>
-</nav>
-
+<div id="app"></div>
 <div class="sheet-bg" id="sheetBg"></div>
 <div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
 
 <script>
-/* ============ CONFIGURATION DES DONNÉES ============ */
+/* ============ CONFIGURATION ============ */
 const BASE = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQQZGLWbKFAw9z2IYBoIqk5LVGNu70HT-mFm3ukchTMOOAyKhEqKV8VTlrHBJEZljLVHzpGTNApMpGM/pub?output=csv";
 const GID = { joueurs: "2055642853", gardiens: "1898483188", clubs: "1741053301" };
-const DEFAULT_TEAM = "Pays Riolais HB";
-const PLACEHOLDER = "non detaille"; // ligne du score J1 non détaillé, exclue des stats individuelles
+const MY_TEAM = "Pays Riolais HB";          // équipe mise en avant (orange) dans les classements
+const PLACEHOLDER = "non detaille";          // ligne du score J1, exclue des stats individuelles
+const LOGO_DIR = "logos/";                   // logos : logos/<nom-du-club>.png (voir LISTE-LOGOS.txt)
 
 /* ============ OUTILS ============ */
 const norm = s => (s||"").toString().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
-const toNum = v => { if(v==null) return 0; const s=String(v).replace(/[%\s\u00a0\u202f]/g,"").replace(",","."); const n=parseFloat(s); return isNaN(n)?0:n; };
+const slug = s => norm(s).replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+const toNum = v => { if(v==null) return 0; const n=parseFloat(String(v).replace(/[%\s\u00a0\u202f]/g,"").replace(",",".")); return isNaN(n)?0:n; };
 const pct = (a,b) => b>0 ? a/b : null;
 const fmtPct = p => p==null ? "-" : (Math.round(p*1000)/10).toString().replace(".",",")+" %";
 const fmt1 = x => (Math.round(x*10)/10).toString().replace(".",",");
@@ -180,251 +168,242 @@ function parseCSV(text){
   const rows=[];let row=[],f="",q=false;
   for(let i=0;i<text.length;i++){const c=text[i];
     if(q){ if(c==='"'){ if(text[i+1]==='"'){f+='"';i++} else q=false } else f+=c }
-    else if(c==='"') q=true;
-    else if(c===','){row.push(f);f=""}
-    else if(c==='\n'){row.push(f);rows.push(row);row=[];f=""}
-    else if(c!=='\r') f+=c;
+    else if(c==='"') q=true; else if(c===','){row.push(f);f=""}
+    else if(c==='\n'){row.push(f);rows.push(row);row=[];f=""} else if(c!=='\r') f+=c;
   }
   if(f!==""||row.length){row.push(f);rows.push(row)}
   return rows;
 }
-// Trouve la ligne d'en-têtes (celle dont la 1re cellule est "Club") et renvoie des objets
 function table(rows){
-  const h=rows.findIndex(r=>norm(r[0])==="club");
-  if(h<0) return [];
+  const h=rows.findIndex(r=>norm(r[0])==="club"); if(h<0) return [];
   const head=rows[h].map(norm);
   return rows.slice(h+1).map(r=>{const o={};head.forEach((k,i)=>o[k]=(r[i]||"").trim());return o});
 }
-const col = (o, ...keys) => { for(const k of keys){ const f=Object.keys(o).find(x=>x.startsWith(k)); if(f) return o[f]; } return ""; };
-
-// "BANGOURA Come" -> {first:"Come", last:"BANGOURA"}
+const col=(o,...keys)=>{for(const k of keys){const f=Object.keys(o).find(x=>x.startsWith(k)); if(f) return o[f];} return "";};
 function splitName(full){
-  const parts=full.trim().split(/\s+/);const last=[],first=[];
-  parts.forEach(p=>{ (p===p.toUpperCase() && /[A-Z]/.test(p) && first.length===0 ? last : first).push(p) });
-  const fn=first.map(w=>w.charAt(0).toUpperCase()+w.slice(1).toLowerCase()).join(" ");
-  return {first:fn,last:last.join(" ")||full};
+  const parts=full.trim().split(/\s+/),last=[],first=[];
+  parts.forEach(p=>{(p===p.toUpperCase()&&/[A-Z]/.test(p)&&first.length===0?last:first).push(p)});
+  return {first:first.map(w=>w.charAt(0).toUpperCase()+w.slice(1).toLowerCase()).join(" "),last:last.join(" ")||full};
 }
-const initials = n => { const s=splitName(n); return ((s.first[0]||"")+(s.last[0]||"")).toUpperCase(); };
-const nameHTML = n => { const s=splitName(n); return `${esc(s.first)} <span class="ln">${esc(s.last)}</span>`; };
-
-// Classement avec ex-aequo
-function ranked(arr, keyFn){
-  let prev=null,r=0;
-  return arr.map((x,i)=>{const k=keyFn(x); if(k!==prev){r=i+1;prev=k} return {...x,rank:r}});
+const initials=n=>{const s=splitName(n);return((s.first[0]||"")+(s.last[0]||"")).toUpperCase();};
+const nameHTML=n=>{const s=splitName(n);return `${esc(s.first)} <span class="ln">${esc(s.last)}</span>`;};
+const shortClub=n=>n.replace(/\s*\([A-Z]\)\s*$/,"").replace(/^(HBC|HB|CA|CS|JA)\s+/,"").replace(/\s+HB$/,"").replace(/^des\s+/,"");
+const mono=n=>{const w=n.replace(/\(.*?\)/g,"").split(/[\s-]+/).filter(x=>x&&!/^(de|des|du)$/i.test(x));return w.map(x=>x[0]).join("").toUpperCase().slice(0,4);};
+function logoHTML(club,size){
+  return `<span class="logo l${size}"><img src="${LOGO_DIR}${slug(club)}.png" alt="" loading="lazy" onerror="this.outerHTML='<span class=&quot;mono&quot;>${esc(mono(club))}</span>'"></span>`;
 }
+function ranked(arr,keyFn){let prev=null,r=0;return arr.map((x,i)=>{const k=keyFn(x);if(k!==prev){r=i+1;prev=k}return{...x,rank:r}});}
+const scorerSort=(a,b)=>b.buts-a.buts||(pct(b.buts,b.tirs)||0)-(pct(a.buts,a.tirs)||0);
 
 /* ============ DONNÉES ============ */
-let D=null;
+let D=null, loading=true;
 async function fetchCSV(gid){
-  const url=`${BASE}&gid=${gid}&single=true&t=${Date.now()}`;
-  const r=await fetch(url,{cache:"no-store"});
+  const r=await fetch(`${BASE}&gid=${gid}&single=true&t=${Date.now()}`,{cache:"no-store"});
   if(!r.ok) throw new Error("HTTP "+r.status);
   return parseCSV(await r.text());
 }
 function build(raw){
-  const players=table(raw.joueurs).map(o=>({
-    club:o["club"], name:col(o,"joueur"), buts:toNum(col(o,"total buts")), tirs:toNum(col(o,"total tirs")), excl:toNum(col(o,"total excl"))
-  })).filter(p=>p.club && p.name && p.name!=="0");
-  const real=players.filter(p=>norm(p.name)!==PLACEHOLDER);
-
-  const keepers=table(raw.gardiens).map(o=>({
-    club:o["club"], name:col(o,"gardien"), arrets:toNum(col(o,"total arrets")), matchs:toNum(col(o,"nb matchs"))
-  })).filter(g=>g.club && g.name && g.name!=="0");
-
-  const clubs=table(raw.clubs).filter(o=>o["club"] && col(o,"buts marques")!=="").map(o=>{
-    const name=o["club"];
-    const ps=real.filter(p=>p.club===name);
-    const b=ps.reduce((s,p)=>s+p.buts,0), t=ps.reduce((s,p)=>s+p.tirs,0);
-    const arr=toNum(col(o,"arrets")), enc=toNum(col(o,"buts encaisses"));
-    return { name, marques:toNum(col(o,"buts marques")), encaisses:enc, arrets:arr,
-      pctArret:pct(arr,arr+enc), pctTir:pct(b,t), excl:toNum(col(o,"exclusions")) };
+  const players=table(raw.joueurs).map(o=>({club:o["club"],name:col(o,"joueur"),buts:toNum(col(o,"total buts")),tirs:toNum(col(o,"total tirs")),excl:toNum(col(o,"total excl"))}))
+    .filter(p=>p.club&&p.name&&p.name!=="0"&&norm(p.name)!==PLACEHOLDER);
+  const keepers=table(raw.gardiens).map(o=>({club:o["club"],name:col(o,"gardien"),arrets:toNum(col(o,"total arrets")),matchs:toNum(col(o,"nb matchs"))}))
+    .filter(g=>g.club&&g.name&&g.name!=="0");
+  const clubs=table(raw.clubs).filter(o=>o["club"]&&col(o,"buts marques")!=="").map(o=>{
+    const name=o["club"],ps=players.filter(p=>p.club===name);
+    const b=ps.reduce((s,p)=>s+p.buts,0),t=ps.reduce((s,p)=>s+p.tirs,0);
+    const arr=toNum(col(o,"arrets")),enc=toNum(col(o,"buts encaisses"));
+    return {name,marques:toNum(col(o,"buts marques")),encaisses:enc,arrets:arr,pctArret:pct(arr,arr+enc),pctTir:pct(b,t),excl:toNum(col(o,"exclusions"))};
   });
-  return {players:real, keepers, clubs};
+  return {players,keepers,clubs};
 }
-async function load(showSpin){
-  const btn=document.getElementById("refreshBtn"); if(showSpin) btn.classList.add("spin");
+async function load(spin){
+  setSpin(spin);
   try{
     const [joueurs,gardiens,clubs]=await Promise.all([fetchCSV(GID.joueurs),fetchCSV(GID.gardiens),fetchCSV(GID.clubs)]);
-    const raw={joueurs,gardiens,clubs};
-    const built=build(raw);
+    const raw={joueurs,gardiens,clubs},built=build(raw);
     if(!built.clubs.length) throw new Error("format");
-    D={...built, at:Date.now(), offline:false};
-    store.set("hand-cache",{raw,at:D.at});
+    D={...built,at:Date.now(),offline:false}; store.set("hand-cache",{raw,at:D.at});
   }catch(e){
     const c=store.get("hand-cache");
-    if(c){ D={...build(c.raw), at:c.at, offline:true}; }
-    else { D=null; renderError(e); btn.classList.remove("spin"); return; }
+    if(c) D={...build(c.raw),at:c.at,offline:true}; else D=null;
   }
-  btn.classList.remove("spin");
-  render();
+  loading=false; setSpin(false); render();
 }
+function setSpin(on){document.querySelectorAll("[data-refresh]").forEach(b=>b.classList.toggle("spin",!!on));}
 
-/* ============ ÉTAT ============ */
-let team=store.get("hand-team")||DEFAULT_TEAM;
-let tab="equipe";
-const ui={ buteurs:"champ", gardiens:"gardiens", clubSort:"pct", clubsMetric:"marques" };
+/* ============ NAVIGATION (#/, #/classement, #/buteurs, #/gardiens, #/club/<slug>) ============ */
+const ui={buteurs:"champ",gardiens:"gardiens",clubSort:"pct",metric:"marques"};
+function route(){const h=location.hash.replace(/^#\/?/,"").split("/");return{page:h[0]||"home",arg:decodeURIComponent(h[1]||"")};}
+let depth=0;
+function go(path){depth++;location.hash="#/"+path;}
+window.addEventListener("hashchange",()=>{closeSheet();render();window.scrollTo(0,0);});
 
-/* ============ RENDU ============ */
-const view=document.getElementById("view");
-function renderError(e){
-  document.getElementById("teamName").textContent="Stats Hand";
-  view.innerHTML=`<div class="error"><b>Impossible de charger les stats</b>Vérifie ta connexion internet, puis appuie sur le bouton d'actualisation en haut à droite.</div>`;
-}
-function renderHero(){
-  const c=D.clubs.find(x=>x.name===team)||D.clubs[0]; if(!c) return;
-  team=c.name;
-  document.getElementById("teamName").textContent=c.name;
-  const byAtt=[...D.clubs].sort((a,b)=>b.marques-a.marques).findIndex(x=>x.name===c.name)+1;
-  const byDef=[...D.clubs].sort((a,b)=>a.encaisses-b.encaisses).findIndex(x=>x.name===c.name)+1;
-  document.getElementById("board").innerHTML=
-    `<div><div class="num">${c.marques}</div><div class="lbl">Buts marqués, ${ordF(byAtt)} attaque</div></div>
-     <div><div class="num">${c.encaisses}</div><div class="lbl">Buts encaissés, ${ordF(byDef)} défense</div></div>`;
-  document.getElementById("minis").innerHTML=
-    `<div><b>${fmtPct(c.pctTir)}</b>Réussite au tir</div><div><b>${fmtPct(c.pctArret)}</b>Arrêts équipe</div><div><b>${c.excl}</b>Exclusions 2 min</div>`;
-}
+/* ============ GABARITS ============ */
+const IC={
+  refresh:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>`,
+  back:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>`,
+  court:`<svg class="court" viewBox="0 0 200 200" fill="none" stroke="#FF6D00" stroke-width="3" aria-hidden="true"><path d="M200 40 A60 60 0 0 0 200 160"/><path d="M200 10 A90 90 0 0 0 200 190" stroke-dasharray="8 7"/><line x1="200" y1="85" x2="200" y2="115" stroke-width="8"/><line x1="132" y1="96" x2="132" y2="104"/></svg>`,
+  table:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 20V11M12 20V5M19 20v-6"/></svg>`,
+  ball:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3c-2.5 3-2.5 15 0 18M3.5 9h17M3.5 15h17"/></svg>`,
+  goal:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20V6h18v14"/><path d="M3 10h18M8 6v14M16 6v14" stroke-dasharray="2 2.5"/></svg>`
+};
+const refreshBtn=`<button class="icon-btn" data-refresh aria-label="Actualiser les stats">${IC.refresh}</button>`;
+const backBtn=`<button class="icon-btn" data-back aria-label="Retour à l'accueil">${IC.back}</button>`;
+function pageHead(title){return `<header class="top">${IC.court}<div class="bar-top">${backBtn}<div class="t"><div class="page-title">${esc(title)}</div></div>${refreshBtn}</div></header>`;}
 function stamp(){
-  const d=new Date(D.at);
-  const t=d.toLocaleDateString("fr-FR",{day:"numeric",month:"long"})+" à "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+  const d=new Date(D.at),t=d.toLocaleDateString("fr-FR",{day:"numeric",month:"long"})+" à "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
   return `<p class="stamp">${D.offline?"Hors connexion, stats du ":"Mis à jour le "}${t}</p>`;
 }
-function segHTML(key,opts){
-  return `<div class="seg" role="group">${opts.map(([v,l])=>`<button data-seg="${key}" data-v="${v}" aria-pressed="${ui[key]===v}">${l}</button>`).join("")}</div>`;
-}
+function seg(key,opts){return `<div class="seg" role="group">${opts.map(([v,l])=>`<button data-seg="${key}" data-v="${v}" aria-pressed="${ui[key]===v}">${l}</button>`).join("")}</div>`;}
+function chips(key,opts){return `<div class="chips">${opts.map(([v,l])=>`<button class="chip" data-seg="${key}" data-v="${v}" aria-pressed="${ui[key]===v}">${l}</button>`).join("")}</div>`;}
 function playerRow(p,{showClub=true,rank=null,max=1}={}){
-  const i=D.players.indexOf(p);
-  return `<button class="row${showClub&&p.club===team?" mine":""}" data-player="${i}">
-    ${rank!=null?`<span class="rank ${rank<=3?"p"+rank:""}">${rank}</span>`:""}
+  return `<button class="row${showClub&&p.club===MY_TEAM?" mine":""}" data-player="${D.players.indexOf(p)}">
+    ${rank!=null?`<span class="rank ${rank===1?"p1":""}">${rank}</span>`:""}
     <span class="avatar">${esc(initials(p.name))}</span>
     <span class="who"><span class="n">${nameHTML(p.name)}</span>
-      <span class="c">${showClub?esc(p.club)+", ":""}${p.tirs} tirs, ${fmtPct(pct(p.buts,p.tirs))}</span>
-      <span class="bar"><i style="width:${Math.round(100*p.buts/max)}%"></i></span></span>
-    <span class="val"><span class="num">${p.buts}</span><span class="s">buts</span></span>
-  </button>`;
+      <span class="c">${showClub?esc(shortClub(p.club))+", ":""}${p.tirs} tirs, ${fmtPct(pct(p.buts,p.tirs))}</span>
+      <span class="meter"><i style="width:${Math.round(100*p.buts/max)}%"></i></span></span>
+    <span class="val"><span class="num">${p.buts}</span><span class="s">buts</span></span></button>`;
 }
-const scorerSort=(a,b)=>b.buts-a.buts || (pct(b.buts,b.tirs)||0)-(pct(a.buts,a.tirs)||0);
+function keeperRow(k,{rank=null,showClub=true,max=1}={}){
+  return `<div class="row${showClub&&k.club===MY_TEAM?" mine":""}">${rank!=null?`<span class="rank ${rank===1?"p1":""}">${rank}</span>`:""}
+    <span class="avatar">${esc(initials(k.name))}</span>
+    <span class="who"><span class="n">${nameHTML(k.name)}</span><span class="c">${showClub?esc(shortClub(k.club))+", ":""}${k.matchs} match${k.matchs>1?"s":""}, ${k.matchs?fmt1(k.arrets/k.matchs):0} par match</span>
+    <span class="meter"><i style="width:${Math.round(100*k.arrets/max)}%"></i></span></span>
+    <span class="val"><span class="num">${k.arrets}</span><span class="s">arrêts</span></span></div>`;
+}
 
-function renderEquipe(){
-  const ps=D.players.filter(p=>p.club===team).sort(scorerSort);
-  const ks=D.keepers.filter(k=>k.club===team).sort((a,b)=>b.arrets-a.arrets);
-  const max=Math.max(1,...ps.map(p=>p.buts));
-  let h=`<h2>Joueurs</h2>`;
-  h+= ps.length?`<div class="list">${ps.map(p=>playerRow(p,{showClub:false,max})).join("")}</div>`:`<div class="empty">Aucun joueur saisi pour ce club.</div>`;
-  h+=`<h2 style="margin-top:20px">Gardiens</h2>`;
-  h+= ks.length?`<div class="list">${ks.map(k=>`<div class="row"><span class="avatar">${esc(initials(k.name))}</span>
-      <span class="who"><span class="n">${nameHTML(k.name)}</span><span class="c">${k.matchs} match${k.matchs>1?"s":""}, ${k.matchs?fmt1(k.arrets/k.matchs):0} arrêts par match</span></span>
-      <span class="val"><span class="num">${k.arrets}</span><span class="s">arrêts</span></span></div>`).join("")}</div>`:`<div class="empty">Aucun gardien saisi.</div>`;
-  h+=`<p class="note">La J1 n'a pas de feuille de match détaillée : elle compte dans les totaux d'équipe mais pas dans les stats individuelles.</p>`;
-  return h;
-}
-function renderButeurs(){
-  let h=segHTML("buteurs",[["champ","Championnat"],["club","Meilleur par club"]]);
-  if(ui.buteurs==="champ"){
-    const top=ranked([...D.players].sort(scorerSort).slice(0,30),p=>p.buts+"|"+(pct(p.buts,p.tirs)||0).toFixed(4));
-    const max=Math.max(1,top[0]?.buts||1);
-    h+=`<div class="list">${top.map(p=>playerRow(p,{rank:p.rank,max})).join("")}</div>`;
-    h+=`<p class="note">À buts égaux, le meilleur pourcentage au tir passe devant.</p>`;
-  }else{
-    const best=D.clubs.map(c=>[...D.players.filter(p=>p.club===c.name)].sort(scorerSort)[0]).filter(Boolean).sort(scorerSort);
-    const max=Math.max(1,best[0]?.buts||1);
-    h+=`<div class="list">${best.map(p=>playerRow(p,{max})).join("")}</div>`;
-  }
-  return h;
-}
-function renderGardiens(){
-  let h=segHTML("gardiens",[["gardiens","Gardiens"],["clubs","Par club"]]);
-  if(ui.gardiens==="gardiens"){
-    const ks=ranked(D.keepers.filter(k=>k.matchs>0).sort((a,b)=>b.arrets-a.arrets||a.matchs-b.matchs).slice(0,20),k=>k.arrets+"|"+k.matchs);
-    const max=Math.max(1,ks[0]?.arrets||1);
-    h+=`<div class="list">${ks.map(k=>`<div class="row${k.club===team?" mine":""}"><span class="rank ${k.rank<=3?"p"+k.rank:""}">${k.rank}</span>
-      <span class="avatar">${esc(initials(k.name))}</span>
-      <span class="who"><span class="n">${nameHTML(k.name)}</span><span class="c">${esc(k.club)}, ${fmt1(k.arrets/k.matchs)} par match</span>
-      <span class="bar"><i style="width:${Math.round(100*k.arrets/max)}%"></i></span></span>
-      <span class="val"><span class="num">${k.arrets}</span><span class="s">arrêts</span></span></div>`).join("")}</div>`;
-    h+=`<p class="note">La feuille de match ne donne pas les buts encaissés par gardien : le pourcentage d'arrêt n'existe donc qu'au niveau de l'équipe (onglet Par club).</p>`;
-  }else{
-    h+=`<div class="chips">${[["pct","% d'arrêt"],["total","Total d'arrêts"]].map(([v,l])=>`<button class="chip" data-seg="clubSort" data-v="${v}" aria-pressed="${ui.clubSort===v}">${l}</button>`).join("")}</div>`;
-    const byPct=ui.clubSort==="pct";
-    const cs=ranked([...D.clubs].sort((a,b)=>byPct?((b.pctArret||0)-(a.pctArret||0)||b.arrets-a.arrets):(b.arrets-a.arrets||(b.pctArret||0)-(a.pctArret||0))),c=>byPct?(c.pctArret||0).toFixed(4):c.arrets+"|"+(c.pctArret||0).toFixed(4));
-    const max=Math.max(...cs.map(c=>byPct?(c.pctArret||0):c.arrets))||1;
-    h+=`<div class="list">${cs.map(c=>{const v=byPct?(c.pctArret||0):c.arrets;return `<div class="row${c.name===team?" mine":""}"><span class="rank ${c.rank<=3?"p"+c.rank:""}">${c.rank}</span>
-      <span class="who"><span class="n">${esc(c.name)}</span><span class="c">${c.arrets} arrêts, ${c.encaisses} buts encaissés</span>
-      <span class="bar"><i style="width:${Math.round(100*v/max)}%"></i></span></span>
-      <span class="val"><span class="num">${byPct?fmtPct(c.pctArret):c.arrets}</span></span></div>`}).join("")}</div>`;
-    h+=`<p class="note">% d'arrêt équipe = arrêts ÷ (arrêts + buts encaissés).</p>`;
-  }
-  return h;
+/* ============ PAGES ============ */
+function pHome(){
+  const clubs=[...D.clubs].sort((a,b)=>(b.name===MY_TEAM)-(a.name===MY_TEAM)||a.name.localeCompare(b.name,"fr"));
+  return `<header class="top">${IC.court}
+    <div class="bar-top"><div class="t"></div>${refreshBtn}</div>
+    <div class="home-title"><h1>Honneur<br><em>masculine</em></h1><p>Poule A, saison 2026-2027</p></div></header>
+  <main>
+    <h2>Classements généraux</h2>
+    <div class="tiles">
+      <button class="tile" data-go="classement">${IC.table}<span><b>Classement des clubs</b><span class="d">Attaque, défense, tir, arrêts, discipline</span></span><span class="go">›</span></button>
+      <button class="tile" data-go="buteurs">${IC.ball}<span><b>Classement buteurs</b><span class="d">Tous clubs et meilleur par club</span></span><span class="go">›</span></button>
+      <button class="tile" data-go="gardiens">${IC.goal}<span><b>Classement gardiens</b><span class="d">Arrêts individuels et par club</span></span><span class="go">›</span></button>
+    </div>
+    <h2>Les équipes</h2>
+    <div class="clubs-grid">${clubs.map(c=>`<button class="club-card${c.name===MY_TEAM?" mine":""}" data-go="club/${slug(c.name)}">${logoHTML(c.name,64)}<span>${esc(shortClub(c.name))}</span></button>`).join("")}</div>
+    ${stamp()}
+  </main>`;
 }
 const METRICS={
   marques:{l:"Attaque",get:c=>c.marques,desc:true,show:c=>c.marques,sub:c=>`${c.marques} buts marqués`},
   encaisses:{l:"Défense",get:c=>c.encaisses,desc:false,show:c=>c.encaisses,sub:c=>`${c.encaisses} buts encaissés`},
-  pctTir:{l:"% tir",get:c=>c.pctTir||0,desc:true,show:c=>fmtPct(c.pctTir),sub:c=>`Hors J1 non détaillée`},
-  pctArret:{l:"% arrêt",get:c=>c.pctArret||0,desc:true,show:c=>fmtPct(c.pctArret),sub:c=>`${c.arrets} arrêts`},
+  pctTir:{l:"% tir",get:c=>c.pctTir||0,desc:true,show:c=>fmtPct(c.pctTir),sub:()=>`Hors J1 non détaillée`},
+  pctArret:{l:"% arrêt",get:c=>c.pctArret||0,desc:true,show:c=>fmtPct(c.pctArret),sub:c=>`${c.arrets} arrêts, ${c.encaisses} encaissés`},
+  arrets:{l:"Total arrêts",get:c=>c.arrets,desc:true,show:c=>c.arrets,sub:c=>`${fmtPct(c.pctArret)} d'arrêts`},
   excl:{l:"Discipline",get:c=>c.excl,desc:false,show:c=>c.excl,sub:c=>`${c.excl} exclusions 2 min`}
 };
-function renderClubs(){
-  const m=METRICS[ui.clubsMetric];
-  let h=`<div class="chips">${Object.entries(METRICS).map(([k,v])=>`<button class="chip" data-seg="clubsMetric" data-v="${k}" aria-pressed="${ui.clubsMetric===k}">${v.l}</button>`).join("")}</div>`;
+function clubRank(c,key){const m=METRICS[key];return ranked([...D.clubs].sort((a,b)=>m.desc?m.get(b)-m.get(a):m.get(a)-m.get(b)),x=>m.get(x)).find(x=>x.name===c.name).rank;}
+function pClassement(){
+  const m=METRICS[ui.metric];
   const cs=ranked([...D.clubs].sort((a,b)=>m.desc?m.get(b)-m.get(a):m.get(a)-m.get(b)),c=>m.get(c));
-  const vals=cs.map(m.get), max=Math.max(...vals)||1;
-  h+=`<div class="list">${cs.map(c=>`<button class="row${c.name===team?" mine":""}" data-team="${esc(c.name)}"><span class="rank ${c.rank<=3?"p"+c.rank:""}">${c.rank}</span>
-    <span class="who"><span class="n">${esc(c.name)}</span><span class="c">${m.sub(c)}</span>
-    <span class="bar"><i style="width:${Math.round(100*m.get(c)/max)}%"></i></span></span>
-    <span class="val"><span class="num">${m.show(c)}</span></span></button>`).join("")}</div>`;
-  h+=`<p class="note">${m.desc?"Du plus haut au plus bas.":"Du plus bas au plus haut : moins, c'est mieux."} Touchez un club pour l'afficher en haut.</p>`;
-  return h;
+  const max=Math.max(...cs.map(m.get))||1;
+  return pageHead("Classement clubs")+`<main>${chips("metric",Object.entries(METRICS).map(([k,v])=>[k,v.l]))}
+    <div class="list">${cs.map(c=>`<button class="row${c.name===MY_TEAM?" mine":""}" data-go="club/${slug(c.name)}"><span class="rank ${c.rank===1?"p1":""}">${c.rank}</span>
+      ${logoHTML(c.name,32)}<span class="who"><span class="n">${esc(c.name)}</span><span class="c">${m.sub(c)}</span>
+      <span class="meter"><i style="width:${Math.round(100*m.get(c)/max)}%"></i></span></span>
+      <span class="val"><span class="num">${m.show(c)}</span></span></button>`).join("")}</div>
+    <p class="note">${m.desc?"Du plus haut au plus bas.":"Moins, c'est mieux."} Touchez un club pour voir toutes ses stats.</p>${stamp()}</main>`;
+}
+function pButeurs(){
+  let h=seg("buteurs",[["champ","Championnat"],["club","Meilleur par club"]]);
+  if(ui.buteurs==="champ"){
+    const top=ranked([...D.players].sort(scorerSort).slice(0,30),p=>p.buts+"|"+(pct(p.buts,p.tirs)||0).toFixed(4));
+    h+=`<div class="list">${top.map(p=>playerRow(p,{rank:p.rank,max:top[0]?.buts||1})).join("")}</div><p class="note">À buts égaux, le meilleur pourcentage au tir passe devant. J1 non comptée (feuille de match non détaillée).</p>`;
+  }else{
+    const best=D.clubs.map(c=>D.players.filter(p=>p.club===c.name).sort(scorerSort)[0]).filter(Boolean).sort(scorerSort);
+    h+=`<div class="list">${best.map(p=>playerRow(p,{max:best[0]?.buts||1})).join("")}</div>`;
+  }
+  return pageHead("Buteurs")+`<main>${h}${stamp()}</main>`;
+}
+function pGardiens(){
+  let h=seg("gardiens",[["gardiens","Gardiens"],["clubs","Par club"]]);
+  if(ui.gardiens==="gardiens"){
+    const ks=ranked(D.keepers.filter(k=>k.matchs>0).sort((a,b)=>b.arrets-a.arrets||a.matchs-b.matchs).slice(0,20),k=>k.arrets+"|"+k.matchs);
+    h+=`<div class="list">${ks.map(k=>keeperRow(k,{rank:k.rank,max:ks[0]?.arrets||1})).join("")}</div>
+      <p class="note">La feuille de match ne donne pas les buts encaissés par gardien : le pourcentage d'arrêt n'existe qu'au niveau de l'équipe (onglet Par club).</p>`;
+  }else{
+    const byPct=ui.clubSort==="pct";
+    h+=chips("clubSort",[["pct","% d'arrêt"],["total","Total d'arrêts"]]);
+    const cs=ranked([...D.clubs].sort((a,b)=>byPct?((b.pctArret||0)-(a.pctArret||0)||b.arrets-a.arrets):(b.arrets-a.arrets||(b.pctArret||0)-(a.pctArret||0))),c=>byPct?(c.pctArret||0).toFixed(4):c.arrets+"|"+(c.pctArret||0).toFixed(4));
+    const max=Math.max(...cs.map(c=>byPct?(c.pctArret||0):c.arrets))||1;
+    h+=`<div class="list">${cs.map(c=>{const v=byPct?(c.pctArret||0):c.arrets;return `<button class="row${c.name===MY_TEAM?" mine":""}" data-go="club/${slug(c.name)}"><span class="rank ${c.rank===1?"p1":""}">${c.rank}</span>
+      ${logoHTML(c.name,32)}<span class="who"><span class="n">${esc(c.name)}</span><span class="c">${c.arrets} arrêts, ${c.encaisses} buts encaissés</span>
+      <span class="meter"><i style="width:${Math.round(100*v/max)}%"></i></span></span>
+      <span class="val"><span class="num">${byPct?fmtPct(c.pctArret):c.arrets}</span></span></button>`}).join("")}</div>
+      <p class="note">% d'arrêt équipe = arrêts ÷ (arrêts + buts encaissés).</p>`;
+  }
+  return pageHead("Gardiens")+`<main>${h}${stamp()}</main>`;
+}
+function pClub(s){
+  const c=D.clubs.find(x=>slug(x.name)===s); if(!c) return pageHead("Club introuvable")+`<main><div class="empty">Ce club n'existe pas dans le fichier.</div></main>`;
+  const ps=D.players.filter(p=>p.club===c.name).sort(scorerSort), ks=D.keepers.filter(k=>k.club===c.name).sort((a,b)=>b.arrets-a.arrets);
+  const r=k=>clubRank(c,k), maxP=Math.max(1,...ps.map(p=>p.buts)), maxK=Math.max(1,...ks.map(k=>k.arrets));
+  const rk=(k,l)=>{const v=r(k);return `<div class="rk${v===1?" best":""}"><div class="num">${ordM(v)}</div><div class="l">${l}</div></div>`;};
+  return `<header class="top">${IC.court}<div class="bar-top">${backBtn}<div class="t"></div>${refreshBtn}</div>
+    <div class="club-head">${logoHTML(c.name,72)}<div><h1>${esc(c.name)}</h1><div class="sub">Honneur masculine, poule A</div></div></div>
+    <div class="board"><div><div class="num">${c.marques}</div><div class="lbl">Buts marqués, ${ordF(r("marques"))} attaque</div></div>
+      <div><div class="num">${c.encaisses}</div><div class="lbl">Buts encaissés, ${ordF(r("encaisses"))} défense</div></div></div>
+    <div class="minis"><div><b>${fmtPct(c.pctTir)}</b>Réussite au tir</div><div><b>${fmtPct(c.pctArret)}</b>Arrêts équipe</div><div><b>${c.excl}</b>Exclusions 2 min</div></div></header>
+  <main>
+    <h2>Rang dans la poule</h2>
+    <div class="ranks">${rk("marques","Attaque")}${rk("encaisses","Défense")}${rk("pctTir","% tir")}${rk("pctArret","% arrêt")}${rk("arrets","Total arrêts")}${rk("excl","Discipline")}</div>
+    <h2>Joueurs</h2>
+    ${ps.length?`<div class="list">${ps.map(p=>playerRow(p,{showClub:false,max:maxP})).join("")}</div>`:`<div class="empty">Aucun joueur saisi.</div>`}
+    <h2 style="margin-top:22px">Gardiens</h2>
+    ${ks.length?`<div class="list">${ks.map(k=>keeperRow(k,{showClub:false,max:maxK})).join("")}</div>`:`<div class="empty">Aucun gardien saisi.</div>`}
+    <p class="note">La J1 compte dans les totaux d'équipe mais pas dans les stats individuelles (feuille de match non détaillée).</p>
+    ${stamp()}</main>`;
 }
 function render(){
-  if(!D) return;
-  renderHero();
-  const f={equipe:renderEquipe,buteurs:renderButeurs,gardiens:renderGardiens,clubs:renderClubs}[tab];
-  view.innerHTML=f()+stamp();
+  const app=document.getElementById("app");
+  if(!D){ app.innerHTML=`<header class="top">${IC.court}<div class="bar-top"><div class="t"><div class="page-title">Stats Hand</div></div>${refreshBtn}</div></header>
+    <main>${loading?`<div class="empty">Chargement des stats…</div>`:`<div class="error"><b>Impossible de charger les stats</b>Vérifie ta connexion internet, puis appuie sur le bouton d'actualisation.</div>`}</main>`; return; }
+  const {page,arg}=route();
+  app.innerHTML=({home:pHome,classement:pClassement,buteurs:pButeurs,gardiens:pGardiens,club:()=>pClub(arg)}[page]||pHome)();
 }
 
-/* ============ FICHES ============ */
-const sheet=document.getElementById("sheet"), bg=document.getElementById("sheetBg");
-function openSheet(html){ sheet.innerHTML=`<div class="grip"></div>`+html; sheet.classList.add("open"); bg.classList.add("open"); }
-function closeSheet(){ sheet.classList.remove("open"); bg.classList.remove("open"); }
+/* ============ FICHE JOUEUR ============ */
+const sheet=document.getElementById("sheet"),bg=document.getElementById("sheetBg");
+function openSheet(h){sheet.innerHTML=`<div class="grip"></div>`+h;sheet.classList.add("open");bg.classList.add("open");}
+function closeSheet(){sheet.classList.remove("open");bg.classList.remove("open");}
 bg.onclick=closeSheet;
 function playerSheet(p){
-  const all=[...D.players].sort(scorerSort), rc=all.indexOf(p)+1;
-  const mates=D.players.filter(x=>x.club===p.club).sort(scorerSort), rt=mates.indexOf(p)+1;
-  openSheet(`<h3>${nameHTML(p.name)}</h3><p class="c">${esc(p.club)}</p>
-   <div class="stats">
-     <div class="stat"><div class="num">${p.buts}</div><div class="l">Buts</div></div>
-     <div class="stat"><div class="num">${fmtPct(pct(p.buts,p.tirs))}</div><div class="l">Réussite au tir (${p.tirs} tirs)</div></div>
-     <div class="stat"><div class="num">${ordM(rc)}</div><div class="l">Buteur du championnat</div></div>
-     <div class="stat"><div class="num">${ordM(rt)}</div><div class="l">Buteur de l'équipe</div></div>
-     <div class="stat"><div class="num">${p.excl}</div><div class="l">Exclusions 2 min</div></div>
-     <div class="stat"><div class="num">${fmtPct(pct(p.buts,mates.reduce((s,x)=>s+x.buts,0)))}</div><div class="l">Part des buts de l'équipe</div></div>
-   </div>
-   <p class="note">Stats individuelles hors J1 (feuille de match non détaillée).</p>`);
+  const rc=[...D.players].sort(scorerSort).indexOf(p)+1, mates=D.players.filter(x=>x.club===p.club).sort(scorerSort), rt=mates.indexOf(p)+1;
+  openSheet(`<h3>${nameHTML(p.name)}</h3><p class="c">${esc(p.club)}</p><div class="stats">
+    <div class="stat"><div class="num">${p.buts}</div><div class="l">Buts</div></div>
+    <div class="stat"><div class="num">${fmtPct(pct(p.buts,p.tirs))}</div><div class="l">Réussite au tir (${p.tirs} tirs)</div></div>
+    <div class="stat"><div class="num">${ordM(rc)}</div><div class="l">Buteur du championnat</div></div>
+    <div class="stat"><div class="num">${ordM(rt)}</div><div class="l">Buteur de l'équipe</div></div>
+    <div class="stat"><div class="num">${p.excl}</div><div class="l">Exclusions 2 min</div></div>
+    <div class="stat"><div class="num">${fmtPct(pct(p.buts,mates.reduce((s,x)=>s+x.buts,0)))}</div><div class="l">Part des buts de l'équipe</div></div>
+  </div><p class="note">Stats individuelles hors J1 (feuille de match non détaillée).</p>`);
 }
-function teamSheet(){
-  openSheet(`<h3>Choisir une équipe</h3><p class="c">L'équipe choisie s'affiche en haut et ressort dans les classements.</p>`+
-    [...D.clubs].sort((a,b)=>a.name.localeCompare(b.name,"fr")).map(c=>`<button class="pick" data-team="${esc(c.name)}" aria-current="${c.name===team}">${esc(c.name)}</button>`).join(""));
-}
-function setTeam(t){ team=t; store.set("hand-team",t); closeSheet(); window.scrollTo({top:0,behavior:"smooth"}); render(); }
 
 /* ============ ÉVÉNEMENTS ============ */
 document.addEventListener("click",e=>{
-  const s=e.target.closest("[data-seg]"); if(s){ ui[s.dataset.seg]=s.dataset.v; render(); return; }
-  const pl=e.target.closest("[data-player]"); if(pl){ playerSheet(D.players[+pl.dataset.player]); return; }
-  const tm=e.target.closest("[data-team]"); if(tm){ setTeam(tm.dataset.team); return; }
-  const tb=e.target.closest("[data-tab]"); if(tb){ tab=tb.dataset.tab;
-    document.querySelectorAll("[data-tab]").forEach(b=>b.setAttribute("aria-selected",b===tb)); render(); window.scrollTo(0,0); }
+  const t=e.target;
+  if(t.closest("[data-refresh]")){load(true);return;}
+  if(t.closest("[data-back]")){ if(depth>0){depth--;history.back();} else location.hash="#/"; return; }
+  const s=t.closest("[data-seg]"); if(s){ui[s.dataset.seg]=s.dataset.v;render();return;}
+  const p=t.closest("[data-player]"); if(p){playerSheet(D.players[+p.dataset.player]);return;}
+  const g=t.closest("[data-go]"); if(g){go(g.dataset.go);return;}
 });
-document.getElementById("teamBtn").onclick=()=>D&&teamSheet();
-document.getElementById("refreshBtn").onclick=()=>load(true);
-document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeSheet(); });
-document.addEventListener("visibilitychange",()=>{ if(!document.hidden && D && Date.now()-D.at>5*60*1000) load(false); });
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSheet();});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&D&&Date.now()-D.at>5*60*1000)load(false);});
 
-// Affiche d'abord le cache (instantané), puis actualise
 (function init(){
   const c=store.get("hand-cache");
-  if(c){ try{ D={...build(c.raw),at:c.at,offline:true}; render(); }catch(e){} }
+  if(c){try{D={...build(c.raw),at:c.at,offline:true};render();}catch(e){}}
+  else render();
   load(!c);
 })();
-if("serviceWorker" in navigator){ window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{})); }
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}
 </script>
 </body>
 </html>
