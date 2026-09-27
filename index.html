@@ -235,9 +235,11 @@ function build(raw){
     const name=o["club"],ps=players.filter(p=>p.club===name);
     const b=ps.reduce((s,p)=>s+p.buts,0),t=ps.reduce((s,p)=>s+p.tirs,0);
     const arr=toNum(col(o,"arrets")),enc=toNum(col(o,"buts encaisses"));
+    const rawPT=col(o,"% tir"); let pt=pct(b,t);
+    if(rawPT!==""){ pt=toNum(rawPT); if(pt>1) pt=pt/100; }   // % tir corrigé du Comparatif (matchs à stats incomplètes exclus)
     const rawPA=col(o,"% arret"); let pa=null;
     if(rawPA!==""){ pa=toNum(rawPA); if(pa>1) pa=pa/100; }   // % corrigé du Comparatif (journées avec arrêts saisis)
-    return {name,marques:toNum(col(o,"buts marques")),encaisses:enc,arrets:arr,pctArret:pa,pctTir:pct(b,t),excl:toNum(col(o,"exclusions"))};
+    return {name,marques:toNum(col(o,"buts marques")),encaisses:enc,arrets:arr,pctArret:pa,pctTir:pt,excl:toNum(col(o,"exclusions"))};
   });
   // Classement : colonnes Classement, J, V, N, D, BP, BC, Pts, Diff ajoutées au Comparatif Clubs
   const standings=table(raw.clubs).filter(o=>o["club"]&&o["pts"]!==undefined&&o["pts"]!=="").map(o=>({
@@ -256,7 +258,8 @@ function buildEvo(raw){
   if(!raw.journees) return null;
   const games=rowsWithHeader(raw.journees,"club").filter(o=>o["club"]&&toNum(o["joue"])===1&&o["bc"]!=="").map(o=>({
     club:o["club"],j:toNum(o["j"]),adv:o["adversaire"]||"",bp:toNum(o["bp"]),bc:toNum(o["bc"]),
-    tirs:toNum(o["tirs"])||null,arrets:o["arrets"]===""?null:toNum(o["arrets"]),excl:toNum(o["excl"])}));
+    tirs:(t=>t>toNum(o["bp"])?t:null)(toNum(o["tirs"])),   // tirs <= buts : stats incomplètes, match ignoré pour le % tir
+    arrets:o["arrets"]===""?null:toNum(o["arrets"]),excl:toNum(o["excl"])}));
   if(!games.length) return null;
   // adversaire déduit du score si l'en-tête ne le donne pas
   games.forEach(g=>{ if(!g.adv){ const o=games.find(x=>x.j===g.j&&x.club!==g.club&&x.bp===g.bc&&x.bc===g.bp); if(o) g.adv=o.club; } });
@@ -416,7 +419,7 @@ function pHome(){
 const METRICS={
   marques:{l:"Attaque",get:c=>c.marques,desc:true,show:c=>c.marques,sub:c=>`${c.marques} buts marqués`},
   encaisses:{l:"Défense",get:c=>c.encaisses,desc:false,show:c=>c.encaisses,sub:c=>`${c.encaisses} buts encaissés`},
-  pctTir:{l:"% tir",get:c=>c.pctTir||0,desc:true,show:c=>fmtPct(c.pctTir),sub:()=>`Hors J1 non détaillée`},
+  pctTir:{l:"% tir",get:c=>c.pctTir||0,desc:true,show:c=>fmtPct(c.pctTir),sub:()=>`Hors matchs à stats incomplètes`},
   pctArret:{l:"% arrêt",get:c=>c.pctArret||0,desc:true,show:c=>fmtPct(c.pctArret),sub:c=>`${c.arrets} arrêts, hors journées sans arrêts saisis`},
   arrets:{l:"Total arrêts",get:c=>c.arrets,desc:true,show:c=>c.arrets,sub:c=>`${fmtPct(c.pctArret)} d'arrêts`},
   excl:{l:"Discipline",get:c=>c.excl,desc:false,show:c=>c.excl,sub:c=>`${c.excl} exclusions 2 min`}
