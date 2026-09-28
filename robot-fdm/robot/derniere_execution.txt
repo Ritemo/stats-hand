@@ -1,15 +1,1 @@
-28/09/2026 12:02 | 2 | J2 PALENTE BESANCON HB (A) 22-18 HBC LURE VILLERS (C) | CORRIGÉ | Palente Besancon HB (A) (journée déjà saisie), renommés : BENHAMOUDA Abdel → BENHAMMOUDA Abdelghani
-28/09/2026 12:02 | 2 | J2 PALENTE BESANCON HB (A) 22-18 HBC LURE VILLERS (C) | CORRIGÉ | HBC Lure Villers (C) (journée déjà saisie), renommés : ANNEQUIN Kilian → ANNEQUIN-INGRASSIA Killian, GALLOYER Camille → GALLOYER-BRILLAT Camille, LESCAFETTE Pierre-Jean → LESCAFFETTE Pierre-jean
-28/09/2026 12:02 | 2 | J2 HBC GILLEY 29-39 PAYS RIOLAIS HB | CORRIGÉ | HBC Gilley (journée déjà saisie), renommés : GARNIER Geoffroy → GARNIER Geoffrey
-28/09/2026 12:02 | 2 | J2 JA MAICHE 29-38 HBC FRANOIS (B) | CORRIGÉ | JA Maiche (journée déjà saisie), ajoutés : LE BRECH Michel, renommés : BILLOTE Simon → BILLOTTE Simon
-28/09/2026 12:02 | 2 | J2 JA MAICHE 29-38 HBC FRANOIS (B) | CORRIGÉ | HBC Franois (B) (journée déjà saisie), ajoutés : LEAUTAUD Paul, VIENNET Paco
-28/09/2026 12:02 | 2 | J2 HBC DES MONTS DE GY 22-23 DOUBS CENTRAL HB | CORRIGÉ | HBC Monts de Gy (journée déjà saisie), renommés : PICHARD Enwann → PICHARD Erwann
-28/09/2026 12:02 | 2 | J2 HBC DES MONTS DE GY 22-23 DOUBS CENTRAL HB | CORRIGÉ | Doubs Central HB (journée déjà saisie), renommés : BESSONAT Mahé → BESSONNAT Mahe
-28/09/2026 12:02 | 2 | J2 BEEX-VA PM HB (C) 28-33 CA PONTARLIER HB (B) | CORRIGÉ | BEEX-VA PM HB (C) (journée déjà saisie), ajoutés : BIFARINI Dimitri
-28/09/2026 12:02 | 2 | J2 BEEX-VA PM HB (C) 28-33 CA PONTARLIER HB (B) | CORRIGÉ | CA Pontarlier HB (B) (journée déjà saisie), ajoutés : MOUREAUX Mathis, PETER Nicolas
-28/09/2026 12:02 | 3 | J3 PALENTE BESANCON HB (A) 28-32 HBC DANJOUTIN | CORRIGÉ | HBC Danjoutin (journée déjà saisie), ajoutés : COISY Maxime
-28/09/2026 12:02 | 3 | J3 PAYS RIOLAIS HB 44-26 HBC LURE VILLERS (C) | CORRIGÉ | HBC Lure Villers (C) (journée déjà saisie), ajoutés : ERARD BOGNON Robin, RIBLET Mathieu
-28/09/2026 12:02 | 3 | J3 CS VESULIEN HAUTE SAONE (C) 24-33 JA MAICHE | CORRIGÉ | CS Vesulien HS (C) (journée déjà saisie), ajoutés : VEJUX Thierry, renommés : CMIELESWKI Michal → CHMIELEWSKI Michal
-28/09/2026 12:02 | 3 | J3 DOUBS CENTRAL HB 29-16 HBC GILLEY | CORRIGÉ | Doubs Central HB (journée déjà saisie), ajoutés : CUENOT Antoine
-28/09/2026 12:02 | 3 | J3 CA PONTARLIER HB (B) 30-31 HBC DES MONTS DE GY | CORRIGÉ | CA Pontarlier HB (B) (journée déjà saisie), ajoutés : GILET Jayson, PARIS Julien
-28/09/2026 12:02 | 3 | J3 CA PONTARLIER HB (B) 30-31 HBC DES MONTS DE GY | CORRIGÉ | HBC Monts de Gy (journée déjà saisie), ajoutés : KAULEK Christophe
+28/09/2026 12:08 |  |  | RIEN À FAIRE | mode reel, aucune nouvelle feuille
