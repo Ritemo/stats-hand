@@ -1,0 +1,21 @@
+ROBOT FEUILLES DE MATCH (stats-hand)
+
+Fichiers :
+  robot/robot.py            programme principal
+  robot/fdm.py              lecture des feuilles de match PDF
+  robot/config_honneur.json poule, fichier Google Sheets, correspondance équipes / onglets
+  robot/requirements.txt    bibliothèques Python
+  .github/workflows/robot-fdm.yml  horaires (dimanche et lundi 6 h UTC) et lancement manuel
+
+Réglages (GitHub > Settings > Secrets and variables > Actions) :
+  secret   GOOGLE_CREDENTIALS : contenu complet du fichier JSON de la clé du compte de service
+  variable ROBOT_MODE         : controle (écrit seulement l'onglet _Import_Controle) ou reel
+  variable NOMS_OFFICIELS     : 1 pour réécrire les noms avec l'orthographe de la feuille de match
+
+Onglets créés dans le Sheets :
+  _Import_Controle  ce que le robot écrirait, avec les écarts par rapport à tes saisies
+  _Robot_Journal    une ligne par match traité (IMPORTÉ, EN ATTENTE, À CONFIRMER, ERREUR)
+  _Licences         licence -> ligne de chaque joueur (ne pas modifier sauf erreur de rattachement)
+
+Le robot n'écrit jamais dans une journée déjà remplie pour un club.
+En cas d'ERREUR ou d'À CONFIRMER, le passage est marqué en échec sur GitHub (tu reçois un e-mail).
