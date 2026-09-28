@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "controle (onglet _Import_Controle seulement) ou reel (remplit les onglets clubs)"
+        description: "controle (onglet _Import_Controle seulement), reel (remplit les journées vides) ou rattrapage (reel + noms officiels et joueurs manquants dans les journées déjà saisies)"
         required: true
         default: controle
         type: choice
@@ -30,13 +30,21 @@ jobs:
       - name: Import Honneur masculine
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          # lancement manuel : mode choisi ; lancement programmé : variable du dépôt ROBOT_MODE (controle par défaut)
           ROBOT_MODE: ${{ github.event.inputs.mode || vars.ROBOT_MODE || 'controle' }}
           NOMS_OFFICIELS: ${{ vars.NOMS_OFFICIELS || '0' }}
         run: python robot-fdm/robot/robot.py robot-fdm/robot/config_honneur.json
+      - name: Import Nationale 3 féminine
+        if: always()
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          ROBOT_MODE: ${{ github.event.inputs.mode || vars.ROBOT_MODE_N3F || 'controle' }}
+          NOMS_OFFICIELS: ${{ vars.NOMS_OFFICIELS || '0' }}
+        run: python robot-fdm/robot/robot.py robot-fdm/robot/config_n3f.json
       - name: Garder une trace dans le dépôt
         if: always()
         run: |
           git config user.name "robot-fdm"
           git config user.email "robot-fdm@users.noreply.github.com"
-          git add robot-fdm/robot/derniere_execution.txt || true
+          git add robot-fdm/robot/derniere_execution*.txt || true
           git diff --cached --quiet || (git commit -m "Robot : passage du $(date +%d/%m/%Y)" && git push)
