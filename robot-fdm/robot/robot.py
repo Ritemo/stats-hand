@@ -337,7 +337,7 @@ def main(cfg_path):
     book.append(LOG_TAB, journal)
     for l in journal: print(" | ".join(str(x) for x in l))
     try:   # trace dans le dépôt GitHub (garde aussi le robot actif)
-        with open(os.path.join(os.path.dirname(__file__), "derniere_execution.txt"), "w", encoding="utf-8") as fh:
+        with open(os.path.join(os.path.dirname(__file__), "derniere_execution_" + os.path.splitext(os.path.basename(cfg_path))[0].replace("config_", "") + ".txt"), "w", encoding="utf-8") as fh:
             fh.write("\n".join(" | ".join(str(x) for x in l) for l in journal) + "\n")
     except OSError: pass
     erreurs = [l for l in journal if l[3] in ("ERREUR", "À CONFIRMER")]
