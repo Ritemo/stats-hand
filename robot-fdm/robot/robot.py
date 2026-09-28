@@ -200,7 +200,11 @@ class Club:
 def main(cfg_path):
     cfg = json.load(open(cfg_path, encoding="utf-8"))
     mode = os.environ.get("ROBOT_MODE", "controle").strip().lower()
-    noms_off = os.environ.get("NOMS_OFFICIELS", "0") == "1"
+    # rattrapage : comme reel, et en plus, pour les journées déjà saisies, met les noms à l'orthographe
+    # officielle et ajoute les joueurs absents du fichier (sans toucher aux chiffres déjà saisis)
+    ecrit = mode in ("reel", "rattrapage")
+
+    noms_off = os.environ.get("NOMS_OFFICIELS", "0") == "1" or os.environ.get("ROBOT_MODE", "").strip().lower() == "rattrapage"
     book = BOOK_FACTORY(cfg["sheet_id"])
     manquants = [t for t in cfg["equipes"].values() if t not in book.tabs()]
     if manquants: raise SystemExit(f"Onglets introuvables : {manquants}. Onglets présents : {book.tabs()}")
@@ -249,9 +253,9 @@ def main(cfg_path):
             for side, tab in enumerate(tabs):
                 cl = clubs[tab]; j = m["j"]; c0 = cl.block(j)
                 if cl.filled(j) or not cl.head_ok(j):
-                    if mode != "reel": journal.append([now, j, label, "NON DÉTAILLÉE", f"{tab} : feuille sans stats individuelles, journée déjà saisie"])
+                    if not ecrit: journal.append([now, j, label, "NON DÉTAILLÉE", f"{tab} : feuille sans stats individuelles, journée déjà saisie"])
                     continue
-                if mode != "reel":
+                if not ecrit:
                     journal.append([now, j, label, "NON DÉTAILLÉE", f"{tab} : seul le score serait importé"]); continue
                 rows = [r for r in range(ROW_P, ROW_P_END + 1) if norm(cl.name(r)) == PLACEHOLDER] or \
                        [r for r in range(ROW_P, ROW_P_END + 1) if not cl.name(r)]
@@ -297,33 +301,39 @@ def main(cfg_path):
                              cl.name(r) if r else "", f"{how} ({round(sc*100)} %)" if how in ("proche", "a_confirmer") else how,
                              p["arrets"] if k == "G" else p["tirs"], "" if k == "G" else p["buts"],
                              "" if k == "G" else p["excl"], cur, ecart])
-            if mode != "reel": continue
+            if not ecrit: continue
             if douteux:
-                journal.append([now, j, label, "À CONFIRMER", f"{tab} non importé : " + ", ".join(douteux)]); continue
-            cells = []
+                journal.append([now, j, label, "À CONFIRMER", f"{tab} {'non importé' if not deja else 'non corrigé'} : " + ", ".join(douteux)]); continue
+            cells, renommes = [], []
             for k, p, r, how, sc in plan:
-                if how == "nouveau" or (noms_off and cl.name(r) != p["nom"]):
+                if how == "nouveau" or (noms_off and norm(cl.name(r)) != norm(p["nom"])):   # accents et majuscules conservés
                     cells.append((r, 1, p["nom"]))
-                if k == "J": cells += [(r, c0, p["tirs"]), (r, c0 + 1, p["buts"]), (r, c0 + 2, p["excl"])]
-                else: cells.append((r, c0, p["arrets"]))
+                    if how != "nouveau": renommes.append(f"{cl.name(r)} → {p['nom']}")
+                if not deja or how == "nouveau":          # journée déjà saisie : seuls les joueurs absents reçoivent leurs chiffres
+                    if k == "J": cells += [(r, c0, p["tirs"]), (r, c0 + 1, p["buts"]), (r, c0 + 2, p["excl"])]
+                    else: cells.append((r, c0, p["arrets"]))
                 if p["licence"] not in licences or licences[p["licence"]][:2] != (tab, k):
-                    licences[p["licence"]] = (tab, k, r); new_lic.append([p["licence"], tab, k, r, p["nom"]])
-            cells.append((ROW_SCORE_ADV, c0, adv))
-            book.write(tab, cells)
+                    licences[p["licence"]] = (tab, k, r); cl.lic[p["licence"]] = (k, r)
+                    new_lic.append([p["licence"], tab, k, r, p["nom"]])
+            if not deja: cells.append((ROW_SCORE_ADV, c0, adv))
+            if cells: book.write(tab, cells)
             for rr, cc, v in cells:          # mise à jour de la copie locale
                 cl.g[rr - 1][cc - 1] = v
             nouveaux = [p["nom"] for k, p, r, how, sc in plan if how == "nouveau"]
-            journal.append([now, j, label, "IMPORTÉ", f"{tab} : {len(plan)} lignes" + (f", nouveaux : {', '.join(nouveaux)}" if nouveaux else "")])
+            if deja and not nouveaux and not renommes: continue
+            det = (f"{tab} : {len(plan)} lignes" if not deja else f"{tab} (journée déjà saisie)") + \
+                  (f", ajoutés : {', '.join(nouveaux)}" if nouveaux else "") + (f", renommés : {', '.join(renommes)}" if renommes else "")
+            journal.append([now, j, label, "IMPORTÉ" if not deja else "CORRIGÉ", det])
 
-    if mode == "reel":
+    if ecrit:
         book.ensure(LIC_TAB, ["Licence", "Onglet", "Type", "Ligne", "Nom"]); book.append(LIC_TAB, new_lic)
     else:
         book.ensure(CTRL_TAB, ctrl_head); book.replace(CTRL_TAB, [ctrl_head] + ctrl)
     book.ensure(LOG_TAB, ["Date", "J", "Match", "Statut", "Détail"])
-    if mode != "reel":
+    if not ecrit:
         n_ecarts = sum(1 for l in ctrl if l[-1] == "ÉCART")
         journal.append([now, "", "", "CONTRÔLE", f"{len(ctrl)} lignes dans {CTRL_TAB}, dont {n_ecarts} écart(s)"])
-    if not journal: journal = [[now, "", "", "RIEN À FAIRE" if mode == "reel" else "CONTRÔLE", f"mode {mode}, aucune nouvelle feuille" if mode == "reel" else f"{len(ctrl)} lignes dans {CTRL_TAB}"]]
+    if not journal: journal = [[now, "", "", "RIEN À FAIRE" if ecrit else "CONTRÔLE", f"mode {mode}, aucune nouvelle feuille" if ecrit else f"{len(ctrl)} lignes dans {CTRL_TAB}"]]
     book.append(LOG_TAB, journal)
     for l in journal: print(" | ".join(str(x) for x in l))
     try:   # trace dans le dépôt GitHub (garde aussi le robot actif)
