@@ -34,6 +34,29 @@ def sim(a, b):
     return max(r1, r2)
 
 
+def split_np(s):
+    """Sépare NOM (mots en majuscules) et Prénom. Renvoie (nom, prénom) normalisés, ou None."""
+    s = re.sub(r"\(N[ée]\.?e?\s[^)]*\)", "", str(s or ""))
+    toks = s.split()
+    up = [t for t in toks if re.sub(r"[^A-Za-zÀ-ÿ]", "", t).isupper() and len(re.sub(r"[^A-Za-zÀ-ÿ]", "", t)) > 1]
+    lo = [t for t in toks if t not in up]
+    if not up or not lo: return None
+    return norm(" ".join(up)), norm(" ".join(lo))
+
+
+def sim_person(a, b):
+    """Ressemblance entre deux noms de joueur (0 à 1), NOM et Prénom comparés séparément."""
+    A, B = split_np(a), split_np(b)
+    if not A or not B: return sim(a, b)
+    r = lambda x, y: difflib.SequenceMatcher(None, x, y).ratio()
+    na, nb = set(A[0].split()), set(B[0].split())
+    s_nom = 1.0 if (na <= nb or nb <= na) else r(A[0], B[0])            # ANNEQUIN / ANNEQUIN-INGRASSIA
+    pa, pb = A[1], B[1]
+    s_pre = 0.95 if min(len(pa), len(pb)) >= 3 and (pa.startswith(pb) or pb.startswith(pa)) else r(pa, pb)   # Abdel / Abdelghani
+    if pa == pb: s_pre = 1.0
+    return 0.6 * s_nom + 0.4 * s_pre
+
+
 def col_letter(n):
     s = ""
     while n: n, r = divmod(n - 1, 26); s = chr(65 + r) + s
@@ -124,6 +147,35 @@ class Club:
         cells = [self.g[r - 1][c + k] for r in range(ROW_P, ROW_P_END + 1) for k in range(3)]
         cells += [self.g[r - 1][c] for r in range(ROW_G, ROW_G_END + 1)] + [self.g[ROW_SCORE_ADV - 1][c]]
         return any(str(x).strip() != "" for x in cells)
+
+    def assign(self, kind, players):
+        """Affecte chaque joueur de la feuille à une ligne : exacts d'abord, puis du plus ressemblant au moins ressemblant."""
+        lo, hi = (ROW_P, ROW_P_END) if kind == "J" else (ROW_G, ROW_G_END)
+        res, used = {}, set()
+        others = {x[1] for l, x in self.lic.items() if x[0] == kind}
+        for i, p in enumerate(players):                                     # 1. licence connue
+            if p["licence"] in self.lic and self.lic[p["licence"]][0] == kind:
+                r = self.lic[p["licence"]][1]
+                if lo <= r <= hi and self.name(r) and r not in used:
+                    res[i] = (r, "licence", 1.0); used.add(r)
+        rows = [r for r in range(lo, hi + 1) if self.name(r) and norm(self.name(r)) != PLACEHOLDER]
+        pairs = sorted(((sim_person(self.name(r), p["nom"]), i, r) for i, p in enumerate(players) if i not in res
+                        for r in rows if r not in used and (r not in others or self.lic.get(p["licence"], (None, 0))[1] == r)), reverse=True)
+        best_of = {}
+        for sc, i, r in pairs: best_of.setdefault(i, []).append((sc, r))
+        for sc, i, r in pairs:                                               # 2. du plus sûr au moins sûr
+            if i in res or r in used: continue
+            if sc >= 0.999:
+                res[i] = (r, "exact" if norm(self.name(r)) == norm(players[i]["nom"]) else "proche", sc); used.add(r); continue
+            alt = [x for x, rr in best_of[i] if rr != r and rr not in used]
+            second = alt[0] if alt else 0
+            if sc >= 0.85 and sc - second >= 0.08: res[i] = (r, "proche", sc); used.add(r)
+            elif sc >= 0.60: res[i] = (r, "a_confirmer", sc); used.add(r)
+        free = [r for r in range(lo, hi + 1) if not self.name(r)]           # 3. nouveaux joueurs
+        for i, p in enumerate(players):
+            if i not in res:
+                res[i] = (free.pop(0), "nouveau", 0.0) if free else (None, "plus_de_place", 0.0)
+        return res
 
     def resolve(self, kind, p, taken):
         """kind 'J' (joueur) ou 'G' (gardien). Renvoie (ligne, mode, score)."""
@@ -218,14 +270,13 @@ def main(cfg_path):
             deja = cl.filled(j)
             if mode == "reel" and deja: continue
             adv = f["score"][1 - side]
-            plan, taken, douteux = [], {"J": set(), "G": set()}, []
-            for p in team["joueurs"]:
-                kinds = []
-                if p["arrets"] is not None: kinds.append("G")
-                if p["arrets"] is None or p["tirs"] or p["buts"]: kinds.append("J")
-                for k in kinds:
-                    r, how, sc = cl.resolve(k, p, taken[k])
-                    if r: taken[k].add(r)
+            plan, douteux = [], []
+            groupes = {"G": [p for p in team["joueurs"] if p["arrets"] is not None],
+                       "J": [p for p in team["joueurs"] if p["arrets"] is None or p["tirs"] or p["buts"]]}
+            for k, ps in groupes.items():
+                aff = cl.assign(k, ps)
+                for i, p in enumerate(ps):
+                    r, how, sc = aff[i]
                     if how == "a_confirmer": douteux.append(f"{p['nom']} ressemble à « {cl.name(r)} » (ligne {r}) sans certitude")
                     if how == "plus_de_place": douteux.append(f"{p['nom']} : plus de ligne libre")
                     plan.append((k, p, r, how, sc))
@@ -240,7 +291,8 @@ def main(cfg_path):
                         cur_v = [row[c0 - 1]]; new_v = [p["arrets"]]
                     if any(str(x).strip() for x in cur_v):
                         cur = " / ".join(str(x) for x in cur_v)
-                        ecart = "" if [str(x).strip() for x in cur_v] == [str(x) for x in new_v] else "ÉCART"
+                        n0 = lambda x: str(x).strip() or "0"          # case vide = 0
+                        ecart = "" if [n0(x) for x in cur_v] == [str(x) for x in new_v] else "ÉCART"
                 ctrl.append([j, label, tab, "Gardien" if k == "G" else "Joueur", p["nom"], r or "",
                              cl.name(r) if r else "", f"{how} ({round(sc*100)} %)" if how in ("proche", "a_confirmer") else how,
                              p["arrets"] if k == "G" else p["tirs"], "" if k == "G" else p["buts"],
