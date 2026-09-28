@@ -234,6 +234,28 @@ body{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
 .brand small{display:block;font-size:12px;opacity:.7}
 .logo.l40{width:40px;height:40px}.logo.l40 .mono{font-size:13px;border-width:2px}
 .club-card .sub{font-size:12px;color:var(--muted);font-family:"Barlow",sans-serif;font-weight:500;margin-top:-4px}
+
+/* ---------- Cotes ---------- */
+.mr-odds{grid-column:1/-1;display:grid;grid-template-columns:1fr 62px 1fr;gap:8px;font-size:12px;color:var(--muted);margin-top:-2px}
+.mr-odds span:first-child{text-align:right}.mr-odds span:nth-child(2){text-align:center}
+.mr-odds b{color:var(--ink);font-weight:600}.mr-odds b.fav{color:var(--orange)}
+.mr-odds .one{grid-column:1/-1;text-align:center}
+.odds{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.odd{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 6px;text-align:center}
+.odd small{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.odd .num{font-size:26px;font-weight:700;line-height:1.1}
+.odd.fav{border-color:var(--orange);box-shadow:inset 0 0 0 1px var(--orange)}.odd.fav .num{color:var(--orange)}
+.pbar{display:flex;height:8px;border-radius:4px;overflow:hidden;margin:2px 0 6px}
+.pbar i{display:block;height:100%}
+.verdict{font-weight:600}
+.card{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--orange);border-radius:12px;padding:12px 14px;margin:6px 0 16px}
+.card .big{font-family:"Barlow Condensed",sans-serif;font-size:25px;font-weight:700;line-height:1.05}
+.card p{font-size:14px;color:var(--muted);margin-top:4px}
+.rep{display:flex;align-items:baseline;gap:10px;padding:5px 0;border-top:1px solid var(--line)}
+.rep:first-of-type{border-top:0}
+.rep span{flex:1}
+.rep b{font-family:"Barlow Condensed",sans-serif;font-size:24px;font-weight:700}
+.rep small{color:var(--muted);width:42px;text-align:right}
 @media (prefers-reduced-motion:reduce){.sheet{transition:none}.icon-btn.spin svg{animation:none}}
 </style>
 </head>
@@ -426,6 +448,7 @@ async function load(spin){
     const [joueurs,gardiens,clubs,journees,joueursJ,calendrier]=await Promise.all([fetchCSV(GID.joueurs),fetchCSV(GID.gardiens),fetchCSV(GID.clubs),opt(GID.journees),opt(GID.joueursJ),opt(GID.calendrier)]);
     const raw={joueurs,gardiens,clubs,journees,joueursJ,calendrier},built=build(raw);
     if(!built.clubs.length) throw new Error("format");
+    for(const k in oddsCache) delete oddsCache[k];
     D={...built,at:Date.now(),offline:false}; store.set("hand-cache",{raw,at:D.at});
   }catch(e){
     const c=store.get("hand-cache");
@@ -665,7 +688,7 @@ function venueTable(kind){
 const recTxt=x=>x.j?`${x.v} V, ${x.n} N, ${x.d} D`:"Aucun match";
 
 /* ---------- Composants ---------- */
-function matchRow(m,{scorersLine=false}={}){
+function matchRow(m,{scorersLine=false,odds=false}={}){
   const r=m.res, hw=r&&r.h>r.a, aw=r&&r.a>r.h, mine=m.home===MY_TEAM||m.away===MY_TEAM;
   let sc="";
   if(r&&scorersLine){ const f=c=>{const s=scorers(c,m.j)[0];return s?`${esc(pName(s.name))} (${s.b})`:"";}; const a=f(m.home),b=f(m.away);
@@ -673,7 +696,7 @@ function matchRow(m,{scorersLine=false}={}){
   return `<button class="mrow${mine?" mine":""}" data-go="duel/${m.j}/${slug(m.home)}">
     <span class="mr-l"><span class="mr-n${hw?" w":""}">${esc(shortClub(m.home))}</span>${logoHTML(m.home,32)}</span>
     <span class="mr-s">${r?`${r.h}<i>-</i>${r.a}`:`<small>vs</small>`}</span>
-    <span class="mr-r">${logoHTML(m.away,32)}<span class="mr-n${aw?" w":""}">${esc(shortClub(m.away))}</span></span>${sc}</button>`;
+    <span class="mr-r">${logoHTML(m.away,32)}<span class="mr-n${aw?" w":""}">${esc(shortClub(m.away))}</span></span>${sc}${odds?oddsLine(m):""}</button>`;
 }
 function nextCard(club){
   const m=nextMatch(club); if(!m) return "";
@@ -727,8 +750,8 @@ function pJournees(arg){
   return pageHead("Calendrier",false)+`<main>
     <div class="chips">${info.Js.map(x=>`<button class="chip" data-seg="jour" data-v="${x}" aria-pressed="${x===j}">J${x}</button>`).join("")}</div>
     <h2>Journée ${j}${d?` <span class="h2s">${wkLabel(d)}</span>`:""}</h2>
-    <div class="list">${ms.map(m=>matchRow(m,{scorersLine:true})).join("")}</div>
-    <p class="note">${played?"Sous chaque score, le meilleur buteur de chaque équipe. ":""}Touchez une rencontre pour voir le face-à-face. Week-ends indicatifs, le calendrier peut évoluer.</p>${stamp()}</main>`;
+    <div class="list">${ms.map(m=>matchRow(m,{scorersLine:true,odds:true})).join("")}</div>
+    <p class="note">${played?"Sous chaque score, le meilleur buteur de chaque équipe. ":""}Touchez une rencontre pour voir le face-à-face. Cotes indicatives, calculées à partir des résultats de la saison. Week-ends indicatifs, le calendrier peut évoluer.</p>${oddsReport(j)}${stamp()}</main>`;
 }
 function clubData(name){
   const c=D.clubs.find(x=>x.name===name)||{name,marques:0,encaisses:0,pctTir:null,pctArret:null,excl:0,arrets:0};
@@ -743,6 +766,7 @@ function pDuel(js,hs){
   let h=`<header class="top">${IC.court}<div class="bar-top">${backBtn}<div class="t"><div class="page-title">J${j}${m.date?", "+wkLabel(m.date):""}</div></div>${refreshBtn}</div>
     <div class="duel-head">${side(m.home,"Domicile")}<div class="dh-s">${r?`<span class="num">${r.h}-${r.a}</span><small>Score final</small>`:`<span class="vs">VS</span>`}</div>${side(m.away,"Extérieur")}</div></header><main>`;
   h+=`<div class="chips">${D.cal.filter(x=>x.j===j).map(x=>`<button class="chip" data-go="duel/${j}/${slug(x.home)}" data-rep aria-pressed="${x===m}">${esc(shortClub(x.home))} - ${esc(shortClub(x.away))}</button>`).join("")}</div>`;
+  h+=oddsBlock(m);
   if(r){
     const col2=n=>{const s=scorers(n,j);return `<div class="list mini">${s.length?s.map(x=>`<div class="mini-row"><span>${esc(pName(x.name))}</span><b>${x.b}</b></div>`).join(""):`<div class="mini-row"><span>Pas de détail</span></div>`}</div>`;};
     h+=`<h2>Buteurs du match</h2><div class="two">${col2(m.home)}${col2(m.away)}</div>`;
@@ -767,6 +791,70 @@ function pDuel(js,hs){
   return h;
 }
 
+
+/* ============ COTES (modèle de force des équipes) ============
+   Note de force par équipe = moindres carrés sur les écarts de buts, adversaire pris en compte,
+   tirée vers la moyenne en début de saison. Écart prévu = note dom. - note ext. + avantage domicile.
+   L'écart réel varie autour de la prévision (loi normale) : on en tire les probabilités 1 / N / 2. */
+const ODDS={home:1.5,shrink:4,sigmaMin:5.5,margin:1.07};
+const oddsCache={};
+function modelBefore(j){
+  if(oddsCache[j]) return oddsCache[j];
+  const teams=D.clubs.map(c=>c.name), idx=Object.fromEntries(teams.map((t,i)=>[t,i])), n=teams.length;
+  const ms=D.cal.filter(m=>m.res&&m.j<j&&idx[m.home]!=null&&idx[m.away]!=null);
+  if(!ms.length) return oddsCache[j]=null;
+  const A=Array.from({length:n},(_,i)=>Array.from({length:n},(_,k)=>i===k?ODDS.shrink:0)), b=Array(n).fill(0);
+  ms.forEach(m=>{const h=idx[m.home],a=idx[m.away],y=m.res.h-m.res.a-ODDS.home;
+    A[h][h]++;A[a][a]++;A[h][a]--;A[a][h]--;b[h]+=y;b[a]-=y;});
+  for(let c=0;c<n;c++){ let p=c; for(let r=c+1;r<n;r++) if(Math.abs(A[r][c])>Math.abs(A[p][c])) p=r;   // Gauss
+    [A[c],A[p]]=[A[p],A[c]];[b[c],b[p]]=[b[p],b[c]];
+    for(let r=0;r<n;r++){ if(r===c) continue; const f=A[r][c]/A[c][c]; for(let k=c;k<n;k++) A[r][k]-=f*A[c][k]; b[r]-=f*b[c]; } }
+  const r=b.map((v,i)=>v/A[i][i]);
+  const res=ms.map(m=>m.res.h-m.res.a-ODDS.home-(r[idx[m.home]]-r[idx[m.away]]));
+  const sigma=Math.max(ODDS.sigmaMin,Math.sqrt(res.reduce((s,x)=>s+x*x,0)/res.length+1));
+  return oddsCache[j]={r:Object.fromEntries(teams.map((t,i)=>[t,r[i]])),sigma,n:ms.length};
+}
+const Phi=z=>{const t=1/(1+0.2316419*Math.abs(z)),d=0.3989423*Math.exp(-z*z/2),p=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));return z>0?1-p:p;};
+function oddsOf(m){
+  const M=modelBefore(m.j); if(!M) return null;
+  const d=(M.r[m.home]||0)-(M.r[m.away]||0)+ODDS.home, s=M.sigma;
+  const p1=1-Phi((0.5-d)/s), pn=Phi((0.5-d)/s)-Phi((-0.5-d)/s), p2=Phi((-0.5-d)/s);
+  const c=p=>Math.max(1.01,1/(p*ODDS.margin));
+  return {d,p1,pn,p2,c1:c(p1),cn:c(pn),c2:c(p2),fav:p1>=p2?"h":"a"};
+}
+const fmtC=c=>c>=10?String(Math.round(c)):c.toFixed(2).replace(".",",");
+function oddsLine(m){
+  const o=oddsOf(m); if(!o) return "";
+  if(!m.res) return `<span class="mr-odds"><span><b class="${o.fav==="h"?"fav":""}">${fmtC(o.c1)}</b></span><span>N ${fmtC(o.cn)}</span><span><b class="${o.fav==="a"?"fav":""}">${fmtC(o.c2)}</b></span></span>`;
+  const favName=o.fav==="h"?m.home:m.away, ok=o.fav==="h"?m.res.h>m.res.a:m.res.a>m.res.h;
+  return `<span class="mr-odds"><span class="one">Favori ${esc(shortClub(favName))} (${fmtC(o.fav==="h"?o.c1:o.c2)}) ${ok?`<b class="good">✓ vu juste</b>`:`<b class="bad">✗ surprise</b>`}</span></span>`;
+}
+function oddsBlock(m){
+  const o=oddsOf(m); if(!o) return "";
+  const O="#FF6D00", G="#8A8A8A", K="var(--ink)";
+  const fav=o.fav==="h"?m.home:m.away, ecart=Math.round(Math.abs(o.d));
+  let v="";
+  if(m.res){ const ok=o.fav==="h"?m.res.h>m.res.a:m.res.a>m.res.h; v=` <span class="verdict ${ok?"good":"bad"}">${ok?"✓ Le favori a gagné":"✗ Surprise"}</span>`; }
+  return `<h2>Cotes${m.res?` <span class="h2s">avant le match</span>`:""}</h2>
+    <div class="odds"><div class="odd${o.fav==="h"?" fav":""}"><small>${esc(shortClub(m.home))}</small><div class="num">${fmtC(o.c1)}</div></div>
+      <div class="odd"><small>Match nul</small><div class="num">${fmtC(o.cn)}</div></div>
+      <div class="odd${o.fav==="a"?" fav":""}"><small>${esc(shortClub(m.away))}</small><div class="num">${fmtC(o.c2)}</div></div></div>
+    <div class="pbar"><i style="width:${o.p1*100}%;background:${o.fav==="h"?O:K}"></i><i style="width:${o.pn*100}%;background:${G}"></i><i style="width:${o.p2*100}%;background:${o.fav==="a"?O:K}"></i></div>
+    <p class="note" style="margin-top:0">${ecart>=1?`${esc(shortClub(fav))} favori, écart prévu d'environ ${ecart} but${ecart>1?"s":""}.`:"Match très serré, aucun favori net."}${v}<br>Estimation à partir des résultats de la saison (force de chaque équipe, adversaires et avantage du terrain). ${modelBefore(m.j).n<24?"Peu de matchs joués : cotes encore peu fiables.":""}</p>`;
+}
+function oddsReport(jSel){
+  const all=D.cal.filter(m=>m.res&&oddsOf(m)); if(!all.length) return "";
+  const stat=ms=>{let ok=0,sur=null; ms.forEach(m=>{const o=oddsOf(m), fh=o.fav==="h", won=fh?m.res.h>m.res.a:m.res.a>m.res.h; if(won) ok++;
+    else if(m.res.h!==m.res.a){ const c=fh?o.c2:o.c1; if(!sur||c>sur.c) sur={m,c}; }}); return {ok,n:ms.length,sur};};
+  const S=stat(all), day=all.filter(m=>m.j===jSel), J=day.length?stat(day):null;
+  const Js=[...new Set(all.map(m=>m.j))].sort((a,b)=>a-b), range=Js.length>1?`J${Js[0]} à J${Js[Js.length-1]}`:`J${Js[0]}`;
+  const line=(t,x)=>`<div class="rep"><span>${t}</span><b>${x.ok} / ${x.n}</b><small>${Math.round(100*x.ok/x.n)} %</small></div>`;
+  const sur=(J&&J.sur)||S.sur;
+  return `<div class="card"><h3 style="font-family:'Barlow Condensed',sans-serif;font-size:19px">Fiabilité des cotes <span class="h2s">favoris gagnants</span></h3>
+    ${J?line(`Journée ${jSel}`,J):""}${line(`Saison (${range})`,S)}
+    ${sur?`<p>Plus grosse surprise ${J&&J.sur?"de la journée":"de la saison"} : ${esc(shortClub(sur.m.res.h>sur.m.res.a?sur.m.home:sur.m.away))} gagne à ${fmtC(sur.c)} (J${sur.m.j}, ${sur.m.res.h}-${sur.m.res.a}).</p>`:""}
+    <p>Cotes calculées avant chaque match, avec uniquement les résultats connus à ce moment-là. La J1 n'est pas comptée (aucun résultat avant).</p></div>`;
+}
 /* ============ FICHE JOUEUR ============ */
 const sheet=document.getElementById("sheet"),bg=document.getElementById("sheetBg");
 function openSheet(h){sheet.innerHTML=`<div class="grip"></div>`+h;sheet.classList.add("open");bg.classList.add("open");}
