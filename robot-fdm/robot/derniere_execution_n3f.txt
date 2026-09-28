@@ -1,0 +1,13 @@
+28/09/2026 16:41 | 1 | J1 ALC LONGVIC (B) 28-23 ASCAP PAYS DE MONTBELIARD HB | NON DÉTAILLÉE | ALC Longvic (B) : feuille sans stats individuelles, journée déjà saisie
+28/09/2026 16:41 | 1 | J1 ALC LONGVIC (B) 28-23 ASCAP PAYS DE MONTBELIARD HB | NON DÉTAILLÉE | ASCAP Pays de Montbeliard HB : feuille sans stats individuelles, journée déjà saisie
+28/09/2026 16:41 | 1 | J1 HBC QUINGEY VAL DE LOUE 24-26 AS AUXOIS | NON DÉTAILLÉE | HBC Quingey Val de Loue : feuille sans stats individuelles, journée déjà saisie
+28/09/2026 16:41 | 1 | J1 HBC QUINGEY VAL DE LOUE 24-26 AS AUXOIS | NON DÉTAILLÉE | AS Auxois : feuille sans stats individuelles, journée déjà saisie
+28/09/2026 16:41 | 1 | J1 HBC LURE VILLERS 30-25 US LEDONIENNE | NON DÉTAILLÉE | HBC Lure Villers : feuille sans stats individuelles, journée déjà saisie
+28/09/2026 16:41 | 1 | J1 HBC LURE VILLERS 30-25 US LEDONIENNE | NON DÉTAILLÉE | US Ledonienne : feuille sans stats individuelles, journée déjà saisie
+28/09/2026 16:41 | 1 | J1 PAYS RIOLAIS HB 29-30 ENT. SAONE MAMIROLLE HB (B) | NON DÉTAILLÉE | Pays Riolais HB : feuille sans stats individuelles, journée déjà saisie
+28/09/2026 16:41 | 1 | J1 PAYS RIOLAIS HB 29-30 ENT. SAONE MAMIROLLE HB (B) | NON DÉTAILLÉE | Ent Saone Mamirolle HB (B) : feuille sans stats individuelles, journée déjà saisie
+28/09/2026 16:41 | 1 | J1 CHEVIGNY ST SAUVEUR HB (B) 27-24 HB ARBOIS POLIGNY | NON DÉTAILLÉE | Chevigny St Sauveur HB (B) : feuille sans stats individuelles, journée déjà saisie
+28/09/2026 16:41 | 1 | J1 CHEVIGNY ST SAUVEUR HB (B) 27-24 HB ARBOIS POLIGNY | NON DÉTAILLÉE | HB Arbois Poligny : feuille sans stats individuelles, journée déjà saisie
+28/09/2026 16:41 | 1 | J1 JA MAICHE 16-32 CA PONTARLIER HB | NON DÉTAILLÉE | JA Maiche : feuille sans stats individuelles, journée déjà saisie
+28/09/2026 16:41 | 1 | J1 JA MAICHE 16-32 CA PONTARLIER HB | NON DÉTAILLÉE | CA Pontarlier HB : feuille sans stats individuelles, journée déjà saisie
+28/09/2026 16:41 |  |  | CONTRÔLE | 275 lignes dans _Import_Controle, dont 4 écart(s)
