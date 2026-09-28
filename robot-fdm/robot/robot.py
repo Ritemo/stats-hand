@@ -184,7 +184,8 @@ def main(cfg_path):
             f = parse_fdm(data)
         except Exception as e:
             journal.append([now, m["j"], label, "ERREUR", f"lecture de la feuille {m['code']} : {e}"]); continue
-        pb = controles(f)
+        non_detaille = f["score"] and sum(f["score"]) > 0 and all(sum(p["buts"] for p in t["joueurs"]) == 0 for t in f["equipes"])
+        pb = [] if non_detaille else controles(f)
         if f["score"] != (int(m["sd"]), int(m["se"])):
             pb.append(f"score de la feuille {f['score']} différent du site {m['sd']}-{m['se']}")
         if f["journee"] and f["journee"] != m["j"]:
@@ -192,6 +193,24 @@ def main(cfg_path):
         if pb:
             journal.append([now, m["j"], label, "ERREUR", " ; ".join(pb)]); continue
 
+        if non_detaille:
+            for side, tab in enumerate(tabs):
+                cl = clubs[tab]; j = m["j"]; c0 = cl.block(j)
+                if cl.filled(j) or not cl.head_ok(j):
+                    if mode != "reel": journal.append([now, j, label, "NON DÉTAILLÉE", f"{tab} : feuille sans stats individuelles, journée déjà saisie"])
+                    continue
+                if mode != "reel":
+                    journal.append([now, j, label, "NON DÉTAILLÉE", f"{tab} : seul le score serait importé"]); continue
+                rows = [r for r in range(ROW_P, ROW_P_END + 1) if norm(cl.name(r)) == PLACEHOLDER] or \
+                       [r for r in range(ROW_P, ROW_P_END + 1) if not cl.name(r)]
+                if not rows:
+                    journal.append([now, j, label, "ERREUR", f"{tab} : pas de ligne libre pour « Non détaillé »"]); continue
+                r = rows[0]
+                cells = [(r, 1, "Non détaillé"), (r, c0 + 1, f["score"][side]), (ROW_SCORE_ADV, c0, f["score"][1 - side])]
+                book.write(tab, cells)
+                for rr, cc, v in cells: cl.g[rr - 1][cc - 1] = v
+                journal.append([now, j, label, "IMPORTÉ", f"{tab} : score seul (feuille de match non détaillée)"])
+            continue
         for side, (tab, team) in enumerate(zip(tabs, f["equipes"])):
             cl = clubs[tab]; j = m["j"]; c0 = cl.block(j)
             if not cl.head_ok(j):
@@ -249,6 +268,9 @@ def main(cfg_path):
     else:
         book.ensure(CTRL_TAB, ctrl_head); book.replace(CTRL_TAB, [ctrl_head] + ctrl)
     book.ensure(LOG_TAB, ["Date", "J", "Match", "Statut", "Détail"])
+    if mode != "reel":
+        n_ecarts = sum(1 for l in ctrl if l[-1] == "ÉCART")
+        journal.append([now, "", "", "CONTRÔLE", f"{len(ctrl)} lignes dans {CTRL_TAB}, dont {n_ecarts} écart(s)"])
     if not journal: journal = [[now, "", "", "RIEN À FAIRE" if mode == "reel" else "CONTRÔLE", f"mode {mode}, aucune nouvelle feuille" if mode == "reel" else f"{len(ctrl)} lignes dans {CTRL_TAB}"]]
     book.append(LOG_TAB, journal)
     for l in journal: print(" | ".join(str(x) for x in l))
