@@ -216,11 +216,30 @@ h2{font-size:23px;font-weight:700;margin:4px 2px 10px}
 .mini-row span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lh{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line);font-family:"Barlow Condensed",sans-serif;font-size:18px}
 .lh+.row{border-top:0}
+
+/* ---------- Ruban de navigation et accueil compact ---------- */
+body{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:9;background:var(--surface);border-top:1px solid var(--line);padding:4px 4px calc(4px + env(safe-area-inset-bottom,0px))}
+.tabbar:empty{display:none}
+.tabbar .in{display:flex;max-width:640px;margin:0 auto}
+.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0 4px;font-size:12px;color:var(--muted);text-align:center;border-radius:10px}
+.tabbar svg{width:24px;height:24px}
+.tabbar button[aria-current="page"]{color:var(--orange);font-weight:600}
+.tabbar button[aria-current="page"] svg{stroke-width:2.4}
+.top.slim{padding:10px 16px}
+.top.slim svg.court{width:150px;height:150px;top:-40px;right:-50px}
+.brand{position:relative;display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.brand b{display:block;font-family:"Barlow Condensed",sans-serif;font-size:21px;font-weight:800;font-style:italic;line-height:1.05}
+.brand b em{color:var(--orange)}
+.brand small{display:block;font-size:12px;opacity:.7}
+.logo.l40{width:40px;height:40px}.logo.l40 .mono{font-size:13px;border-width:2px}
+.club-card .sub{font-size:12px;color:var(--muted);font-family:"Barlow",sans-serif;font-weight:500;margin-top:-4px}
 @media (prefers-reduced-motion:reduce){.sheet{transition:none}.icon-btn.spin svg{animation:none}}
 </style>
 </head>
 <body>
 <div id="app"></div>
+<nav class="tabbar" id="tabbar" aria-label="Navigation"></nav>
 <div class="sheet-bg" id="sheetBg"></div>
 <div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
 
@@ -417,7 +436,7 @@ async function load(spin){
 function setSpin(on){document.querySelectorAll("[data-refresh]").forEach(b=>b.classList.toggle("spin",!!on));}
 
 /* ============ NAVIGATION (#/, #/classement, #/buteurs, #/gardiens, #/club/<slug>) ============ */
-const ui={buteurs:"champ",gardiens:"gardiens",clubSort:"pct",metric:"marques",general:"all",jour:"",calAll:""};
+const ui={buteurs:"champ",gardiens:"gardiens",metric:"marques",general:"all",jour:"",calAll:""};
 function route(){const h=location.hash.replace(/^#\/?/,"").split("/");return{page:h[0]||"home",arg:decodeURIComponent(h[1]||""),arg2:decodeURIComponent(h[2]||"")};}
 let depth=0;
 function go(path){depth++;location.hash="#/"+path;}
@@ -431,12 +450,14 @@ const IC={
   table:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 20V11M12 20V5M19 20v-6"/></svg>`,
   ball:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3c-2.5 3-2.5 15 0 18M3.5 9h17M3.5 15h17"/></svg>`,
   trophy:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v3M8 20h8M9 17h6"/></svg>`,
+  home:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg>`,
+  teams:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="7" r="3"/><circle cx="7" cy="17" r="3"/><circle cx="17" cy="17" r="3"/></svg>`,
   cal:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>`,
   goal:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20V6h18v14"/><path d="M3 10h18M8 6v14M16 6v14" stroke-dasharray="2 2.5"/></svg>`
 };
 const refreshBtn=`<button class="icon-btn" data-refresh aria-label="Actualiser les stats">${IC.refresh}</button>`;
 const backBtn=`<button class="icon-btn" data-back aria-label="Retour à l'accueil">${IC.back}</button>`;
-function pageHead(title){return `<header class="top">${IC.court}<div class="bar-top">${backBtn}<div class="t"><div class="page-title">${esc(title)}</div></div>${refreshBtn}</div></header>`;}
+function pageHead(title,back=true){return `<header class="top">${IC.court}<div class="bar-top">${back?backBtn:""}<div class="t"><div class="page-title">${esc(title)}</div></div>${refreshBtn}</div></header>`;}
 function stamp(){
   const d=new Date(D.at),t=d.toLocaleDateString("fr-FR",{day:"numeric",month:"long"})+" à "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
   return `<p class="stamp">${D.offline?"Hors connexion, stats du ":"Mis à jour le "}${t}</p>`;
@@ -463,26 +484,24 @@ function keeperRow(k,{rank=null,showClub=true,max=1}={}){
 
 /* ============ PAGES ============ */
 function pHome(){
-  const clubs=[...D.clubs].sort((a,b)=>(b.name===MY_TEAM)-(a.name===MY_TEAM)||a.name.localeCompare(b.name,"fr"));
-  return `<header class="top">${IC.court}
-    <div class="bar-top"><div class="t"></div>${refreshBtn}</div>
-    <div class="home-title"><h1>Honneur<br><em>masculine</em></h1><p>Poule A, saison 2026-2027</p></div></header>
+  const nc=nextCard(MY_TEAM), ld=lastDayHTML();
+  return `<header class="top slim">${IC.court}<div class="bar-top">
+      <div class="brand">${logoHTML(MY_TEAM,40)}<span><b>Honneur <em>masculine</em></b><small>Poule A, saison 2026-2027</small></span></div>${refreshBtn}</div></header>
   <main>
-    ${nextCard(MY_TEAM)}
-    ${lastDayHTML()}
-    <h2>Classements et stats</h2>
-    <div class="tiles">
-      ${D.standings.length?`<button class="tile" data-go="general">${IC.trophy}<span><b>Classement général</b><span class="d">Points, victoires, nuls, défaites</span></span><span class="go">›</span></button>`:""}
-      ${D.cal.length?`<button class="tile" data-go="journees">${IC.cal}<span><b>Calendrier et résultats</b><span class="d">Les 22 journées et les face-à-face</span></span><span class="go">›</span></button>`:""}
-      <button class="tile" data-go="classement">${IC.table}<span><b>Stats des clubs</b><span class="d">Attaque, défense, tir, arrêts, discipline</span></span><span class="go">›</span></button>
-      <button class="tile" data-go="buteurs">${IC.ball}<span><b>Classement buteurs</b><span class="d">Total, moyenne par match, meilleur par club</span></span><span class="go">›</span></button>
-      <button class="tile" data-go="gardiens">${IC.goal}<span><b>Classement gardiens</b><span class="d">Arrêts individuels et par club</span></span><span class="go">›</span></button>
-    </div>
-    <h2>Les équipes</h2>
-    <div class="clubs-grid">${clubs.map(c=>`<button class="club-card${c.name===MY_TEAM?" mine":""}" data-go="club/${slug(c.name)}">${logoHTML(c.name,64)}<span>${esc(shortClub(c.name))}</span></button>`).join("")}</div>
+    ${nc}${ld}
+    ${!nc&&!ld?`<div class="empty">Ajoute l'onglet Calendrier au fichier pour voir le prochain match et les derniers résultats.</div>`:""}
     ${stamp()}
   </main>`;
 }
+function pEquipes(){
+  const clubs=[...D.clubs].sort((a,b)=>(b.name===MY_TEAM)-(a.name===MY_TEAM)||a.name.localeCompare(b.name,"fr"));
+  return pageHead("Les équipes",false)+`<main>
+    <div class="clubs-grid">${clubs.map(c=>{const st=D.standings.find(x=>x.club===c.name);
+      return `<button class="club-card${c.name===MY_TEAM?" mine":""}" data-go="club/${slug(c.name)}">${logoHTML(c.name,64)}<span>${esc(shortClub(c.name))}</span>${st?`<span class="sub">${ordM(st.rank)}, ${st.pts} pts</span>`:""}</button>`;}).join("")}</div>
+    <p class="note">Touchez un club pour voir son classement, son calendrier, ses records et ses joueurs.</p>${stamp()}</main>`;
+}
+const viewSeg=(opts,cur)=>`<div class="seg" role="group">${opts.map(([p,l])=>`<button data-go="${p}" data-rep aria-pressed="${p===cur}">${l}</button>`).join("")}</div>`;
+const SEG_CLASS=[["general","Classement"],["classement","Stats des clubs"]], SEG_JOUEURS=[["buteurs","Buteurs"],["gardiens","Gardiens"]];
 const METRICS={
   marques:{l:"Attaque",get:c=>c.marques,desc:true,show:c=>c.marques,sub:c=>`${c.marques} buts marqués`},
   encaisses:{l:"Défense",get:c=>c.encaisses,desc:false,show:c=>c.encaisses,sub:c=>`${c.encaisses} buts encaissés`},
@@ -496,7 +515,7 @@ function pClassement(){
   const m=METRICS[ui.metric];
   const cs=ranked([...D.clubs].sort((a,b)=>m.desc?m.get(b)-m.get(a):m.get(a)-m.get(b)),c=>m.get(c));
   const max=Math.max(...cs.map(m.get))||1;
-  return pageHead("Stats des clubs")+`<main>${chips("metric",Object.entries(METRICS).map(([k,v])=>[k,v.l]))}
+  return pageHead("Classement",false)+`<main>${viewSeg(SEG_CLASS,"classement")}${chips("metric",Object.entries(METRICS).map(([k,v])=>[k,v.l]))}
     <div class="list">${cs.map(c=>`<button class="row${c.name===MY_TEAM?" mine":""}" data-go="club/${slug(c.name)}"><span class="rank ${c.rank===1?"p1":""}">${c.rank}</span>
       ${logoHTML(c.name,32)}<span class="who"><span class="n">${esc(c.name)}</span><span class="c">${m.sub(c)}</span>
       <span class="meter"><i style="width:${Math.round(100*m.get(c)/max)}%"></i></span></span>
@@ -507,14 +526,14 @@ const sign=n=>n>0?"+"+n:String(n);
 function pGeneral(){
   const venue=D.cal.some(m=>m.res), k=venue?ui.general:"all";
   const st=k==="all"?D.standings:venueTable(k), max=Math.max(1,...st.map(x=>x.pts));
-  return pageHead("Classement général")+`<main>${venue?seg("general",[["all","Général"],["dom","Domicile"],["ext","Extérieur"]]):""}<div class="list">${st.map(x=>`<button class="row${x.club===MY_TEAM?" mine":""}" data-go="club/${slug(x.club)}"><span class="rank ${x.rank===1?"p1":""}">${x.rank}</span>
+  return pageHead("Classement",false)+`<main>${D.standings.length?viewSeg(SEG_CLASS,"general"):""}${venue?chips("general",[["all","Général"],["dom","Domicile"],["ext","Extérieur"]]):""}<div class="list">${st.map(x=>`<button class="row${x.club===MY_TEAM?" mine":""}" data-go="club/${slug(x.club)}"><span class="rank ${x.rank===1?"p1":""}">${x.rank}</span>
     ${logoHTML(x.club,32)}<span class="who"><span class="n">${esc(x.club)}</span><span class="c">${x.j} J, ${x.v} V, ${x.n} N, ${x.d} D, diff. ${sign(x.diff)}</span>
     <span class="meter"><i style="width:${Math.round(100*x.pts/max)}%"></i></span></span>
     <span class="val"><span class="num">${x.pts}</span><span class="s">pts</span></span></button>`).join("")}</div>
     <p class="note">${k==="dom"?"Uniquement les matchs joués à domicile. ":k==="ext"?"Uniquement les matchs joués à l'extérieur. ":""}Victoire 3 points, nul 2, défaite 1. À égalité de points, départage à la différence de buts puis aux buts marqués.</p>${stamp()}</main>`;
 }
 function pButeurs(){
-  let h=seg("buteurs",[["champ","Total"],["moy","Par match"],["club","Par club"]]);
+  let h=viewSeg(SEG_JOUEURS,"buteurs")+chips("buteurs",[["champ","Total"],["moy","Par match"],["club","Meilleur par club"]]);
   if(ui.buteurs==="champ"){
     const top=ranked([...D.players].sort(scorerSort).slice(0,30),p=>p.buts+"|"+(pct(p.buts,p.tirs)||0).toFixed(4));
     h+=`<div class="list">${top.map(p=>playerRow(p,{rank:p.rank,max:top[0]?.buts||1})).join("")}</div><p class="note">À buts égaux, le meilleur pourcentage au tir passe devant. J1 non comptée (feuille de match non détaillée).</p>`;
@@ -526,17 +545,16 @@ function pButeurs(){
     const best=D.clubs.map(c=>D.players.filter(p=>p.club===c.name).sort(scorerSort)[0]).filter(Boolean).sort(scorerSort);
     h+=`<div class="list">${best.map(p=>playerRow(p,{max:best[0]?.buts||1})).join("")}</div>`;
   }
-  return pageHead("Buteurs")+`<main>${h}${stamp()}</main>`;
+  return pageHead("Joueurs",false)+`<main>${h}${stamp()}</main>`;
 }
 function pGardiens(){
-  let h=seg("gardiens",[["gardiens","Gardiens"],["clubs","Par club"]]);
+  let h=viewSeg(SEG_JOUEURS,"gardiens")+chips("gardiens",[["gardiens","Individuel"],["pct","% arrêt équipe"],["total","Arrêts équipe"]]);
   if(ui.gardiens==="gardiens"){
     const ks=ranked(D.keepers.filter(k=>k.matchs>0).sort((a,b)=>b.arrets-a.arrets||a.matchs-b.matchs).slice(0,20),k=>k.arrets+"|"+k.matchs);
     h+=`<div class="list">${ks.map(k=>keeperRow(k,{rank:k.rank,max:ks[0]?.arrets||1})).join("")}</div>
-      <p class="note">La feuille de match ne donne pas les buts encaissés par gardien : le pourcentage d'arrêt n'existe qu'au niveau de l'équipe (onglet Par club).</p>`;
+      <p class="note">La feuille de match ne donne pas les buts encaissés par gardien : le pourcentage d'arrêt n'existe qu'au niveau de l'équipe (filtre « % arrêt équipe »).</p>`;
   }else{
-    const byPct=ui.clubSort==="pct";
-    h+=chips("clubSort",[["pct","% d'arrêt"],["total","Total d'arrêts"]]);
+    const byPct=ui.gardiens==="pct";
     const cs=ranked([...D.clubs].sort((a,b)=>byPct?((b.pctArret||0)-(a.pctArret||0)||b.arrets-a.arrets):(b.arrets-a.arrets||(b.pctArret||0)-(a.pctArret||0))),c=>byPct?(c.pctArret||0).toFixed(4):c.arrets+"|"+(c.pctArret||0).toFixed(4));
     const max=Math.max(...cs.map(c=>byPct?(c.pctArret||0):c.arrets))||1;
     h+=`<div class="list">${cs.map(c=>{const v=byPct?(c.pctArret||0):c.arrets;return `<button class="row${c.name===MY_TEAM?" mine":""}" data-go="club/${slug(c.name)}"><span class="rank ${c.rank===1?"p1":""}">${c.rank}</span>
@@ -545,7 +563,7 @@ function pGardiens(){
       <span class="val"><span class="num">${byPct?fmtPct(c.pctArret):c.arrets}</span></span></button>`}).join("")}</div>
       <p class="note">% d'arrêt équipe = arrêts ÷ (arrêts + buts encaissés), calculé uniquement sur les journées où les arrêts sont saisis.</p>`;
   }
-  return pageHead("Gardiens")+`<main>${h}${stamp()}</main>`;
+  return pageHead("Joueurs",false)+`<main>${h}${stamp()}</main>`;
 }
 function pClub(s){
   const c=D.clubs.find(x=>slug(x.name)===s); if(!c) return pageHead("Club introuvable")+`<main><div class="empty">Ce club n'existe pas dans le fichier.</div></main>`;
@@ -577,10 +595,13 @@ function pClub(s){
 }
 function render(){
   const app=document.getElementById("app");
-  if(!D){ app.innerHTML=`<header class="top">${IC.court}<div class="bar-top"><div class="t"><div class="page-title">Stats Hand</div></div>${refreshBtn}</div></header>
+  if(!D){ document.getElementById("tabbar").innerHTML=""; app.innerHTML=`<header class="top">${IC.court}<div class="bar-top"><div class="t"><div class="page-title">Stats Hand</div></div>${refreshBtn}</div></header>
     <main>${loading?`<div class="empty">Chargement des stats…</div>`:`<div class="error"><b>Impossible de charger les stats</b>Vérifie ta connexion internet, puis appuie sur le bouton d'actualisation.</div>`}</main>`; return; }
   const {page,arg,arg2}=route();
-  app.innerHTML=({home:pHome,classement:pClassement,buteurs:pButeurs,gardiens:pGardiens,club:()=>pClub(arg),general:pGeneral,journees:()=>pJournees(arg),duel:()=>pDuel(arg,arg2)}[page]||pHome)();
+  app.innerHTML=({home:pHome,classement:pClassement,buteurs:pButeurs,gardiens:pGardiens,club:()=>pClub(arg),general:pGeneral,journees:()=>pJournees(arg),duel:()=>pDuel(arg,arg2),equipes:pEquipes}[page]||pHome)();
+  const tab={journees:"journees",duel:"journees",general:"general",classement:"general",buteurs:"buteurs",gardiens:"buteurs",equipes:"equipes",club:"equipes"}[page]||"home";
+  const tabs=[["home","Accueil",IC.home],...(D.cal.length?[["journees","Calendrier",IC.cal]]:[]),[D.standings.length?"general":"classement","Classement",IC.trophy],["buteurs","Joueurs",IC.ball],["equipes","Équipes",IC.teams]];
+  document.getElementById("tabbar").innerHTML=`<div class="in">${tabs.map(([p,l,ic])=>`<button data-go="${p==="home"?"":p}" data-tab ${(p===tab||(tab==="general"&&p==="classement"))?'aria-current="page"':""}>${ic}<span>${l}</span></button>`).join("")}</div>`;
   app.querySelectorAll(".chips").forEach(cs=>{const c=cs.querySelector('[aria-pressed="true"]'); if(c) cs.scrollLeft=c.offsetLeft-cs.clientWidth/2+c.clientWidth/2;});
 }
 
@@ -700,10 +721,10 @@ function recordsHTML(c){
 /* ---------- Pages Calendrier et Face-à-face ---------- */
 function pJournees(arg){
   const info=calInfo();
-  if(!info) return pageHead("Calendrier")+`<main><div class="empty">Ajoute l'onglet Calendrier au fichier pour voir les journées.</div></main>`;
+  if(!info) return pageHead("Calendrier",false)+`<main><div class="empty">Ajoute l'onglet Calendrier au fichier pour voir les journées.</div></main>`;
   const j=+ui.jour||+arg||info.next||info.last||info.Js[0];
   const ms=D.cal.filter(m=>m.j===j), d=ms.find(m=>m.date)?.date, played=ms.filter(m=>m.res).length;
-  return pageHead("Calendrier et résultats")+`<main>
+  return pageHead("Calendrier",false)+`<main>
     <div class="chips">${info.Js.map(x=>`<button class="chip" data-seg="jour" data-v="${x}" aria-pressed="${x===j}">J${x}</button>`).join("")}</div>
     <h2>Journée ${j}${d?` <span class="h2s">${wkLabel(d)}</span>`:""}</h2>
     <div class="list">${ms.map(m=>matchRow(m,{scorersLine:true})).join("")}</div>
@@ -772,7 +793,7 @@ document.addEventListener("click",e=>{
   const s=t.closest("[data-seg]"); if(s){ui[s.dataset.seg]=s.dataset.v;render();return;}
   const p=t.closest("[data-player]"); if(p){playerSheet(D.players[+p.dataset.player]);return;}
   const g=t.closest("[data-go]"); if(g){ if(g.dataset.go.startsWith("journees")) ui.jour="";
-    if(g.hasAttribute("data-rep")) location.replace("#/"+g.dataset.go); else go(g.dataset.go); return;}
+    if(g.hasAttribute("data-rep")||g.hasAttribute("data-tab")){ if(g.hasAttribute("data-tab")) depth=0; location.replace("#/"+g.dataset.go); } else go(g.dataset.go); return;}
 });
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSheet();});
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&D&&Date.now()-D.at>5*60*1000)load(false);});
