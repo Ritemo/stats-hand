@@ -11,7 +11,7 @@ on:
         required: true
         default: controle
         type: choice
-        options: [controle, reel]
+        options: [controle, reel, rattrapage]
 
 permissions:
   contents: write
