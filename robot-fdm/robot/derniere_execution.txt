@@ -1,13 +1,13 @@
-28/09/2026 08:39 | 1 | J1 CS VESULIEN HAUTE SAONE (C) 37-33 PALENTE BESANCON HB (A) | NON DÉTAILLÉE | CS Vesulien HS (C) : feuille sans stats individuelles, journée déjà saisie
-28/09/2026 08:39 | 1 | J1 CS VESULIEN HAUTE SAONE (C) 37-33 PALENTE BESANCON HB (A) | NON DÉTAILLÉE | Palente Besancon HB (A) : feuille sans stats individuelles, journée déjà saisie
-28/09/2026 08:39 | 1 | J1 HBC GILLEY 34-26 HBC LURE VILLERS (C) | NON DÉTAILLÉE | HBC Gilley : feuille sans stats individuelles, journée déjà saisie
-28/09/2026 08:39 | 1 | J1 HBC GILLEY 34-26 HBC LURE VILLERS (C) | NON DÉTAILLÉE | HBC Lure Villers (C) : feuille sans stats individuelles, journée déjà saisie
-28/09/2026 08:39 | 1 | J1 HBC FRANOIS (B) 30-16 HBC DANJOUTIN | NON DÉTAILLÉE | HBC Franois (B) : feuille sans stats individuelles, journée déjà saisie
-28/09/2026 08:39 | 1 | J1 HBC FRANOIS (B) 30-16 HBC DANJOUTIN | NON DÉTAILLÉE | HBC Danjoutin : feuille sans stats individuelles, journée déjà saisie
-28/09/2026 08:39 | 1 | J1 PAYS RIOLAIS HB 23-23 HBC DES MONTS DE GY | NON DÉTAILLÉE | Pays Riolais HB : feuille sans stats individuelles, journée déjà saisie
-28/09/2026 08:39 | 1 | J1 PAYS RIOLAIS HB 23-23 HBC DES MONTS DE GY | NON DÉTAILLÉE | HBC Monts de Gy : feuille sans stats individuelles, journée déjà saisie
-28/09/2026 08:39 | 1 | J1 CA PONTARLIER HB (B) 37-29 JA MAICHE | NON DÉTAILLÉE | CA Pontarlier HB (B) : feuille sans stats individuelles, journée déjà saisie
-28/09/2026 08:39 | 1 | J1 CA PONTARLIER HB (B) 37-29 JA MAICHE | NON DÉTAILLÉE | JA Maiche : feuille sans stats individuelles, journée déjà saisie
-28/09/2026 08:39 | 1 | J1 DOUBS CENTRAL HB 24-21 BEEX-VA PM HB (C) | NON DÉTAILLÉE | Doubs Central HB : feuille sans stats individuelles, journée déjà saisie
-28/09/2026 08:39 | 1 | J1 DOUBS CENTRAL HB 24-21 BEEX-VA PM HB (C) | NON DÉTAILLÉE | BEEX-VA PM HB (C) : feuille sans stats individuelles, journée déjà saisie
-28/09/2026 08:39 |  |  | CONTRÔLE | 263 lignes dans _Import_Controle, dont 164 écart(s)
+28/09/2026 11:47 | 1 | J1 CS VESULIEN HAUTE SAONE (C) 37-33 PALENTE BESANCON HB (A) | NON DÉTAILLÉE | CS Vesulien HS (C) : feuille sans stats individuelles, journée déjà saisie
+28/09/2026 11:47 | 1 | J1 CS VESULIEN HAUTE SAONE (C) 37-33 PALENTE BESANCON HB (A) | NON DÉTAILLÉE | Palente Besancon HB (A) : feuille sans stats individuelles, journée déjà saisie
+28/09/2026 11:47 | 1 | J1 HBC GILLEY 34-26 HBC LURE VILLERS (C) | NON DÉTAILLÉE | HBC Gilley : feuille sans stats individuelles, journée déjà saisie
+28/09/2026 11:47 | 1 | J1 HBC GILLEY 34-26 HBC LURE VILLERS (C) | NON DÉTAILLÉE | HBC Lure Villers (C) : feuille sans stats individuelles, journée déjà saisie
+28/09/2026 11:47 | 1 | J1 HBC FRANOIS (B) 30-16 HBC DANJOUTIN | NON DÉTAILLÉE | HBC Franois (B) : feuille sans stats individuelles, journée déjà saisie
+28/09/2026 11:47 | 1 | J1 HBC FRANOIS (B) 30-16 HBC DANJOUTIN | NON DÉTAILLÉE | HBC Danjoutin : feuille sans stats individuelles, journée déjà saisie
+28/09/2026 11:47 | 1 | J1 PAYS RIOLAIS HB 23-23 HBC DES MONTS DE GY | NON DÉTAILLÉE | Pays Riolais HB : feuille sans stats individuelles, journée déjà saisie
+28/09/2026 11:47 | 1 | J1 PAYS RIOLAIS HB 23-23 HBC DES MONTS DE GY | NON DÉTAILLÉE | HBC Monts de Gy : feuille sans stats individuelles, journée déjà saisie
+28/09/2026 11:47 | 1 | J1 CA PONTARLIER HB (B) 37-29 JA MAICHE | NON DÉTAILLÉE | CA Pontarlier HB (B) : feuille sans stats individuelles, journée déjà saisie
+28/09/2026 11:47 | 1 | J1 CA PONTARLIER HB (B) 37-29 JA MAICHE | NON DÉTAILLÉE | JA Maiche : feuille sans stats individuelles, journée déjà saisie
+28/09/2026 11:47 | 1 | J1 DOUBS CENTRAL HB 24-21 BEEX-VA PM HB (C) | NON DÉTAILLÉE | Doubs Central HB : feuille sans stats individuelles, journée déjà saisie
+28/09/2026 11:47 | 1 | J1 DOUBS CENTRAL HB 24-21 BEEX-VA PM HB (C) | NON DÉTAILLÉE | BEEX-VA PM HB (C) : feuille sans stats individuelles, journée déjà saisie
+28/09/2026 11:47 |  |  | CONTRÔLE | 263 lignes dans _Import_Controle, dont 0 écart(s)
