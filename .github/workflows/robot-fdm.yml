@@ -1,0 +1,42 @@
+name: Robot feuilles de match
+
+on:
+  schedule:
+    - cron: "0 6 * * 0"   # dimanche 6 h UTC (8 h en été, 7 h en hiver) : matchs du samedi
+    - cron: "0 6 * * 1"   # lundi 6 h UTC : matchs du dimanche et rattrapages
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "controle (onglet _Import_Controle seulement) ou reel (remplit les onglets clubs)"
+        required: true
+        default: controle
+        type: choice
+        options: [controle, reel]
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: robot-fdm/robot/requirements.txt
+      - run: pip install -r robot-fdm/robot/requirements.txt
+      - name: Import Honneur masculine
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          ROBOT_MODE: ${{ github.event.inputs.mode || vars.ROBOT_MODE || 'controle' }}
+          NOMS_OFFICIELS: ${{ vars.NOMS_OFFICIELS || '0' }}
+        run: python robot-fdm/robot/robot.py robot-fdm/robot/config_honneur.json
+      - name: Garder une trace dans le dépôt
+        if: always()
+        run: |
+          git config user.name "robot-fdm"
+          git config user.email "robot-fdm@users.noreply.github.com"
+          git add robot-fdm/robot/derniere_execution.txt || true
+          git diff --cached --quiet || (git commit -m "Robot : passage du $(date +%d/%m/%Y)" && git push)
