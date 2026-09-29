@@ -9,7 +9,7 @@ Variables d'environnement :
 """
 import os, sys, re, json, html, time, datetime, unicodedata, difflib
 import requests
-from fdm import parse_fdm, controles
+from fdm import parse_fdm, controles, parse_deroule
 
 UA = {"User-Agent": "Mozilla/5.0 (stats PRHB, import hebdomadaire)"}
 ROW_P, ROW_P_END = 7, 26        # joueurs
@@ -17,7 +17,9 @@ ROW_G, ROW_G_END = 33, 37       # gardiens
 ROW_SCORE_ADV = 38              # buts encaissés saisis à la main
 ROW_HEAD = 5                    # en-têtes « J1 vs ... »
 PLACEHOLDER = "non detaille"
-LIC_TAB, LOG_TAB, CTRL_TAB = "_Licences", "_Robot_Journal", "_Import_Controle"
+LIC_TAB, LOG_TAB, CTRL_TAB, MATCH_TAB = "_Licences", "_Robot_Journal", "_Import_Controle", "_Matchs"
+MATCH_HEAD = ["J", "Domicile", "Extérieur", "Date", "Salle", "Adresse", "Lat", "Lng", "Equipement",
+              "MT dom", "MT ext", "Deroule", "Buts 7m", "Rouges", "FDM", "Mise a jour"]
 
 
 def norm(s):
@@ -85,8 +87,24 @@ def rencontres_journee(poule_url, j):
         data = json.loads(raw)
         return [{"j": int(x.get("journeeNumero") or j), "dom": x["equipe1Libelle"], "ext": x["equipe2Libelle"],
                  "sd": x.get("equipe1Score"), "se": x.get("equipe2Score"), "code": x.get("fdmCode"),
-                 "date": (x.get("date") or "")[:10]} for x in data["rencontres"]]
+                 "date": (x.get("date") or "")[:10], "datetime": (x.get("date") or "")[:16],
+                 "rid": x.get("ext_rencontreId"), "eq": x.get("equipementId") or "",
+                 "mtd": x.get("equipe1ScoreMT"), "mte": x.get("equipe2ScoreMT")} for x in data["rencontres"]]
     raise RuntimeError(f"journée {j} : données introuvables sur la page (le site a peut-être changé)")
+
+
+def salle_rencontre(poule_url, rid):
+    """Gymnase d'une rencontre (nom, adresse, coordonnées) depuis la page du match."""
+    page = fetch(f"{poule_url}rencontre-{rid}/")
+    if not page: return None
+    for m in re.finditer(r'<smartfire-component[^>]*?attributes="([^"]*)"', page):
+        raw = html.unescape(m.group(1))
+        if '"equipement"' not in raw: continue
+        e = json.loads(raw).get("equipement") or {}
+        if not e: return None
+        adr = ", ".join(x for x in [(e.get("rue") or "").strip(), " ".join(x for x in [(e.get("codePostal") or "").strip(), (e.get("ville") or "").strip()] if x)] if x)
+        return {"salle": (e.get("libelle") or "").strip(), "adresse": adr, "lat": e.get("latitude") or "", "lng": e.get("longitude") or ""}
+    return None
 
 
 def fdm_url(code):
@@ -125,8 +143,9 @@ class GBook:
     def append(self, tab, rows):
         if rows: self._ws[tab].append_rows(rows, value_input_option="USER_ENTERED")
 
-    def replace(self, tab, rows):
-        ws = self._ws[tab]; ws.clear(); ws.update(rows, "A1", value_input_option="USER_ENTERED")
+    def replace(self, tab, rows, raw=False):
+        ws = self._ws[tab]; ws.clear()
+        ws.update([[str(x) if raw else x for x in r] for r in rows], "A1", value_input_option="RAW" if raw else "USER_ENTERED")
 
 
 # ---------------------------------------------------------------- correspondance des joueurs
@@ -220,6 +239,7 @@ def main(cfg_path):
     print(f"{len(joues)} matchs joués trouvés sur le site")
 
     now = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
+    pdf_cache = {}
     journal, ctrl, new_lic = [], [], []
     ctrl_head = ["J", "Match", "Onglet", "Type", "Nom sur la feuille de match", "Ligne", "Nom dans le fichier",
                  "Correspondance", "Tirs / Arrêts", "Buts", "2 min", "Déjà saisi (Tirs / Buts / 2 min)", "Écart"]
@@ -234,6 +254,7 @@ def main(cfg_path):
         if not m["code"]:
             journal.append([now, m["j"], label, "EN ATTENTE", "pas encore de feuille de match"]); continue
         data = fetch(fdm_url(m["code"]), binary=True)
+        if data: pdf_cache[m["code"]] = data
         if not data:
             journal.append([now, m["j"], label, "EN ATTENTE", f"feuille {m['code']} pas encore en ligne"]); continue
         try:
@@ -326,6 +347,10 @@ def main(cfg_path):
             journal.append([now, j, label, "IMPORTÉ" if not deja else "CORRIGÉ", det])
 
     if ecrit:
+        try:
+            maj_matchs(book, cfg, matchs, pdf_cache, now, journal)
+        except Exception as e:
+            journal.append([now, "", "", "ERREUR", f"onglet {MATCH_TAB} : {e}"])
         book.ensure(LIC_TAB, ["Licence", "Onglet", "Type", "Ligne", "Nom"]); book.append(LIC_TAB, new_lic)
     else:
         book.ensure(CTRL_TAB, ctrl_head); book.replace(CTRL_TAB, [ctrl_head] + ctrl)
@@ -342,6 +367,57 @@ def main(cfg_path):
     except OSError: pass
     erreurs = [l for l in journal if l[3] in ("ERREUR", "À CONFIRMER")]
     return 1 if erreurs else 0
+
+
+def maj_matchs(book, cfg, matchs, pdf_cache, now, journal):
+    """Onglet _Matchs : date/heure, salle, mi-temps, déroulé (momentum), buts sur 7 m, cartons rouges."""
+    old = book.read_all(MATCH_TAB) or []
+    head = old[0] if old else MATCH_HEAD
+    rows = {}
+    for r in old[1:]:
+        d = dict(zip(head, r + [""] * (len(head) - len(r))))
+        rows[(str(d["J"]), d["Domicile"], d["Extérieur"])] = d
+    salles = {d["Equipement"]: d for d in rows.values() if d.get("Equipement") and d.get("Salle")}
+    n_sal = n_der = 0
+    out = []
+    for m in matchs:
+        key = (str(m["j"]), m["dom"], m["ext"])
+        d = {k: "" for k in MATCH_HEAD}; d.update(rows.get(key, {}))
+        d["J"], d["Domicile"], d["Extérieur"] = m["j"], m["dom"], m["ext"]
+        if m.get("datetime"): d["Date"] = m["datetime"]
+        eq = str(m.get("eq") or "")
+        if eq and (eq != str(d.get("Equipement")) or not d.get("Salle")):
+            if eq in salles:
+                s = salles[eq]; d.update({k: s[k] for k in ("Salle", "Adresse", "Lat", "Lng")})
+            elif m.get("rid") and n_sal < 40:
+                s = salle_rencontre(cfg["poule_url"], m["rid"]); n_sal += 1
+                if s:
+                    d.update({"Salle": s["salle"], "Adresse": s["adresse"], "Lat": s["lat"], "Lng": s["lng"]})
+                    salles[eq] = {"Salle": s["salle"], "Adresse": s["adresse"], "Lat": s["lat"], "Lng": s["lng"]}
+            d["Equipement"] = eq
+        joue = str(m["sd"] or "").strip() != "" and str(m["se"] or "").strip() != ""
+        if joue:
+            if m.get("mtd") not in (None, ""): d["MT dom"], d["MT ext"] = m["mtd"], m["mte"]
+            if m.get("code") and (not d.get("Deroule") or d.get("FDM") != m["code"]):
+                data = pdf_cache.get(m["code"]) or fetch(fdm_url(m["code"]), binary=True)
+                if data:
+                    try:
+                        f = parse_fdm(data); ev = parse_deroule(data)
+                        if sum(p["buts"] for t in f["equipes"] for p in t["joueurs"]) == 0 and sum(f["score"] or (0, 0)) > 0:
+                            d["Deroule"] = "ND"                     # feuille non détaillée
+                        else:
+                            d["Deroule"] = " ".join(f"{t}:{h}-{a}" for t, h, a in ev) or "ND"
+                            cote = ("D", "E")
+                            d["Buts 7m"] = "|".join(f"{cote[i]}:{p['nom']}={p['7m']}" for i, t in enumerate(f["equipes"]) for p in t["joueurs"] if p["7m"])
+                            d["Rouges"] = "|".join(f"{cote[i]}:{p['nom']}" for i, t in enumerate(f["equipes"]) for p in t["joueurs"] if p["dis"])
+                        d["FDM"] = m["code"]; d["Mise a jour"] = now; n_der += 1
+                    except Exception as e:
+                        journal.append([now, m["j"], f"J{m['j']} {m['dom']} - {m['ext']}", "ERREUR", f"déroulé illisible : {e}"])
+        out.append([d.get(k, "") for k in MATCH_HEAD])
+    book.ensure(MATCH_TAB, MATCH_HEAD)
+    book.replace(MATCH_TAB, [MATCH_HEAD] + out, raw=True)
+    if n_der or n_sal:
+        journal.append([now, "", "", "MATCHS", f"{MATCH_TAB} : {n_der} déroulé(s) ajouté(s), {n_sal} salle(s) relevée(s)"])
 
 
 BOOK_FACTORY = GBook

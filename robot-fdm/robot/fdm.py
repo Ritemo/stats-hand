@@ -86,3 +86,33 @@ def controles(fdm):
             if p["buts"] > p["tirs"] and p["tirs"] > 0:
                 pb.append(f"{p['nom']} : {p['buts']} buts pour {p['tirs']} tirs")
     return pb
+
+
+TIME = re.compile(r"^(?:(\d{1,2}):)?(\d{1,3}):(\d{2})$")   # 24:18 ou 01:00:00
+
+
+def parse_deroule(data):
+    """Déroulé du match : liste [(secondes, score_dom, score_ext), ...] à chaque changement de score."""
+    pdf = pdfplumber.open(io.BytesIO(data))
+    sec = lambda m: int(m.group(1) or 0) * 3600 + int(m.group(2)) * 60 + int(m.group(3))
+    ev = []
+    for page in pdf.pages:
+        words = page.extract_words()
+        if not any(w["text"] == "Déroulé" for w in words):
+            continue
+        for w in words:
+            m = TIME.match(w["text"])
+            if not m: continue
+            line = sorted([x for x in words if abs(x["top"] - w["top"]) < 2.5 and w["x1"] < x["x0"] < w["x1"] + 90],
+                          key=lambda x: x["x0"])
+            toks = [x["text"] for x in line]
+            if len(toks) >= 3 and toks[0].isdigit() and toks[1] == "-" and toks[2].isdigit():
+                ev.append((sec(m), int(toks[0]), int(toks[2])))
+            elif len(toks) >= 1 and re.match(r"^\d+-\d+$", toks[0]):
+                a, b = toks[0].split("-"); ev.append((sec(m), int(a), int(b)))
+    ev.sort()
+    out, last = [], (0, 0)
+    for t, h, a in ev:
+        if (h, a) != last and h >= last[0] and a >= last[1]:
+            out.append((t, h, a)); last = (h, a)
+    return out
