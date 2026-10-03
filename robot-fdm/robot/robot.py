@@ -59,6 +59,12 @@ def sim_person(a, b):
     return 0.6 * s_nom + 0.4 * s_pre
 
 
+def feuille_suspecte(team):
+    """Tous les buts de l'équipe attribués à un seul joueur : erreur de saisie à la table de marque."""
+    b = [p["buts"] for p in team["joueurs"]]
+    return len(b) >= 5 and sum(b) >= 10 and max(b) == sum(b)
+
+
 def col_letter(n):
     s = ""
     while n: n, r = divmod(n - 1, 26); s = chr(65 + r) + s
@@ -235,11 +241,30 @@ def main(cfg_path):
     matchs = []
     for j in range(1, cfg["journees"] + 1):
         matchs += rencontres_journee(cfg["poule_url"], j)
-    joues = [m for m in matchs if str(m["sd"] or "").strip() != "" and str(m["se"] or "").strip() != ""]
-    print(f"{len(joues)} matchs joués trouvés sur le site")
-
-    now = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
+    try:
+        from zoneinfo import ZoneInfo
+        ici = datetime.datetime.now(ZoneInfo("Europe/Paris")).replace(tzinfo=None)
+    except Exception:
+        ici = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+    now = ici.strftime("%d/%m/%Y %H:%M")
     pdf_cache = {}
+    # Feuilles de match déjà en ligne alors que le site n'affiche pas encore le score :
+    # on lit le score sur la feuille, pour les matchs commencés depuis plus de 80 minutes.
+    n_ant = 0
+    for m in matchs:
+        if str(m["sd"] or "").strip() != "" or not m.get("code") or not m.get("datetime"): continue
+        try: debut = datetime.datetime.strptime(m["datetime"], "%Y-%m-%dT%H:%M")
+        except ValueError: continue
+        if not (debut + datetime.timedelta(minutes=80) <= ici <= debut + datetime.timedelta(days=30)): continue
+        data = fetch(fdm_url(m["code"]), binary=True)
+        if not data: continue
+        try: f0 = parse_fdm(data)
+        except Exception: continue
+        if f0["score"] and sum(f0["score"]) > 0:
+            m["sd"], m["se"], m["anticipe"] = str(f0["score"][0]), str(f0["score"][1]), True
+            pdf_cache[m["code"]] = data; n_ant += 1
+    joues = [m for m in matchs if str(m["sd"] or "").strip() != "" and str(m["se"] or "").strip() != ""]
+    print(f"{len(joues)} matchs joués trouvés" + (f", dont {n_ant} lus sur la feuille avant la mise à jour du site" if n_ant else ""))
     journal, ctrl, new_lic = [], [], []
     ctrl_head = ["J", "Match", "Onglet", "Type", "Nom sur la feuille de match", "Ligne", "Nom dans le fichier",
                  "Correspondance", "Tirs / Arrêts", "Buts", "2 min", "Déjà saisi (Tirs / Buts / 2 min)", "Écart"]
@@ -253,7 +278,7 @@ def main(cfg_path):
         if mode == "reel" and not todo: continue
         if not m["code"]:
             journal.append([now, m["j"], label, "EN ATTENTE", "pas encore de feuille de match"]); continue
-        data = fetch(fdm_url(m["code"]), binary=True)
+        data = pdf_cache.get(m["code"]) or fetch(fdm_url(m["code"]), binary=True)
         if data: pdf_cache[m["code"]] = data
         if not data:
             journal.append([now, m["j"], label, "EN ATTENTE", f"feuille {m['code']} pas encore en ligne"]); continue
@@ -296,8 +321,13 @@ def main(cfg_path):
             if mode == "reel" and deja: continue
             adv = f["score"][1 - side]
             plan, douteux = [], []
+            susp = feuille_suspecte(team)
+            if susp and not deja:
+                nom_s = max(team["joueurs"], key=lambda p: p["buts"])["nom"]
+                journal.append([now, j, label, "FEUILLE SUSPECTE", f"{tab} : les {f['score'][side]} buts sont tous attribués à {nom_s} ; "
+                                + ("équipe importée en non détaillé (score seul)" if ecrit else "l'équipe serait importée en non détaillé")])
             groupes = {"G": [p for p in team["joueurs"] if p["arrets"] is not None],
-                       "J": [p for p in team["joueurs"] if p["arrets"] is None or p["tirs"] or p["buts"]]}
+                       "J": [] if susp else [p for p in team["joueurs"] if p["arrets"] is None or p["tirs"] or p["buts"]]}
             for k, ps in groupes.items():
                 aff = cl.assign(k, ps)
                 for i, p in enumerate(ps):
@@ -336,6 +366,10 @@ def main(cfg_path):
                 if p["licence"] not in licences or licences[p["licence"]][:2] != (tab, k):
                     licences[p["licence"]] = (tab, k, r); cl.lic[p["licence"]] = (k, r)
                     new_lic.append([p["licence"], tab, k, r, p["nom"]])
+            if susp and not deja:
+                libres = [r for r in range(ROW_P, ROW_P_END + 1) if norm(cl.name(r)) == PLACEHOLDER] or \
+                         [r for r in range(ROW_P, ROW_P_END + 1) if not cl.name(r)]
+                if libres: cells += [(libres[0], 1, "Non détaillé"), (libres[0], c0 + 1, f["score"][side])]
             if not deja: cells.append((ROW_SCORE_ADV, c0, adv))
             if cells: book.write(tab, cells)
             for rr, cc, v in cells:          # mise à jour de la copie locale
@@ -343,6 +377,7 @@ def main(cfg_path):
             nouveaux = [p["nom"] for k, p, r, how, sc in plan if how == "nouveau"]
             if deja and not nouveaux and not renommes: continue
             det = (f"{tab} : {len(plan)} lignes" if not deja else f"{tab} (journée déjà saisie)") + \
+                  (" (score lu sur la feuille, site pas encore à jour)" if m.get("anticipe") else "") + \
                   (f", ajoutés : {', '.join(nouveaux)}" if nouveaux else "") + (f", renommés : {', '.join(renommes)}" if renommes else "")
             journal.append([now, j, label, "IMPORTÉ" if not deja else "CORRIGÉ", det])
 
@@ -408,7 +443,7 @@ def maj_matchs(book, cfg, matchs, pdf_cache, now, journal):
                         else:
                             d["Deroule"] = " ".join(f"{t}:{h}-{a}" for t, h, a in ev) or "ND"
                             cote = ("D", "E")
-                            d["Buts 7m"] = "|".join(f"{cote[i]}:{p['nom']}={p['7m']}" for i, t in enumerate(f["equipes"]) for p in t["joueurs"] if p["7m"])
+                            d["Buts 7m"] = "|".join(f"{cote[i]}:{p['nom']}={p['7m']}" for i, t in enumerate(f["equipes"]) if not feuille_suspecte(t) for p in t["joueurs"] if p["7m"])
                             d["Rouges"] = "|".join(f"{cote[i]}:{p['nom']}" for i, t in enumerate(f["equipes"]) for p in t["joueurs"] if p["dis"])
                         d["FDM"] = m["code"]; d["Mise a jour"] = now; n_der += 1
                     except Exception as e:
