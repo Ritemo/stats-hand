@@ -1,3 +1,7 @@
-03/10/2026 21:52 | 4 | J4 ENT. SAONE MAMIROLLE HB (B) 32-20 HBC LURE VILLERS | IMPORTÉ | Ent Saone Mamirolle HB (B) : 13 lignes, ajoutés : BEURTHERET Eloise
-03/10/2026 21:52 | 4 | J4 ENT. SAONE MAMIROLLE HB (B) 32-20 HBC LURE VILLERS | IMPORTÉ | HBC Lure Villers : 12 lignes
-03/10/2026 21:52 |  |  | MATCHS | _Matchs : 1 déroulé(s) ajouté(s), 0 salle(s) relevée(s)
+04/10/2026 00:10 | 4 | J4 HBC QUINGEY VAL DE LOUE 25-34 JA MAICHE | IMPORTÉ | HBC Quingey Val de Loue : 12 lignes (score lu sur la feuille, site pas encore à jour), ajoutés : SANCEY-RICHARD Eugenie
+04/10/2026 00:10 | 4 | J4 HBC QUINGEY VAL DE LOUE 25-34 JA MAICHE | IMPORTÉ | JA Maiche : 11 lignes (score lu sur la feuille, site pas encore à jour)
+04/10/2026 00:10 | 4 | J4 CA PONTARLIER HB 33-23 ALC LONGVIC (B) | IMPORTÉ | CA Pontarlier HB : 12 lignes (score lu sur la feuille, site pas encore à jour)
+04/10/2026 00:10 | 4 | J4 CA PONTARLIER HB 33-23 ALC LONGVIC (B) | IMPORTÉ | ALC Longvic (B) : 12 lignes (score lu sur la feuille, site pas encore à jour), ajoutés : ROGNON Elie
+04/10/2026 00:10 | 4 | J4 AS AUXOIS 23-28 CHEVIGNY ST SAUVEUR HB (B) | IMPORTÉ | AS Auxois : 12 lignes (score lu sur la feuille, site pas encore à jour), ajoutés : CHAINARD Malli, DZIECIOL Tallia
+04/10/2026 00:10 | 4 | J4 AS AUXOIS 23-28 CHEVIGNY ST SAUVEUR HB (B) | IMPORTÉ | Chevigny St Sauveur HB (B) : 12 lignes (score lu sur la feuille, site pas encore à jour), ajoutés : MAGNIEZ Jeanne, PICARD Asya, RENOUX Elisa
+04/10/2026 00:10 |  |  | MATCHS | _Matchs : 3 déroulé(s) ajouté(s), 0 salle(s) relevée(s)

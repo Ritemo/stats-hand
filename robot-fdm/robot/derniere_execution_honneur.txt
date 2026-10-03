@@ -1,1 +1,10 @@
-03/10/2026 21:51 |  |  | RIEN À FAIRE | mode reel, aucune nouvelle feuille
+04/10/2026 00:10 | 4 | J4 PAYS RIOLAIS HB 47-25 PALENTE BESANCON HB (A) | IMPORTÉ | Pays Riolais HB : 13 lignes (score lu sur la feuille, site pas encore à jour), ajoutés : BURGEREY Sacha, HILAIRE GINDRO Jules
+04/10/2026 00:10 | 4 | J4 PAYS RIOLAIS HB 47-25 PALENTE BESANCON HB (A) | FEUILLE SUSPECTE | Palente Besancon HB (A) : les 25 buts sont tous attribués à ANDRE Gabriel ; équipe importée en non détaillé (score seul)
+04/10/2026 00:10 | 4 | J4 PAYS RIOLAIS HB 47-25 PALENTE BESANCON HB (A) | IMPORTÉ | Palente Besancon HB (A) : 1 lignes (score lu sur la feuille, site pas encore à jour), ajoutés : ANDRE Gabriel
+04/10/2026 00:10 | 4 | J4 JA MAICHE 32-27 HBC DANJOUTIN | IMPORTÉ | JA Maiche : 10 lignes (score lu sur la feuille, site pas encore à jour)
+04/10/2026 00:10 | 4 | J4 JA MAICHE 32-27 HBC DANJOUTIN | IMPORTÉ | HBC Danjoutin : 11 lignes (score lu sur la feuille, site pas encore à jour), ajoutés : BOURQUIN Logan, DECAUDIN Francis, LECHINE Maxime, MARTIN Arnaud
+04/10/2026 00:10 | 4 | J4 BEEX-VA PM HB (C) 31-26 CS VESULIEN HAUTE SAONE (C) | IMPORTÉ | BEEX-VA PM HB (C) : 11 lignes (score lu sur la feuille, site pas encore à jour), ajoutés : ARADES Gilles, BOURDENET Mathieu, DIDEY Thomas, SLASSI Mehdi
+04/10/2026 00:10 | 4 | J4 BEEX-VA PM HB (C) 31-26 CS VESULIEN HAUTE SAONE (C) | IMPORTÉ | CS Vesulien HS (C) : 12 lignes (score lu sur la feuille, site pas encore à jour), ajoutés : PERRINGERARD Mathis
+04/10/2026 00:10 | 4 | J4 CA PONTARLIER HB (B) 30-27 HBC GILLEY | IMPORTÉ | CA Pontarlier HB (B) : 12 lignes (score lu sur la feuille, site pas encore à jour), ajoutés : PARIS Julien, MASSON-BARTHOD Kilian
+04/10/2026 00:10 | 4 | J4 CA PONTARLIER HB (B) 30-27 HBC GILLEY | IMPORTÉ | HBC Gilley : 12 lignes (score lu sur la feuille, site pas encore à jour), ajoutés : MICHEL Mathis
+04/10/2026 00:10 |  |  | MATCHS | _Matchs : 4 déroulé(s) ajouté(s), 0 salle(s) relevée(s)
