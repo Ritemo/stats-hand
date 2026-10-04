@@ -269,6 +269,53 @@ body{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
 .kv{display:flex;justify-content:space-between;gap:10px;padding:8px 14px;border-top:1px solid var(--line);font-size:14px}
 .kv:first-child{border-top:0}.kv span{color:var(--muted)}.kv b{text-align:right;font-weight:600}
 .mom .home{fill:#FF6D00;opacity:.85}.mom .away{fill:var(--ink);opacity:.8}
+
+/* ---------- Supériorité numérique et détail des tirs ---------- */
+.pbar.big{height:14px;border-radius:7px;margin:6px 4px 8px}
+.shots{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:0 6px}
+.shots b{color:var(--ink);font-family:"Barlow Condensed",sans-serif;font-size:18px;margin-right:3px}
+.shots i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+
+/* ---------- Fiche adversaire et recherche ---------- */
+.fiche{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:6px 14px 10px;margin-bottom:14px}
+.fiche h3{font-family:"Barlow Condensed",sans-serif;font-size:17px;font-weight:700;margin:10px 0 4px;text-transform:uppercase;letter-spacing:.4px}
+.fiche h3.good{color:#1E9E5A}.fiche h3.bad{color:#C8402F}.fiche h3.info{color:var(--muted)}
+.fiche ul{list-style:none}
+.fiche li{position:relative;padding:4px 0 4px 20px;font-size:15px;line-height:1.35}
+.fiche li::before{content:"";position:absolute;left:4px;top:11px;width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.fiche .good+ul li::before{background:#1E9E5A}.fiche .bad+ul li::before{background:#C8402F}
+.fiche-h{display:flex;align-items:center;gap:10px;margin:0 2px 8px}
+.fiche-h b{font-family:"Barlow Condensed",sans-serif;font-size:20px}
+.bar-top .icon-btn+.icon-btn{margin-left:-2px}
+.sheet.full{top:0;bottom:auto;height:100%;max-height:100%;border-radius:0;overflow:auto;transform:translateY(-100%);padding-top:calc(12px + env(safe-area-inset-top,0px))}
+.sheet.full.open{transform:none}
+.sheet.full .grip{display:none}
+.qbar{display:flex;align-items:center;gap:10px}
+.qbar button{color:var(--orange);font-weight:600;padding:8px 2px}
+#q{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 14px;margin:8px 0 12px;outline:none}
+#q:focus{border-color:var(--orange)}
+#qres .row{padding:9px 12px}
+#qres:empty{display:none}
+
+/* ---------- Finitions d'ergonomie ---------- */
+button:active,.route:active{opacity:.72}
+.tabbar button{font-size:11.5px;min-width:0}
+.tabbar button span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mr-n{overflow-wrap:anywhere}
+@media (max-width:400px){
+  .mrow{gap:6px;padding:10px 8px}.mr-l,.mr-r{gap:6px}
+  .mr-n{font-size:14px}.mr-s{min-width:56px;font-size:22px}
+  .mrow .logo.l32{width:28px;height:28px}
+  .mr-sc,.mr-odds{grid-template-columns:1fr 56px 1fr}
+}
+.nx-top{flex-wrap:nowrap;align-items:flex-start}
+.nx-when{display:flex;flex-direction:column;flex:1;min-width:0;line-height:1.25}
+.route b{white-space:normal}
+.dh-s small{display:block}
+.board{margin-top:12px}.board div{padding:8px 12px}
+.board .ttl{font-size:16px}.board .num{font-size:36px;line-height:1.1}.board .lbl{line-height:1.25}
+.club-head h1{font-size:26px}.club-head{margin-top:8px}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .avatar{background:#3A3A3A}}
 @media (prefers-reduced-motion:reduce){.sheet{transition:none}.icon-btn.spin svg{animation:none}}
 </style>
 </head>
@@ -364,7 +411,8 @@ function build(raw){
   const cal=buildCal(raw,clubs.map(c=>c.name),evo);
   const hasM=buildMatchs(raw,clubs.map(c=>c.name),cal);
   const nn=s=>norm(s).replace(/\([^)]*\)/g,"").replace(/[^a-z]/g,"");
-  players.forEach(p=>{p.b7=0;p.red=0;}); clubs.forEach(c=>c.red=0);
+  players.forEach(p=>{p.b7=0;p.red=0;p.ta=0;p.sh=false;}); clubs.forEach(c=>{c.red=0;c.num=numStats(cal,c.name);});
+  cal.forEach(m=>{ if(m.info) (m.info.sh||[]).forEach(x=>{const p=players.find(q=>q.club===x.club&&nn(q.name)===nn(x.nom)); if(p){p.ta+=x.a;p.sh=true;}}); });
   cal.forEach(m=>{ if(!m.info) return;
     (m.info.m7||[]).forEach(x=>{const p=players.find(q=>q.club===x.club&&nn(q.name)===nn(x.nom)); if(p) p.b7+=x.n;});
     (m.info.red||[]).forEach(x=>{const p=players.find(q=>q.club===x.club&&nn(q.name)===nn(x.nom)); if(p) p.red++; const c=clubs.find(c=>c.name===x.club); if(c) c.red++;}); });
@@ -430,7 +478,7 @@ function barChart(labels,series,{max}){
   return `<svg viewBox="0 0 ${W} ${H}" role="img">${g}</svg>`;
 }
 const legend=items=>`<div class="legend">${items.map(([c,l])=>`<span><i style="background:${c}"></i>${l}</span>`).join("")}</div>`;
-function evoClubHTML(c){
+function evoClubHTML(c,part){
   const E=D.evo; if(!E) return "";
   const gs=E.games.filter(g=>g.club===c.name).sort((a,b)=>a.j-b.j); if(!gs.length) return "";
   const O="#FF6D00", K="var(--ink)";
@@ -439,7 +487,9 @@ function evoClubHTML(c){
   const ranks=E.rankHist[c.name]||[];
   const last5=gs.slice(-5);
   const sk=streak(c.name);
-  let h=`<h2>Évolution</h2><div class="formline"><div class="form" aria-label="Forme">${last5.map(g=>`<span class="${resOf(g)}" title="J${g.j}">${resOf(g)}</span>`).join("")}</div>${sk?`<span class="streak ${sk.k}">${sk.t}</span>`:""}</div>`;
+  const forme=`<div class="formline"><div class="form" aria-label="Forme">${last5.map(g=>`<span class="${resOf(g)}" title="J${g.j}">${resOf(g)}</span>`).join("")}</div>${sk?`<span class="streak ${sk.k}">${sk.t}</span>`:""}</div>`;
+  if(part==="forme") return `<h2>Forme</h2>`+forme;
+  let h=`<h2>Évolution</h2>`;
   h+=`<div class="chart"><h3>Classement après chaque journée</h3>${lineChart(labels,[{vals:ranks,color:O,labels:true}],{min:1,max:E.nClubs,invert:true,ticks:[1,Math.ceil(E.nClubs/2),E.nClubs],fmt:v=>v})}</div>`;
   const bps=labels.map((_,i)=>byJ(i+1)?.bp??null), bcs=labels.map((_,i)=>byJ(i+1)?.bc??null);
   h+=`<div class="chart"><h3>Buts par match</h3>${barChart(labels,[{vals:bps,color:O},{vals:bcs,color:K}],{max:Math.max(1,...bps.filter(v=>v!=null),...bcs.filter(v=>v!=null))})}${legend([[O,"Marqués"],[K,"Encaissés"]])}</div>`;
@@ -479,11 +529,14 @@ async function load(spin){
 function setSpin(on){document.querySelectorAll("[data-refresh]").forEach(b=>b.classList.toggle("spin",!!on));}
 
 /* ============ NAVIGATION (#/, #/classement, #/buteurs, #/gardiens, #/club/<slug>) ============ */
-const ui={buteurs:"champ",gardiens:"gardiens",metric:"marques",general:"all",jour:"",calAll:""};
+const ui={clubTab:"resume",buteurs:"champ",gardiens:"gardiens",metric:"marques",general:"all",jour:"",calAll:""};
 function route(){const h=location.hash.replace(/^#\/?/,"").split("/");return{page:h[0]||"home",arg:decodeURIComponent(h[1]||""),arg2:decodeURIComponent(h[2]||"")};}
 let depth=0;
-function go(path){depth++;location.hash="#/"+path;}
-window.addEventListener("hashchange",()=>{closeSheet();ui.calAll="";render();window.scrollTo(0,0);});
+const scrollMem={}, navStack=[], hkey=()=>location.hash.replace(/^#\/?/,"");
+function go(path){scrollMem[hkey()]=window.scrollY;navStack.push(hkey());depth++;location.hash="#/"+path;}
+window.addEventListener("hashchange",()=>{
+  const back=navStack.length&&navStack[navStack.length-1]===hkey(); if(back) navStack.pop();   // retour : on retrouve sa position dans la liste
+  closeSheet();ui.calAll="";render();window.scrollTo(0,back?(scrollMem[hkey()]||0):0);});
 
 /* ============ GABARITS ============ */
 const IC={
@@ -495,11 +548,12 @@ const IC={
   trophy:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v3M8 20h8M9 17h6"/></svg>`,
   home:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg>`,
   teams:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="7" r="3"/><circle cx="7" cy="17" r="3"/><circle cx="17" cy="17" r="3"/></svg>`,
+  search:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>`,
   pin:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>`,
   cal:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>`,
   goal:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20V6h18v14"/><path d="M3 10h18M8 6v14M16 6v14" stroke-dasharray="2 2.5"/></svg>`
 };
-const refreshBtn=`<button class="icon-btn" data-refresh aria-label="Actualiser les stats">${IC.refresh}</button>`;
+const refreshBtn=`<button class="icon-btn" data-search aria-label="Rechercher">${IC.search}</button><button class="icon-btn" data-refresh aria-label="Actualiser les stats">${IC.refresh}</button>`;
 const backBtn=`<button class="icon-btn" data-back aria-label="Retour à l'accueil">${IC.back}</button>`;
 function pageHead(title,back=true){return `<header class="top">${IC.court}<div class="bar-top">${back?backBtn:""}<div class="t"><div class="page-title">${esc(title)}</div></div>${refreshBtn}</div></header>`;}
 function stamp(){
@@ -552,6 +606,8 @@ const METRICS={
   pctTir:{l:"% tir",get:c=>c.pctTir||0,desc:true,show:c=>fmtPct(c.pctTir),sub:()=>`Hors matchs à stats incomplètes`},
   pctArret:{l:"% arrêt",get:c=>c.pctArret||0,desc:true,show:c=>fmtPct(c.pctArret),sub:c=>`${c.arrets} arrêts, hors journées sans arrêts saisis`},
   arrets:{l:"Total arrêts",get:c=>c.arrets,desc:true,show:c=>c.arrets,sub:c=>`${fmtPct(c.pctArret)} d'arrêts`},
+  sup:{l:"Supériorité",get:c=>perP(c.num&&c.num.sup)??-99,desc:true,show:c=>c.num&&c.num.sup.n?sign1(perP(c.num.sup)):"-",sub:c=>c.num&&c.num.sup.n?`${c.num.sup.gf} marqués, ${c.num.sup.ga} encaissés en ${c.num.sup.n} supériorités`:"Pas encore de donnée"},
+  inf:{l:"Infériorité",get:c=>perP(c.num&&c.num.inf)??-99,desc:true,show:c=>c.num&&c.num.inf.n?sign1(perP(c.num.inf)):"-",sub:c=>c.num&&c.num.inf.n?`${c.num.inf.gf} marqués, ${c.num.inf.ga} encaissés en ${c.num.inf.n} infériorités`:"Pas encore de donnée"},
   excl:{l:"Discipline",get:c=>c.excl+3*(c.red||0),desc:false,show:c=>c.excl,sub:c=>`${c.excl} exclusions 2 min${c.red?`, ${c.red} carton${c.red>1?"s":""} rouge${c.red>1?"s":""}`:""}`}
 };
 function clubRank(c,key){const m=METRICS[key];return ranked([...D.clubs].sort((a,b)=>m.desc?m.get(b)-m.get(a):m.get(a)-m.get(b)),x=>m.get(x)).find(x=>x.name===c.name).rank;}
@@ -615,7 +671,7 @@ function pGardiens(){
 function pClub(s){
   const c=D.clubs.find(x=>slug(x.name)===s); if(!c) return pageHead("Club introuvable")+`<main><div class="empty">Ce club n'existe pas dans le fichier.</div></main>`;
   const ps=D.players.filter(p=>p.club===c.name).sort(scorerSort), ks=D.keepers.filter(k=>k.club===c.name).sort((a,b)=>b.arrets-a.arrets);
-  const st=D.standings.find(x=>x.club===c.name);
+  const st=D.standings.find(x=>x.club===c.name), T=ui.clubTab||"resume";
   const r=k=>clubRank(c,k), maxP=Math.max(1,...ps.map(p=>p.buts)), maxK=Math.max(1,...ks.map(k=>k.arrets));
   const rk=(k,l)=>{const v=r(k);return `<div class="rk${v===1?" best":""}"><div class="num">${ordM(v)}</div><div class="l">${l}</div></div>`;};
   return `<header class="top">${IC.court}<div class="bar-top">${backBtn}<div class="t"></div>${refreshBtn}</div>
@@ -623,21 +679,21 @@ function pClub(s){
     <div class="board"><div><div class="ttl">Buts marqués</div><div class="num">${c.marques}</div><div class="lbl">${ordF(r("marques"))} attaque de la poule</div></div>
       <div><div class="ttl">Buts encaissés</div><div class="num">${c.encaisses}</div><div class="lbl">${ordF(r("encaisses"))} défense de la poule</div></div></div>
     <div class="minis"><div><b>${fmtPct(c.pctTir)}</b>Réussite au tir</div><div><b>${fmtPct(c.pctArret)}</b>Arrêts équipe</div><div><b>${c.excl}</b>Exclusions 2 min</div></div></header>
-  <main>
-    ${nextCard(c.name)}
+  <main>${seg("clubTab",[["resume","Résumé"],["stats","Statistiques"],["effectif","Effectif"]])}
+    ${T==="resume"?`${nextCard(c.name)}
     ${st?`<h2>Classement</h2><div class="standing"><div class="pos"><div class="num">${ordM(st.rank)}</div><div class="l">sur ${D.standings.length}</div></div>
       <div class="grid"><div><div class="num">${st.pts}</div><div class="l">Points</div></div><div><div class="num">${sign(st.diff)}</div><div class="l">Goal average</div></div><div><div class="num">${st.j}</div><div class="l">Matchs joués</div></div>
       <div><div class="num">${st.v}</div><div class="l">Victoires</div></div><div><div class="num">${st.n}</div><div class="l">Nuls</div></div><div><div class="num">${st.d}</div><div class="l">Défaites</div></div></div></div>`:""}
-    ${evoClubHTML(c)}
+    ${evoClubHTML(c,"forme")}
     ${clubCalHTML(c)}
-    ${recordsHTML(c)}
     <h2>Rang par statistique</h2>
-    <div class="ranks">${rk("marques","Attaque")}${rk("encaisses","Défense")}${rk("pctTir","% tir")}${rk("pctArret","% arrêt")}${rk("arrets","Total arrêts")}${rk("excl","Discipline")}</div>
-    <h2>Joueurs</h2>
+    <div class="ranks">${rk("marques","Attaque")}${rk("encaisses","Défense")}${rk("pctTir","% tir")}${rk("pctArret","% arrêt")}${rk("arrets","Total arrêts")}${rk("excl","Discipline")}</div>`:""}
+    ${T==="stats"?`${evoClubHTML(c,"courbes")}${recordsHTML(c)}${numHTML(c)}${D.evo?"":`<div class="empty">Les statistiques détaillées apparaîtront après la première journée.</div>`}`:""}
+    ${T==="effectif"?`<h2>Joueurs</h2>
     ${ps.length?`<div class="list">${ps.map(p=>playerRow(p,{showClub:false,max:maxP})).join("")}</div>`:`<div class="empty">Aucun joueur saisi.</div>`}
     <h2 style="margin-top:22px">Gardiens</h2>
     ${ks.length?`<div class="list">${ks.map(k=>keeperRow(k,{showClub:false,max:maxK})).join("")}</div>`:`<div class="empty">Aucun gardien saisi.</div>`}
-    <p class="note">La J1 compte dans les totaux d'équipe mais pas dans les stats individuelles (feuille de match non détaillée).</p>
+    <p class="note">La J1 compte dans les totaux d'équipe mais pas dans les stats individuelles (feuille de match non détaillée).</p>`:""}
     ${stamp()}</main>`;
 }
 function render(){
@@ -725,7 +781,7 @@ function matchRow(m,{scorersLine=false,odds=false}={}){
 function nextCard(club){
   const m=nextMatch(club); if(!m) return "";
   return `<h2>Prochain match</h2><button class="next" data-go="duel/${m.j}/${slug(m.home)}">
-    <span class="nx-top"><b>Journée ${m.j}</b>${m.info&&m.info.dt?`<span>${fmtDT(m.info.dt)}</span>`:m.date?`<span>${wkLabel(m.date)}</span>`:""}<span class="tag">${m.home===club?"À domicile":"À l'extérieur"}</span></span>
+    <span class="nx-top"><span class="nx-when"><b>Journée ${m.j}</b>${m.info&&m.info.dt?`<span>${fmtDT(m.info.dt)}</span>`:m.date?`<span>${wkLabel(m.date)}</span>`:""}</span><span class="tag">${m.home===club?"À domicile":"À l'extérieur"}</span></span>
     <span class="nx-teams"><span class="nx-t">${logoHTML(m.home,64)}<span>${esc(shortClub(m.home))}</span></span><span class="nx-vs">VS</span>
       <span class="nx-t">${logoHTML(m.away,64)}<span>${esc(shortClub(m.away))}</span></span></span>
     <span class="nx-go">Voir le face-à-face ›</span></button>${routeHTML(m)||'<div style="height:12px"></div>'}`;
@@ -775,7 +831,7 @@ function pJournees(arg){
     <div class="chips">${info.Js.map(x=>`<button class="chip" data-seg="jour" data-v="${x}" aria-pressed="${x===j}">J${x}</button>`).join("")}</div>
     <h2>Journée ${j}${d?` <span class="h2s">${wkLabel(d)}</span>`:""}</h2>
     <div class="list">${ms.map(m=>matchRow(m,{scorersLine:true,odds:true})).join("")}</div>
-    <p class="note">${played?"Sous chaque score, le meilleur buteur de chaque équipe. ":""}Touchez une rencontre pour voir le face-à-face. Cotes indicatives, calculées à partir des résultats de la saison. ${D.hasM?"Horaires et salles mis à jour chaque matin depuis le site de la fédération.":"Week-ends indicatifs, le calendrier peut évoluer."}</p>${oddsReport(j)}${stamp()}</main>`;
+    <p class="note">${played?"Sous chaque score, le meilleur buteur de chaque équipe. ":""}Touchez une rencontre pour ouvrir le face-à-face. Les cotes sont indicatives.</p>${oddsReport(j)}${stamp()}</main>`;
 }
 function clubData(name){
   const c=D.clubs.find(x=>x.name===name)||{name,marques:0,encaisses:0,pctTir:null,pctArret:null,excl:0,arrets:0};
@@ -787,10 +843,10 @@ function pDuel(js,hs){
   if(!m) return pageHead("Rencontre introuvable")+`<main><div class="empty">Cette rencontre n'est pas dans le calendrier.</div></main>`;
   const A=clubData(m.home), B=clubData(m.away), r=m.res;
   const side=(n,l)=>`<button class="dh-t" data-go="club/${slug(n)}">${logoHTML(n,64)}<span>${esc(shortClub(n))}</span><small>${l}</small></button>`;
-  let h=`<header class="top">${IC.court}<div class="bar-top">${backBtn}<div class="t"><div class="page-title">J${j}${m.info&&m.info.dt&&!r?", "+fmtDay(m.info.dt)+" "+m.info.dt.getDate()+"/"+(m.info.dt.getMonth()+1):m.date?", "+wkLabel(m.date):""}</div></div>${refreshBtn}</div>
-    <div class="duel-head">${side(m.home,"Domicile")}<div class="dh-s">${r?`<span class="num">${r.h}-${r.a}</span><small>Score final</small>`:`<span class="vs">VS</span>`}</div>${side(m.away,"Extérieur")}</div></header><main>`;
+  let h=`<header class="top">${IC.court}<div class="bar-top">${backBtn}<div class="t"><div class="page-title">Journée ${j}</div></div>${refreshBtn}</div>
+    <div class="duel-head">${side(m.home,"Domicile")}<div class="dh-s">${r?`<span class="num">${r.h}-${r.a}</span>`:`<span class="vs">VS</span>`}<small>${m.info&&m.info.dt?fmtDT(m.info.dt):m.date?wkLabel(m.date):""}</small></div>${side(m.away,"Extérieur")}</div></header><main>`;
   h+=`<div class="chips">${D.cal.filter(x=>x.j===j).map(x=>`<button class="chip" data-go="duel/${j}/${slug(x.home)}" data-rep aria-pressed="${x===m}">${esc(shortClub(x.home))} - ${esc(shortClub(x.away))}</button>`).join("")}</div>`;
-  if(!r&&m.info&&m.info.salle) h+=`<h2>Lieu <span class="h2s">${m.info.dt?fmtDT(m.info.dt):""}</span></h2>${routeHTML(m)}`;
+  if(!r&&m.info&&m.info.salle) h+=`<h2>Lieu</h2>${routeHTML(m)}`;
   h+=oddsBlock(m);
   if(r){
     const col2=n=>{const s=scorers(n,j);return `<div class="list mini">${s.length?s.map(x=>`<div class="mini-row"><span>${esc(pName(x.name))}</span><b>${x.b}</b></div>`).join(""):`<div class="mini-row"><span>Pas de détail</span></div>`}</div>`;};
@@ -810,6 +866,9 @@ function pDuel(js,hs){
     rows+=rowH("Bilan à domicile / à l'extérieur",`<small>${recTxt(a)}</small>`,`<small>${recTxt(b)}</small>`); }
   rows+=row("Buts marqués par match",per(A,A.c.marques),per(B,B.c.marques),fmt1,"high")+row("Buts encaissés par match",per(A,A.c.encaisses),per(B,B.c.encaisses),fmt1,"low")
     +row("% tir",A.c.pctTir,B.c.pctTir,fmtPct,"high")+row("% arrêt",A.c.pctArret,B.c.pctArret,fmtPct,"high")+row("Exclusions par match",per(A,A.c.excl),per(B,B.c.excl),fmt1,"low");
+  if((A.c.num&&A.c.num.sup.n)||(B.c.num&&B.c.num.sup.n)) rows+=row("En supériorité, écart par 2 min",perP(A.c.num&&A.c.num.sup),perP(B.c.num&&B.c.num.sup),sign1,"high");
+  if((A.c.num&&A.c.num.inf.n)||(B.c.num&&B.c.num.inf.n)) rows+=row("En infériorité, écart par 2 min",perP(A.c.num&&A.c.num.inf),perP(B.c.num&&B.c.num.inf),sign1,"high");
+  if(!r) h+=fichesHTML(m);
   h+=`<h2>Face-à-face</h2><div class="duel">${rows}</div>`;
   h+=`<h2>À surveiller</h2>`+[m.home,m.away].map(n=>{const ps=D.players.filter(p=>p.club===n).sort(scorerSort).slice(0,3);
     return `<div class="list" style="margin-bottom:10px"><div class="lh">${logoHTML(n,32)}<b>${esc(n)}</b></div>${ps.length?ps.map(p=>playerRow(p,{showClub:false,max:ps[0].buts||1})).join(""):`<div class="empty">Aucun joueur saisi.</div>`}</div>`;}).join("");
@@ -839,6 +898,9 @@ function buildMatchs(raw,names,cal){
     const side=c=>c==="D"?h:a;
     I.m7=(o["buts 7m"]||"").split("|").filter(Boolean).map(x=>{const r=x.slice(2),i=r.lastIndexOf("=");return {club:side(x[0]),nom:r.slice(0,i),n:+r.slice(i+1)};});
     I.red=(o["rouges"]||"").split("|").filter(Boolean).map(x=>({club:side(x[0]),nom:x.slice(2)}));
+    I.ex=(o["exclusions"]||"").split(" ").filter(Boolean).map(x=>[+x.slice(2),x[0]==="D"?"h":"a"]).filter(x=>!isNaN(x[0]));
+    I.sh=(o["tirs"]||"").split("|").filter(Boolean).map(x=>{const r=x.slice(2),i=r.lastIndexOf("="),v=r.slice(i+1).split("/");return {club:side(x[0]),nom:r.slice(0,i),a:+v[0]||0,h:+v[1]||0};});
+    I.v2=(o["v"]||"")!=="";
     m.info=I;
   });
   return ok;
@@ -885,6 +947,39 @@ function momentumHTML(m){
   return `<h2>Momentum</h2><div class="chart mom"><h3>Écart au score, minute par minute</h3><svg viewBox="0 0 ${W} ${H}" role="img">${g}</svg>
     ${legend([["#FF6D00",shortClub(m.home)+" devant"],["var(--ink)",shortClub(m.away)+" devant"]])}</div>
     <div class="list" style="margin-bottom:22px">${kv.map(([k,v])=>`<div class="kv"><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join("")}</div>`;
+}
+
+
+/* ---------- Supériorité / infériorité numérique (exclusions de 2 min + déroulé du score) ---------- */
+function numStats(cal,club){
+  const S={sup:{n:0,gf:0,ga:0},inf:{n:0,gf:0,ga:0},m:0};
+  cal.forEach(m=>{ const I=m.info; if(!I||!I.der||!I.v2||(m.home!==club&&m.away!==club)) return;
+    const me=m.home===club?"h":"a"; S.m++;
+    I.ex.forEach(([t,sd])=>{ (sd===me?S.inf:S.sup).n++; });
+    let ps=[0,0];
+    I.der.forEach(([t,h,a])=>{ const scorer=h>ps[0]?"h":"a"; ps=[h,a];
+      let nh=0,na=0; I.ex.forEach(([te,sd])=>{ if(te<t&&t<=te+120){ if(sd==="h") nh++; else na++; } });
+      if(nh===na) return;                                   // égalité numérique
+      const B=(nh>na?"a":"h")===me?S.sup:S.inf;            // l'équipe en supériorité est celle qui a le moins d'exclus
+      if(scorer===me) B.gf++; else B.ga++; });
+  });
+  return S.m?S:null;
+}
+const perP=x=>x&&x.n?(x.gf-x.ga)/x.n:null;
+const sign1=v=>(v>0?"+":"")+fmt1(v);
+function numHTML(c){
+  const N=c.num; if(!N||(!N.sup.n&&!N.inf.n)) return "";
+  const card=(t,x,txt)=>`<div class="stat"><div class="num ${x.gf-x.ga>0?"good":x.gf-x.ga<0?"bad":""}">${sign(x.gf-x.ga)}</div><div class="l">${t}</div>
+    <div class="d">${x.n?`${x.gf} marqué${x.gf>1?"s":""}, ${x.ga} encaissé${x.ga>1?"s":""} en ${x.n} période${x.n>1?"s":""} de 2 min ${txt}`:"Aucune période pour l'instant"}</div></div>`;
+  return `<h2>Supériorité et infériorité</h2><div class="stats recs">${card("En supériorité numérique",N.sup,"à un de plus")}${card("En infériorité numérique",N.inf,"à un de moins")}</div>`;
+}
+function shotsHTML(p){
+  if(!p.sh||!p.tirs) return "";
+  const ar=Math.min(p.ta,Math.max(0,p.tirs-p.buts)), hc=Math.max(0,p.tirs-p.buts-ar), T=p.tirs||1;
+  const O="#FF6D00",K="var(--ink)",G="#B5B0A8";
+  return `<div class="chart" style="margin-top:14px"><h3>Détail des tirs</h3>
+    <div class="pbar big"><i style="width:${100*p.buts/T}%;background:${O}"></i><i style="width:${100*ar/T}%;background:${K}"></i><i style="width:${100*hc/T}%;background:${G}"></i></div>
+    <div class="shots"><span><i style="background:${O}"></i><b>${p.buts}</b>but${p.buts>1?"s":""}</span><span><i style="background:${K}"></i><b>${ar}</b>arrêté${ar>1?"s":""} par le gardien</span><span><i style="background:${G}"></i><b>${hc}</b>hors cadre</span></div></div>`;
 }
 
 /* ============ COTES (modèle de force des équipes) ============
@@ -945,14 +1040,71 @@ function oddsReport(jSel){
   const Js=[...new Set(all.map(m=>m.j))].sort((a,b)=>a-b), range=Js.length>1?`J${Js[0]} à J${Js[Js.length-1]}`:`J${Js[0]}`;
   const line=(t,x)=>`<div class="rep"><span>${t}</span><b>${x.ok} / ${x.n}</b><small>${Math.round(100*x.ok/x.n)} %</small></div>`;
   const sur=(J&&J.sur)||S.sur;
-  return `<div class="card"><h3 style="font-family:'Barlow Condensed',sans-serif;font-size:19px">Fiabilité des cotes <span class="h2s">favoris gagnants</span></h3>
+  return `<div class="card"><h3 style="font-family:'Barlow Condensed',sans-serif;font-size:19px">Fiabilité des cotes</h3><p style="margin:0 0 4px">Nombre de favoris qui ont gagné</p>
     ${J?line(`Journée ${jSel}`,J):""}${line(`Saison (${range})`,S)}
     ${sur?`<p>Plus grosse surprise ${J&&J.sur?"de la journée":"de la saison"} : ${esc(shortClub(sur.m.res.h>sur.m.res.a?sur.m.home:sur.m.away))} gagne à ${fmtC(sur.c)} (J${sur.m.j}, ${sur.m.res.h}-${sur.m.res.a}).</p>`:""}
     <p>Cotes calculées avant chaque match, avec uniquement les résultats connus à ce moment-là. La J1 n'est pas comptée (aucun résultat avant).</p></div>`;
 }
+
+/* ============ FICHE ADVERSAIRE (points forts et faibles rédigés à partir des rangs) ============ */
+const ordT=n=>n===1?"1re":n+"e";
+function ficheHTML(name,kind){
+  const c=D.clubs.find(x=>x.name===name); if(!c) return "";
+  const n=D.clubs.length, X=clubData(name), nb=X.n; if(!nb) return "";
+  const rk=k=>clubRank(c,k), top=r=>r<=3, low=r=>r>=n-2;
+  const F=[],W=[],I=[];
+  let r=rk("marques"); const am=fmt1(c.marques/nb);
+  if(top(r)) F.push(`${ordT(r)} attaque de la poule, ${am} buts par match`); else if(low(r)) W.push(`Attaque en difficulté : ${am} buts par match (${ordT(r)} de la poule)`);
+  r=rk("encaisses"); const de=fmt1(c.encaisses/nb);
+  if(top(r)) F.push(`${ordT(r)} défense de la poule, ${de} buts encaissés par match`); else if(low(r)) W.push(`Défense perméable : ${de} buts encaissés par match`);
+  if(c.pctTir!=null){ r=rk("pctTir"); if(top(r)) F.push(`Adroite au tir : ${fmtPct(c.pctTir)} de réussite`); else if(low(r)) W.push(`Maladroite au tir : ${fmtPct(c.pctTir)} de réussite`); }
+  if(c.pctArret!=null){ r=rk("pctArret"); if(top(r)) F.push(`Gardiens performants : ${fmtPct(c.pctArret)} d'arrêts`); else if(low(r)) W.push(`Peu d'arrêts : ${fmtPct(c.pctArret)}`); }
+  r=rk("excl"); const ex=fmt1(c.excl/nb);
+  if(top(r)) F.push(`Équipe disciplinée : ${ex} exclusion${c.excl/nb>=2?"s":""} par match`); else if(low(r)) W.push(`Beaucoup d'exclusions (${ex} par match) : des supériorités à exploiter`);
+  if(c.num&&c.num.sup.n>=2){ const v=perP(c.num.sup); r=rk("sup"); if(top(r)&&v>0) F.push(`Efficace en supériorité numérique (${sign1(v)} par 2 min)`); else if(low(r)) W.push(`Peu efficace en supériorité numérique (${sign1(v)} par 2 min)`); }
+  if(c.num&&c.num.inf.n>=2){ const v=perP(c.num.inf); r=rk("inf"); if(top(r)&&v>=0) F.push(`Solide en infériorité numérique (${sign1(v)} par 2 min)`); else if(low(r)&&v<0) W.push(`Souffre en infériorité numérique (${sign1(v)} par 2 min)`); }
+  if(D.cal.some(m=>m.res)){ const v=venueRec(name,kind), ou=kind==="dom"?"à domicile":"à l'extérieur";
+    if(v.j>=2&&v.d===0) F.push(`Invaincue ${ou} (${recTxt(v)})`); else if(v.j>=2&&v.v===0) W.push(`Aucune victoire ${ou} (${recTxt(v)})`); }
+  if(X.streak){ if(X.streak.k==="good"&&/suite|Invaincu/.test(X.streak.t)) F.push(`En forme : ${X.streak.t.toLowerCase()}`); else if(X.streak.k==="bad"&&/suite|Sans/.test(X.streak.t)) W.push(`En difficulté : ${X.streak.t.toLowerCase()}`); }
+  const ps=D.players.filter(p=>p.club===name).sort(scorerSort), tot=ps.reduce((a,p)=>a+p.buts,0);
+  if(ps[0]&&tot){ const sh=ps[0].buts/tot; I.push(`${pName(ps[0].name)} marque ${fmtPct(sh)} des buts de l'équipe${sh>=.3?" : attaque très dépendante":""}`); }
+  if(ps[0]&&ps[0].sh&&ps[0].tirs>ps[0].buts) I.push(`Ses tirs manqués : ${Math.min(ps[0].ta,ps[0].tirs-ps[0].buts)} arrêté${ps[0].ta>1?"s":""}, ${Math.max(0,ps[0].tirs-ps[0].buts-ps[0].ta)} hors cadre`);
+  const b7=ps.filter(p=>p.b7>0).sort((a,b)=>b.b7-a.b7)[0]; if(b7) I.push(`Aux 7 m : ${pName(b7.name)} (${b7.b7} marqué${b7.b7>1?"s":""})`);
+  const k=D.keepers.filter(k=>k.club===name&&k.matchs>0).sort((a,b)=>b.arrets-a.arrets)[0];
+  if(k) I.push(`Le gardien : ${pName(k.name)}, ${fmt1(k.arrets/k.matchs)} arrêts par match`);
+  const last=X.gs.slice(-3).reverse().map(g=>`${resOf(g)==="V"?"victoire":resOf(g)==="N"?"nul":"défaite"} ${g.bp}-${g.bc} contre ${shortClub(g.adv||"?")}`);
+  if(last.length) I.push(`Derniers matchs : ${last.join(", ")}`);
+  const ul=(cls,t,a)=>a.length?`<h3 class="${cls}">${t}</h3><ul>${a.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:"";
+  return `<div class="fiche"><div class="fiche-h">${logoHTML(name,32)}<b>${esc(name)}</b></div>${ul("good","Points forts",F)}${ul("bad","Points faibles",W)}${ul("info","À savoir",I)}
+    ${!F.length&&!W.length?`<p class="note" style="margin:6px 0 0">Pas de point saillant : équipe dans la moyenne de la poule sur toutes les statistiques.</p>`:""}</div>`;
+}
+function fichesHTML(m){
+  const mine=m.home===MY_TEAM||m.away===MY_TEAM;
+  if(mine){ const adv=m.home===MY_TEAM?m.away:m.home; return `<h2>Fiche adversaire</h2>${ficheHTML(adv,adv===m.home?"dom":"ext")}`; }
+  return `<h2>Fiches des équipes</h2>${ficheHTML(m.home,"dom")}${ficheHTML(m.away,"ext")}`;
+}
+
+/* ============ RECHERCHE ============ */
+function openSearch(){
+  if(!D) return;
+  openSheet(`<div class="qbar"><input id="q" type="search" placeholder="Joueur ou club" autocomplete="off" enterkeyhint="search"><button data-close>Fermer</button></div><div id="qres" class="list"></div>`,true);
+  setTimeout(()=>{const q=document.getElementById("q"); if(q) q.focus();},250);
+}
+function searchResults(v){
+  const q=norm(v); if(q.length<2) return "";
+  const ws=q.split(/\s+/), hit=t=>ws.every(w=>norm(t).includes(w));
+  const cs=D.clubs.filter(c=>hit(c.name)).slice(0,6), ps=D.players.filter(p=>hit(p.name)).sort(scorerSort).slice(0,15);
+  const ks=D.keepers.filter(k=>k.matchs>0&&hit(k.name)&&!ps.some(p=>p.club===k.club&&norm(p.name)===norm(k.name))).slice(0,6);
+  if(!cs.length&&!ps.length&&!ks.length) return `<div class="empty">Aucun résultat.</div>`;
+  return cs.map(c=>{const st=D.standings.find(x=>x.club===c.name);return `<button class="row" data-go="club/${slug(c.name)}">${logoHTML(c.name,32)}<span class="who"><span class="n">${esc(c.name)}</span><span class="c">Club${st?`, ${st.rank}e, ${st.pts} pts`:""}</span></span><span class="go">›</span></button>`;}).join("")
+    +ps.map(p=>`<button class="row" data-player="${D.players.indexOf(p)}"><span class="avatar">${esc(initials(p.name))}</span><span class="who"><span class="n">${nameHTML(p.name)}</span><span class="c">${esc(shortClub(p.club))}, ${p.buts} but${p.buts>1?"s":""}</span></span><span class="go">›</span></button>`).join("")
+    +ks.map(k=>`<button class="row" data-go="club/${slug(k.club)}"><span class="avatar">${esc(initials(k.name))}</span><span class="who"><span class="n">${nameHTML(k.name)}</span><span class="c">${esc(shortClub(k.club))}, ${k.arrets} arrêts</span></span><span class="go">›</span></button>`).join("");
+}
+document.addEventListener("input",e=>{ if(e.target&&e.target.id==="q"){ const r=document.getElementById("qres"); if(r) r.innerHTML=searchResults(e.target.value); } });
+
 /* ============ FICHE JOUEUR ============ */
 const sheet=document.getElementById("sheet"),bg=document.getElementById("sheetBg");
-function openSheet(h){sheet.innerHTML=`<div class="grip"></div>`+h;sheet.classList.add("open");bg.classList.add("open");}
+function openSheet(h,top){sheet.classList.toggle("full",!!top);sheet.innerHTML=`<div class="grip"></div>`+h;sheet.classList.add("open");bg.classList.add("open");}
 function closeSheet(){sheet.classList.remove("open");bg.classList.remove("open");}
 bg.onclick=closeSheet;
 function playerSheet(p){
@@ -966,18 +1118,20 @@ function playerSheet(p){
     <div class="stat"><div class="num">${fmtPct(pct(p.buts,mates.reduce((s,x)=>s+x.buts,0)))}</div><div class="l">Part des buts de l'équipe</div></div>
     ${D.hasM?`<div class="stat"><div class="num">${p.b7}</div><div class="l">Buts sur 7 m</div></div>`:""}${p.red?`<div class="stat"><div class="num">${p.red}</div><div class="l">Carton${p.red>1?"s":""} rouge${p.red>1?"s":""}</div></div>`:""}
     ${p.m?`<div class="stat"><div class="num">${p.m}</div><div class="l">Matchs joués</div></div><div class="stat"><div class="num">${fmt1(p.buts/p.m)}</div><div class="l">Buts par match</div></div>`:""}
-  </div>${evoPlayerHTML(p)}<p class="note">Stats individuelles hors J1 (feuille de match non détaillée).</p>`);
+  </div>${shotsHTML(p)}${evoPlayerHTML(p)}<p class="note">Stats individuelles hors J1 (feuille de match non détaillée).</p>`);
 }
 
 /* ============ ÉVÉNEMENTS ============ */
 document.addEventListener("click",e=>{
   const t=e.target;
+  if(t.closest("[data-search]")){openSearch();return;}
+  if(t.closest("[data-close]")){closeSheet();return;}
   if(t.closest("[data-refresh]")){load(true);return;}
   if(t.closest("[data-back]")){ if(depth>0){depth--;history.back();} else location.hash="#/"; return; }
   const s=t.closest("[data-seg]"); if(s){ui[s.dataset.seg]=s.dataset.v;render();return;}
   const p=t.closest("[data-player]"); if(p){playerSheet(D.players[+p.dataset.player]);return;}
-  const g=t.closest("[data-go]"); if(g){ if(g.dataset.go.startsWith("journees")) ui.jour="";
-    if(g.hasAttribute("data-rep")||g.hasAttribute("data-tab")){ if(g.hasAttribute("data-tab")) depth=0; location.replace("#/"+g.dataset.go); } else go(g.dataset.go); return;}
+  const g=t.closest("[data-go]"); if(g){ closeSheet(); if(g.dataset.go.startsWith("club/")) ui.clubTab="resume"; if(g.dataset.go.startsWith("journees")) ui.jour="";
+    if(g.hasAttribute("data-rep")||g.hasAttribute("data-tab")){ if(g.hasAttribute("data-tab")){depth=0;navStack.length=0;} location.replace("#/"+g.dataset.go); } else go(g.dataset.go); return;}
 });
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSheet();});
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&D&&Date.now()-D.at>5*60*1000)load(false);});
