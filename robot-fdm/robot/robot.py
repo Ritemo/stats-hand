@@ -9,7 +9,7 @@ Variables d'environnement :
 """
 import os, sys, re, json, html, time, datetime, unicodedata, difflib
 import requests
-from fdm import parse_fdm, controles, parse_deroule
+from fdm import parse_fdm, controles, parse_deroule, parse_events, analyse_events
 
 UA = {"User-Agent": "Mozilla/5.0 (stats PRHB, import hebdomadaire)"}
 ROW_P, ROW_P_END = 7, 26        # joueurs
@@ -19,7 +19,8 @@ ROW_HEAD = 5                    # en-têtes « J1 vs ... »
 PLACEHOLDER = "non detaille"
 LIC_TAB, LOG_TAB, CTRL_TAB, MATCH_TAB = "_Licences", "_Robot_Journal", "_Import_Controle", "_Matchs"
 MATCH_HEAD = ["J", "Domicile", "Extérieur", "Date", "Salle", "Adresse", "Lat", "Lng", "Equipement",
-              "MT dom", "MT ext", "Deroule", "Buts 7m", "Rouges", "FDM", "Mise a jour"]
+              "MT dom", "MT ext", "Deroule", "Buts 7m", "Rouges", "FDM", "Mise a jour", "Exclusions", "Tirs", "V"]
+MATCH_V = "2"   # version du contenu de _Matchs : une ligne d'une version antérieure est relue
 
 
 def norm(s):
@@ -433,7 +434,7 @@ def maj_matchs(book, cfg, matchs, pdf_cache, now, journal):
         joue = str(m["sd"] or "").strip() != "" and str(m["se"] or "").strip() != ""
         if joue:
             if m.get("mtd") not in (None, ""): d["MT dom"], d["MT ext"] = m["mtd"], m["mte"]
-            if m.get("code") and (not d.get("Deroule") or d.get("FDM") != m["code"]):
+            if m.get("code") and (not d.get("Deroule") or d.get("FDM") != m["code"] or (d.get("Deroule") != "ND" and d.get("V") != MATCH_V)):
                 data = pdf_cache.get(m["code"]) or fetch(fdm_url(m["code"]), binary=True)
                 if data:
                     try:
@@ -445,6 +446,11 @@ def maj_matchs(book, cfg, matchs, pdf_cache, now, journal):
                             cote = ("D", "E")
                             d["Buts 7m"] = "|".join(f"{cote[i]}:{p['nom']}={p['7m']}" for i, t in enumerate(f["equipes"]) if not feuille_suspecte(t) for p in t["joueurs"] if p["7m"])
                             d["Rouges"] = "|".join(f"{cote[i]}:{p['nom']}" for i, t in enumerate(f["equipes"]) for p in t["joueurs"] if p["dis"])
+                            excl, tirs = analyse_events(f, parse_events(data))
+                            d["Exclusions"] = " ".join(f"{cote[sd]}:{t}" for t, sd in excl)
+                            d["Tirs"] = "|".join(f"{cote[sd]}:{nom}={v[0]}/{v[1]}" for (sd, nom), v in tirs.items()
+                                                 if not feuille_suspecte(f["equipes"][sd]))
+                            d["V"] = MATCH_V
                         d["FDM"] = m["code"]; d["Mise a jour"] = now; n_der += 1
                     except Exception as e:
                         journal.append([now, m["j"], f"J{m['j']} {m['dom']} - {m['ext']}", "ERREUR", f"déroulé illisible : {e}"])

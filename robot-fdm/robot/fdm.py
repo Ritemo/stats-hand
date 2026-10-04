@@ -116,3 +116,51 @@ def parse_deroule(data):
         if (h, a) != last and h >= last[0] and a >= last[1]:
             out.append((t, h, a)); last = (h, a)
     return out
+
+
+ACTIONS = ["But 7m", "But", "Tir non-cadré", "Arrêt", "2MN", "Avertissement", "Disqualification", "Carton rouge",
+           "Carton bleu", "Temps mort"]
+
+
+def parse_events(data):
+    """Toutes les actions du déroulé : [(secondes, score_dom, score_ext, action, nom), ...] dans l'ordre du match."""
+    pdf = pdfplumber.open(io.BytesIO(data))
+    sec = lambda m: int(m.group(1) or 0) * 3600 + int(m.group(2)) * 60 + int(m.group(3))
+    ev = []
+    for pno, page in enumerate(pdf.pages):
+        words = page.extract_words()
+        if not any(w["text"] == "Déroulé" for w in words):
+            continue
+        for ln in _lines(words):
+            idx = [i for i, w in enumerate(ln) if TIME.match(w["text"])]
+            for k, i in enumerate(idx):
+                seg = ln[i:(idx[k + 1] if k + 1 < len(idx) else len(ln))]
+                toks = [w["text"] for w in seg]
+                if len(toks) < 4 or not (toks[1].isdigit() and toks[2] == "-" and toks[3].isdigit()):
+                    continue
+                txt = " ".join(toks[4:])
+                act = next((a for a in ACTIONS if txt.startswith(a)), None)
+                if not act: continue
+                nom = clean_name(txt[len(act):])
+                ev.append((sec(TIME.match(toks[0])), int(toks[1]), int(toks[3]), act, nom, pno, round(seg[0]["x0"] / 200), seg[0]["top"]))
+    ev.sort(key=lambda e: (e[0], e[5], e[6], e[7]))
+    return [e[:5] for e in ev]
+
+
+def analyse_events(fdm, events):
+    """Exclusions par équipe et détail des tirs manqués par joueur (arrêtés par le gardien / hors cadre)."""
+    cote = {}
+    for i, t in enumerate(fdm["equipes"]):
+        for p in t["joueurs"]:
+            cote.setdefault(p["nom"], set()).add(i)
+    side = lambda nom: next(iter(cote[nom])) if nom in cote and len(cote[nom]) == 1 else None
+    excl, tirs = [], {}
+    for k, (t, h, a, act, nom) in enumerate(events):
+        s = side(nom)
+        if act == "2MN" and s is not None:
+            excl.append((t, s))
+        elif act == "Tir non-cadré" and s is not None:
+            nxt = events[k + 1] if k + 1 < len(events) else None
+            arrete = bool(nxt and nxt[3] == "Arrêt" and nxt[0] - t <= 15 and side(nxt[4]) != s)   # la table saisit l'arrêt juste après le tir
+            d = tirs.setdefault((s, nom), [0, 0]); d[0 if arrete else 1] += 1
+    return excl, tirs
