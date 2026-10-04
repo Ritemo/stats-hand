@@ -118,7 +118,7 @@ def parse_deroule(data):
     return out
 
 
-ACTIONS = ["But 7m", "But", "Tir non-cadré", "Arrêt", "2MN", "Avertissement", "Disqualification", "Carton rouge",
+ACTIONS = ["But 7m", "But", "Tir non-cadré", "Tir", "Arrêt", "2MN", "Avertissement", "Disqualification", "Carton rouge",
            "Carton bleu", "Temps mort"]
 
 
@@ -138,7 +138,7 @@ def parse_events(data):
                 toks = [w["text"] for w in seg]
                 if len(toks) < 4 or not (toks[1].isdigit() and toks[2] == "-" and toks[3].isdigit()):
                     continue
-                txt = " ".join(toks[4:])
+                txt = re.sub(r"^2 MN\b", "2MN", " ".join(toks[4:]))
                 act = next((a for a in ACTIONS if txt.startswith(a)), None)
                 if not act: continue
                 nom = clean_name(txt[len(act):])
@@ -159,7 +159,7 @@ def analyse_events(fdm, events):
         s = side(nom)
         if act == "2MN" and s is not None:
             excl.append((t, s))
-        elif act == "Tir non-cadré" and s is not None:
+        elif act in ("Tir non-cadré", "Tir") and s is not None:      # « Tir » : libellé des feuilles depuis octobre 2026
             nxt = events[k + 1] if k + 1 < len(events) else None
             arrete = bool(nxt and nxt[3] == "Arrêt" and nxt[0] - t <= 15 and side(nxt[4]) != s)   # la table saisit l'arrêt juste après le tir
             d = tirs.setdefault((s, nom), [0, 0]); d[0 if arrete else 1] += 1

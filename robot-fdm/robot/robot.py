@@ -20,7 +20,7 @@ PLACEHOLDER = "non detaille"
 LIC_TAB, LOG_TAB, CTRL_TAB, MATCH_TAB = "_Licences", "_Robot_Journal", "_Import_Controle", "_Matchs"
 MATCH_HEAD = ["J", "Domicile", "Extérieur", "Date", "Salle", "Adresse", "Lat", "Lng", "Equipement",
               "MT dom", "MT ext", "Deroule", "Buts 7m", "Rouges", "FDM", "Mise a jour", "Exclusions", "Tirs", "V"]
-MATCH_V = "2"   # version du contenu de _Matchs : une ligne d'une version antérieure est relue
+MATCH_V = "3"   # version du contenu de _Matchs : une ligne d'une version antérieure est relue
 
 
 def norm(s):
@@ -327,7 +327,8 @@ def main(cfg_path):
                 nom_s = max(team["joueurs"], key=lambda p: p["buts"])["nom"]
                 journal.append([now, j, label, "FEUILLE SUSPECTE", f"{tab} : les {f['score'][side]} buts sont tous attribués à {nom_s} ; "
                                 + ("équipe importée en non détaillé (score seul)" if ecrit else "l'équipe serait importée en non détaillé")])
-            groupes = {"G": [p for p in team["joueurs"] if p["arrets"] is not None],
+            fictif = max(team["joueurs"], key=lambda p: p["buts"]) if susp else None      # feuille suspecte : ses arrêts ne sont pas fiables non plus
+            groupes = {"G": [p for p in team["joueurs"] if p["arrets"] is not None and p is not fictif],
                        "J": [] if susp else [p for p in team["joueurs"] if p["arrets"] is None or p["tirs"] or p["buts"]]}
             for k, ps in groupes.items():
                 aff = cl.assign(k, ps)
