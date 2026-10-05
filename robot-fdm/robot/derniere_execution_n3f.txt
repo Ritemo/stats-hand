@@ -1,1 +1,13 @@
-05/10/2026 07:18 |  |  | RIEN À FAIRE | mode reel, aucune nouvelle feuille
+05/10/2026 16:37 | 1 | J1 ALC LONGVIC (B) 28-23 ASCAP PAYS DE MONTBELIARD HB | COMPLÉTÉ | ALC Longvic (B) : totaux d'équipe ajoutés (45 tirs, 16 arrêts)
+05/10/2026 16:37 | 1 | J1 ALC LONGVIC (B) 28-23 ASCAP PAYS DE MONTBELIARD HB | COMPLÉTÉ | ASCAP Pays de Montbeliard HB : totaux d'équipe ajoutés (48 tirs, 10 arrêts, 2 min : ESTAVOYER Floriane)
+05/10/2026 16:37 | 1 | J1 HBC QUINGEY VAL DE LOUE 24-26 AS AUXOIS | COMPLÉTÉ | HBC Quingey Val de Loue : totaux d'équipe ajoutés (45 tirs, 20 arrêts)
+05/10/2026 16:37 | 1 | J1 HBC QUINGEY VAL DE LOUE 24-26 AS AUXOIS | COMPLÉTÉ | AS Auxois : totaux d'équipe ajoutés (54 tirs, 18 arrêts)
+05/10/2026 16:37 | 1 | J1 HBC LURE VILLERS 30-25 US LEDONIENNE | COMPLÉTÉ | HBC Lure Villers : totaux d'équipe ajoutés (53 tirs, 13 arrêts)
+05/10/2026 16:37 | 1 | J1 HBC LURE VILLERS 30-25 US LEDONIENNE | COMPLÉTÉ | US Ledonienne : totaux d'équipe ajoutés (44 tirs, 13 arrêts)
+05/10/2026 16:37 | 1 | J1 PAYS RIOLAIS HB 29-30 ENT. SAONE MAMIROLLE HB (B) | COMPLÉTÉ | Pays Riolais HB : totaux d'équipe ajoutés (51 tirs, 13 arrêts)
+05/10/2026 16:37 | 1 | J1 PAYS RIOLAIS HB 29-30 ENT. SAONE MAMIROLLE HB (B) | COMPLÉTÉ | Ent Saone Mamirolle HB (B) : totaux d'équipe ajoutés (56 tirs, 15 arrêts)
+05/10/2026 16:37 | 1 | J1 CHEVIGNY ST SAUVEUR HB (B) 27-24 HB ARBOIS POLIGNY | COMPLÉTÉ | Chevigny St Sauveur HB (B) : totaux d'équipe ajoutés (46 tirs, 9 arrêts)
+05/10/2026 16:37 | 1 | J1 CHEVIGNY ST SAUVEUR HB (B) 27-24 HB ARBOIS POLIGNY | COMPLÉTÉ | HB Arbois Poligny : totaux d'équipe ajoutés (41 tirs, 13 arrêts)
+05/10/2026 16:37 | 1 | J1 JA MAICHE 16-32 CA PONTARLIER HB | COMPLÉTÉ | JA Maiche : totaux d'équipe ajoutés (46 tirs, 11 arrêts)
+05/10/2026 16:37 | 1 | J1 JA MAICHE 16-32 CA PONTARLIER HB | COMPLÉTÉ | CA Pontarlier HB : totaux d'équipe ajoutés (48 tirs, 19 arrêts)
+05/10/2026 16:37 |  |  | ERREUR | onglet _Matchs : 429 Client Error: Too Many Requests for url: https://fdm.fdme.ffhandball.fr/W/A/G/R/WAGRGIB.pdf
