@@ -74,14 +74,18 @@ def col_letter(n):
 
 # ---------------------------------------------------------------- site FFHandball
 def fetch(url, binary=False):
-    for essai in range(3):
+    for essai in range(5):
         try:
             r = requests.get(url, headers=UA, timeout=30)
             if r.status_code == 404: return None
+            if r.status_code in (429, 503) and essai < 4:          # serveur saturé : on attend avant de réessayer
+                ra = r.headers.get("Retry-After", "")
+                time.sleep(min(int(ra), 90) if ra.isdigit() else 20 * (essai + 1)); continue
             r.raise_for_status()
+            if binary: time.sleep(1.5)                              # pause entre deux feuilles de match
             return r.content if binary else r.text
         except requests.RequestException:
-            if essai == 2: raise
+            if essai >= 2: raise
             time.sleep(5)
 
 
@@ -503,7 +507,7 @@ def maj_matchs(book, cfg, matchs, pdf_cache, now, journal):
         d = dict(zip(head, r + [""] * (len(head) - len(r))))
         rows[(str(d["J"]), d["Domicile"], d["Extérieur"])] = d
     salles = {d["Equipement"]: d for d in rows.values() if d.get("Equipement") and d.get("Salle")}
-    n_sal = n_der = 0
+    n_sal = n_der = n_att = 0
     out = []
     for m in matchs:
         key = (str(m["j"]), m["dom"], m["ext"])
@@ -524,7 +528,11 @@ def maj_matchs(book, cfg, matchs, pdf_cache, now, journal):
         if joue:
             if m.get("mtd") not in (None, ""): d["MT dom"], d["MT ext"] = m["mtd"], m["mte"]
             if m.get("code") and (not d.get("Deroule") or d.get("FDM") != m["code"] or d.get("V") != MATCH_V):
-                data = pdf_cache.get(m["code"]) or fetch(fdm_url(m["code"]), binary=True)
+                data = pdf_cache.get(m["code"])
+                if not data and not n_att:
+                    try: data = fetch(fdm_url(m["code"]), binary=True)
+                    except requests.RequestException: n_att = 1      # serveur des feuilles saturé : on s'arrête là pour ce passage
+                elif not data: n_att += 1
                 if data:
                     try:
                         f = parse_fdm(data); ev = parse_deroule(data)
@@ -554,6 +562,8 @@ def maj_matchs(book, cfg, matchs, pdf_cache, now, journal):
     book.replace(MATCH_TAB, [MATCH_HEAD] + out, raw=True)
     if n_der or n_sal:
         journal.append([now, "", "", "MATCHS", f"{MATCH_TAB} : {n_der} déroulé(s) ajouté(s), {n_sal} salle(s) relevée(s)"])
+    if n_att:
+        journal.append([now, "", "", "EN ATTENTE", f"{MATCH_TAB} : {n_att} feuille(s) à relire au prochain passage (serveur des feuilles de match saturé)"])
 
 
 BOOK_FACTORY = GBook
