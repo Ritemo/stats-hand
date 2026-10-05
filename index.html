@@ -390,7 +390,7 @@ function build(raw){
   const players=table(raw.joueurs).map(o=>({club:o["club"],name:col(o,"joueur"),buts:toNum(col(o,"total buts")),tirs:toNum(col(o,"total tirs")),excl:toNum(col(o,"total excl"))}))
     .filter(p=>p.club&&p.name&&p.name!=="0"&&norm(p.name)!==PLACEHOLDER);
   const keepers=table(raw.gardiens).map(o=>({club:o["club"],name:col(o,"gardien"),arrets:toNum(col(o,"total arrets")),matchs:toNum(col(o,"nb matchs"))}))
-    .filter(g=>g.club&&g.name&&g.name!=="0");
+    .filter(g=>g.club&&g.name&&g.name!=="0"&&norm(g.name)!==PLACEHOLDER);   // ligne « Non détaillé » : arrêts d'équipe d'une journée sans détail
   const clubs=table(raw.clubs).filter(o=>o["club"]&&col(o,"buts marques")!=="").map(o=>{
     const name=o["club"],ps=players.filter(p=>p.club===name);
     const b=ps.reduce((s,p)=>s+p.buts,0),t=ps.reduce((s,p)=>s+p.tirs,0);
