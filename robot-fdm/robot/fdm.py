@@ -136,6 +136,8 @@ def parse_events(data):
             for k, i in enumerate(idx):
                 seg = ln[i:(idx[k + 1] if k + 1 < len(idx) else len(ln))]
                 toks = [w["text"] for w in seg]
+                for k in range(4, len(toks) - 1):                 # en-tête « Temps Score Action » de la colonne voisine, sur la même ligne
+                    if toks[k] == "Temps" and toks[k + 1] == "Score": toks = toks[:k]; break
                 if len(toks) < 4 or not (toks[1].isdigit() and toks[2] == "-" and toks[3].isdigit()):
                     continue
                 txt = re.sub(r"^2 MN\b", "2MN", " ".join(toks[4:]))
@@ -164,3 +166,21 @@ def analyse_events(fdm, events):
             arrete = bool(nxt and nxt[3] == "Arrêt" and nxt[0] - t <= 15 and side(nxt[4]) != s)   # la table saisit l'arrêt juste après le tir
             d = tirs.setdefault((s, nom), [0, 0]); d[0 if arrete else 1] += 1
     return excl, tirs
+
+
+EQUIPE = {"Recevant": 0, "Visiteur": 1}
+
+
+def stats_equipes(events):
+    """Feuille sans détail individuel : le déroulé désigne l'équipe et non le joueur (« But Recevant »,
+    « Arrêt Visiteur »). Renvoie les totaux [recevant, visiteur] : buts, tirs, arrets, 7m."""
+    out = [{"buts": 0, "tirs": 0, "arrets": 0, "7m": 0} for _ in (0, 1)]
+    for t, h, a, act, nom in events:
+        s = EQUIPE.get(nom)
+        if s is None: continue
+        if act in ("But", "But 7m"):
+            out[s]["buts"] += 1; out[s]["tirs"] += 1
+            if act == "But 7m": out[s]["7m"] += 1
+        elif act in ("Tir non-cadré", "Tir"): out[s]["tirs"] += 1
+        elif act == "Arrêt": out[s]["arrets"] += 1
+    return out

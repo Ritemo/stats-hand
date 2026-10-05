@@ -9,7 +9,7 @@ Variables d'environnement :
 """
 import os, sys, re, json, html, time, datetime, unicodedata, difflib
 import requests
-from fdm import parse_fdm, controles, parse_deroule, parse_events, analyse_events
+from fdm import parse_fdm, controles, parse_deroule, parse_events, analyse_events, stats_equipes
 
 UA = {"User-Agent": "Mozilla/5.0 (stats PRHB, import hebdomadaire)"}
 ROW_P, ROW_P_END = 7, 26        # joueurs
@@ -20,7 +20,7 @@ PLACEHOLDER = "non detaille"
 LIC_TAB, LOG_TAB, CTRL_TAB, MATCH_TAB = "_Licences", "_Robot_Journal", "_Import_Controle", "_Matchs"
 MATCH_HEAD = ["J", "Domicile", "Extérieur", "Date", "Salle", "Adresse", "Lat", "Lng", "Equipement",
               "MT dom", "MT ext", "Deroule", "Buts 7m", "Rouges", "FDM", "Mise a jour", "Exclusions", "Tirs", "V"]
-MATCH_V = "3"   # version du contenu de _Matchs : une ligne d'une version antérieure est relue
+MATCH_V = "4"   # version du contenu de _Matchs : une ligne d'une version antérieure est relue
 
 
 def norm(s):
@@ -174,6 +174,64 @@ class Club:
         cells += [self.g[r - 1][c] for r in range(ROW_G, ROW_G_END + 1)] + [self.g[ROW_SCORE_ADV - 1][c]]
         return any(str(x).strip() != "" for x in cells)
 
+    def nd_row(self, j):
+        """Ligne « Non détaillé » de la journée : le score de l'équipe y est saisi sans détail par joueur (None sinon)."""
+        c = self.block(j)
+        rows = [r for r in range(ROW_P, ROW_P_END + 1) if str(self.g[r - 1][c]).strip() != ""]
+        if len(rows) != 1: return None
+        r = rows[0]
+        return r if (not self.name(r) or norm(self.name(r)) == PLACEHOLDER) else None
+
+    def nd_gardien(self):
+        """Ligne gardien « Non détaillé » (ou la première ligne gardien libre)."""
+        rows = [r for r in range(ROW_G, ROW_G_END + 1) if norm(self.name(r)) == PLACEHOLDER] or \
+               [r for r in range(ROW_G, ROW_G_END + 1) if not self.name(r)]
+        return rows[0] if rows else None
+
+    def nd_incomplet(self, j):
+        """Journée « Non détaillé » dont les tirs ou les arrêts d'équipe restent à compléter."""
+        r = self.nd_row(j)
+        if not r: return False
+        c = self.block(j)
+        tirs, buts = str(self.g[r - 1][c - 1]).strip(), str(self.g[r - 1][c]).strip()
+        arr = any(str(self.g[x - 1][c - 1]).strip() != "" for x in range(ROW_G, ROW_G_END + 1))
+        return tirs in ("", buts) or (not arr and self.nd_gardien() is not None)
+
+    def completer_nd(self, j, tot, exclus, individuel):
+        """Complète une journée « Non détaillé » avec les totaux de l'équipe.
+        tot : dict(buts, tirs, arrets) ; exclus : joueurs de la feuille ayant des 2 min ;
+        individuel : les 2 min sont attribués aux joueurs reconnus (sinon tout va sur la ligne « Non détaillé »).
+        Renvoie (cellules à écrire, détail pour le journal)."""
+        r = self.nd_row(j); c = self.block(j)
+        cell = lambda row, col: str(self.g[row - 1][col - 1]).strip()
+        cells, det = [], []
+        if cell(r, c + 1) != str(tot["buts"]): return [], ""
+        if not self.name(r): cells.append((r, 1, "Non détaillé"))
+        if tot["tirs"] > tot["buts"] or tot["arrets"] > 0:              # le déroulé contient bien les tirs et les arrêts
+            if cell(r, c) in ("", cell(r, c + 1)) and tot["tirs"] > tot["buts"]:
+                cells.append((r, c, tot["tirs"])); det.append(f"{tot['tirs']} tirs")
+            if not any(cell(x, c) != "" for x in range(ROW_G, ROW_G_END + 1)):
+                rg = self.nd_gardien()
+                if rg:
+                    if not self.name(rg): cells.append((rg, 1, "Non détaillé"))
+                    cells.append((rg, c, tot["arrets"])); det.append(f"{tot['arrets']} arrêts")
+                else: det.append("arrêts non saisis (plus de ligne gardien libre)")
+        num = lambda v: int(v) if str(v).strip().isdigit() else 0
+        deja = sum(num(self.g[x - 1][c + 1]) for x in range(ROW_P, ROW_P_END + 1))
+        cible = sum(p["excl"] for p in exclus)
+        if deja < cible:
+            noms = []
+            if individuel:
+                aff = self.assign("J", exclus)
+                for i, p in enumerate(exclus):
+                    row, how, sc = aff[i]
+                    if how in ("licence", "exact", "proche") and cell(row, c + 2) == "" and deja + p["excl"] <= cible:
+                        cells.append((row, c + 2, p["excl"])); deja += p["excl"]; noms.append(self.name(row))
+            if deja < cible and cell(r, c + 2) == "":
+                cells.append((r, c + 2, cible - deja)); noms.append(f"{cible - deja} sur la ligne « Non détaillé »")
+            if noms: det.append("2 min : " + ", ".join(noms))
+        return ([] if not det else cells), ", ".join(det)
+
     def assign(self, kind, players):
         """Affecte chaque joueur de la feuille à une ligne : exacts d'abord, puis du plus ressemblant au moins ressemblant."""
         lo, hi = (ROW_P, ROW_P_END) if kind == "J" else (ROW_G, ROW_G_END)
@@ -270,13 +328,41 @@ def main(cfg_path):
     ctrl_head = ["J", "Match", "Onglet", "Type", "Nom sur la feuille de match", "Ligne", "Nom dans le fichier",
                  "Correspondance", "Tirs / Arrêts", "Buts", "2 min", "Déjà saisi (Tirs / Buts / 2 min)", "Écart"]
 
+    def completer(m, f, data, tabs, label):
+        """Journées « Non détaillé » : ajoute les totaux d'équipe (tirs, arrêts) et les 2 min lus sur la feuille."""
+        tot_eq = None
+        for side, tab in enumerate(tabs):
+            cl = clubs[tab]; j = m["j"]; team = f["equipes"][side]
+            if not cl.nd_incomplet(j): continue
+            if sum(p["buts"] for p in team["joueurs"]) == 0:              # feuille non détaillée : totaux lus dans le déroulé
+                if tot_eq is None:
+                    try: tot_eq = stats_equipes(parse_events(data))
+                    except Exception: tot_eq = [{"buts": -1, "tirs": 0, "arrets": 0}] * 2
+                tot, indiv = tot_eq[side], True
+            elif feuille_suspecte(team):                                    # tout est sur un joueur : seuls les totaux sont justes
+                tot = {"buts": f["score"][side], "tirs": sum(p["tirs"] for p in team["joueurs"]),
+                       "arrets": sum(p["arrets"] or 0 for p in team["joueurs"])}
+                indiv = False
+            else: continue
+            if tot["buts"] != f["score"][side]:
+                if mode != "reel": journal.append([now, j, label, "NON DÉTAILLÉE", f"{tab} : déroulé inexploitable, journée laissée en score seul"])
+                continue
+            cells, det = cl.completer_nd(j, tot, [p for p in team["joueurs"] if p["excl"]], indiv)
+            if not cells: continue
+            if not ecrit:
+                journal.append([now, j, label, "NON DÉTAILLÉE", f"{tab} : serait complété ({det})"]); continue
+            book.write(tab, cells)
+            for rr, cc, v in cells: cl.g[rr - 1][cc - 1] = v
+            journal.append([now, j, label, "COMPLÉTÉ", f"{tab} : totaux d'équipe ajoutés ({det})"])
+
     for m in joues:
         tabs = [cfg["equipes"].get(m["dom"]), cfg["equipes"].get(m["ext"])]
         label = f"J{m['j']} {m['dom']} {m['sd']}-{m['se']} {m['ext']}"
         if None in tabs:
             journal.append([now, m["j"], label, "ERREUR", "équipe absente de la configuration"]); continue
         todo = [t for t in tabs if not clubs[t].filled(m["j"])]
-        if mode == "reel" and not todo: continue
+        nd_todo = [t for t in tabs if clubs[t].nd_incomplet(m["j"])]
+        if mode == "reel" and not todo and not nd_todo: continue
         if not m["code"]:
             journal.append([now, m["j"], label, "EN ATTENTE", "pas encore de feuille de match"]); continue
         data = pdf_cache.get(m["code"]) or fetch(fdm_url(m["code"]), binary=True)
@@ -313,6 +399,7 @@ def main(cfg_path):
                 book.write(tab, cells)
                 for rr, cc, v in cells: cl.g[rr - 1][cc - 1] = v
                 journal.append([now, j, label, "IMPORTÉ", f"{tab} : score seul (feuille de match non détaillée)"])
+            completer(m, f, data, tabs, label)
             continue
         for side, (tab, team) in enumerate(zip(tabs, f["equipes"])):
             cl = clubs[tab]; j = m["j"]; c0 = cl.block(j)
@@ -382,6 +469,7 @@ def main(cfg_path):
                   (" (score lu sur la feuille, site pas encore à jour)" if m.get("anticipe") else "") + \
                   (f", ajoutés : {', '.join(nouveaux)}" if nouveaux else "") + (f", renommés : {', '.join(renommes)}" if renommes else "")
             journal.append([now, j, label, "IMPORTÉ" if not deja else "CORRIGÉ", det])
+        completer(m, f, data, tabs, label)
 
     if ecrit:
         try:
@@ -435,13 +523,19 @@ def maj_matchs(book, cfg, matchs, pdf_cache, now, journal):
         joue = str(m["sd"] or "").strip() != "" and str(m["se"] or "").strip() != ""
         if joue:
             if m.get("mtd") not in (None, ""): d["MT dom"], d["MT ext"] = m["mtd"], m["mte"]
-            if m.get("code") and (not d.get("Deroule") or d.get("FDM") != m["code"] or (d.get("Deroule") != "ND" and d.get("V") != MATCH_V)):
+            if m.get("code") and (not d.get("Deroule") or d.get("FDM") != m["code"] or d.get("V") != MATCH_V):
                 data = pdf_cache.get(m["code"]) or fetch(fdm_url(m["code"]), binary=True)
                 if data:
                     try:
                         f = parse_fdm(data); ev = parse_deroule(data)
                         if sum(p["buts"] for t in f["equipes"] for p in t["joueurs"]) == 0 and sum(f["score"] or (0, 0)) > 0:
-                            d["Deroule"] = "ND"                     # feuille non détaillée
+                            evs = parse_events(data); tq = stats_equipes(evs)      # feuille non détaillée : le déroulé est par équipe
+                            if ev and (tq[0]["buts"], tq[1]["buts"]) == tuple(f["score"]):
+                                d["Deroule"] = " ".join(f"{t}:{h}-{a}" for t, h, a in ev)
+                                d["Exclusions"] = " ".join(f"{('D', 'E')[sd]}:{t}" for t, sd in analyse_events(f, evs)[0])
+                            else:
+                                d["Deroule"] = "ND"
+                            d["V"] = MATCH_V
                         else:
                             d["Deroule"] = " ".join(f"{t}:{h}-{a}" for t, h, a in ev) or "ND"
                             cote = ("D", "E")
