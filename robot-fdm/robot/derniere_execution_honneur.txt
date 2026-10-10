@@ -1,7 +1,9 @@
-10/10/2026 22:34 | 5 | J5 DOUBS CENTRAL HB 24-31 PAYS RIOLAIS HB | IMPORTÉ | Doubs Central HB : 11 lignes (score lu sur la feuille, site pas encore à jour), ajoutés : FAIVRE-RAMPANT Mathis, ROBARDEY Benoit
-10/10/2026 22:34 | 5 | J5 DOUBS CENTRAL HB 24-31 PAYS RIOLAIS HB | IMPORTÉ | Pays Riolais HB : 10 lignes (score lu sur la feuille, site pas encore à jour)
-10/10/2026 22:34 | 5 | J5 CA PONTARLIER HB (B) 26-25 HBC LURE VILLERS (C) | IMPORTÉ | CA Pontarlier HB (B) : 10 lignes, ajoutés : VOUILLOT Jeremy, YUCA Sener
-10/10/2026 22:34 | 5 | J5 CA PONTARLIER HB (B) 26-25 HBC LURE VILLERS (C) | IMPORTÉ | HBC Lure Villers (C) : 10 lignes, ajoutés : NAJID Abdelrhani, CHICOT Xavier
-10/10/2026 22:34 | 5 | J5 HBC FRANOIS (B) 36-22 HBC GILLEY | À CONFIRMER | HBC Franois (B) non importé : SEGUIN Vaik : plus de ligne libre, TRIFFAULT Titouan : plus de ligne libre
-10/10/2026 22:34 | 5 | J5 HBC FRANOIS (B) 36-22 HBC GILLEY | IMPORTÉ | HBC Gilley : 12 lignes, ajoutés : FAILUTTI Noah, BEZ Jules
-10/10/2026 22:34 |  |  | MATCHS | _Matchs : 3 déroulé(s) ajouté(s), 0 salle(s) relevée(s)
+10/10/2026 23:59 |  |  | AGRANDIR (essai) | _Data_Journees : 2376 texte(s) de ligne à décaler (ex. "'!R38C" -> "'!R51C")
+10/10/2026 23:59 |  |  | AGRANDIR (essai) | _Data_Joueurs_J : 0 texte(s) de ligne à décaler, 1920 bloc(s) de 20 lignes à passer à 30
+10/10/2026 23:59 |  |  | AGRANDIR (essai) | Classement général : 24 texte(s) de ligne à décaler (ex. "'!G38:BR38" -> "'!G51:BR51")
+10/10/2026 23:59 |  |  | AGRANDIR (essai) | Comparatif Clubs : 24 texte(s) de ligne à décaler (ex. "'!G38:BR38" -> "'!G51:BR51")
+10/10/2026 23:59 |  |  | AGRANDIR (essai) | _Data_Joueurs : 12 blocs de clubs trouvés, +10 lignes chacun
+10/10/2026 23:59 |  |  | AGRANDIR (essai) | _Data_Gardiens : 12 blocs de clubs trouvés, +3 lignes chacun
+10/10/2026 23:59 |  |  | AGRANDIR (essai) | _Data_Joueurs_J : prolongé de la ligne 241 à la ligne 361
+10/10/2026 23:59 |  |  | AGRANDIR (essai) | _Licences : 40 numéro(s) de ligne de gardien à décaler
+10/10/2026 23:59 |  |  | AGRANDIR (essai) | 12 onglets clubs : 30 lignes joueurs et 8 lignes gardiens au lieu de 20 et 5 ; 151 opérations prêtes, rien n'a été modifié

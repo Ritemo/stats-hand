@@ -1,9 +1,7 @@
-10/10/2026 22:35 | 5 | J5 ASCAP PAYS DE MONTBELIARD HB 31-30 HB ARBOIS POLIGNY | IMPORTÉ | ASCAP Pays de Montbeliard HB : 12 lignes (score lu sur la feuille, site pas encore à jour)
-10/10/2026 22:35 | 5 | J5 ASCAP PAYS DE MONTBELIARD HB 31-30 HB ARBOIS POLIGNY | IMPORTÉ | HB Arbois Poligny : 10 lignes (score lu sur la feuille, site pas encore à jour), ajoutés : GAUTHIER Maud
-10/10/2026 22:35 | 5 | J5 US LEDONIENNE 23-31 CA PONTARLIER HB | IMPORTÉ | US Ledonienne : 11 lignes (score lu sur la feuille, site pas encore à jour), ajoutés : DARRE Effie, MALFROY Lou
-10/10/2026 22:35 | 5 | J5 US LEDONIENNE 23-31 CA PONTARLIER HB | IMPORTÉ | CA Pontarlier HB : 12 lignes (score lu sur la feuille, site pas encore à jour), ajoutés : PRUDHAM Margot, CHOPARD FUMEZ Megane
-10/10/2026 22:35 | 5 | J5 ALC LONGVIC (B) 26-23 ENT. SAONE MAMIROLLE HB (B) | IMPORTÉ | ALC Longvic (B) : 12 lignes, ajoutés : PURSAD Leela, PEYRAUD Charlotte
-10/10/2026 22:35 | 5 | J5 ALC LONGVIC (B) 26-23 ENT. SAONE MAMIROLLE HB (B) | IMPORTÉ | Ent Saone Mamirolle HB (B) : 12 lignes
-10/10/2026 22:35 | 5 | J5 HBC LURE VILLERS 28-21 AS AUXOIS | IMPORTÉ | HBC Lure Villers : 12 lignes
-10/10/2026 22:35 | 5 | J5 HBC LURE VILLERS 28-21 AS AUXOIS | IMPORTÉ | AS Auxois : 10 lignes, ajoutés : MEUNIER Elisa
-10/10/2026 22:35 |  |  | MATCHS | _Matchs : 4 déroulé(s) ajouté(s), 0 salle(s) relevée(s)
+10/10/2026 23:59 |  |  | AGRANDIR (essai) | _Data_Journees : 2376 texte(s) de ligne à décaler (ex. "'!R38C" -> "'!R51C")
+10/10/2026 23:59 |  |  | AGRANDIR (essai) | _Data_Joueurs_J : 0 texte(s) de ligne à décaler, 1920 bloc(s) de 20 lignes à passer à 30
+10/10/2026 23:59 |  |  | AGRANDIR (essai) | _Data_Joueurs : 12 blocs de clubs trouvés, +10 lignes chacun
+10/10/2026 23:59 |  |  | AGRANDIR (essai) | _Data_Gardiens : 12 blocs de clubs trouvés, +3 lignes chacun
+10/10/2026 23:59 |  |  | AGRANDIR (essai) | _Data_Joueurs_J : prolongé de la ligne 241 à la ligne 361
+10/10/2026 23:59 |  |  | AGRANDIR (essai) | _Licences : 29 numéro(s) de ligne de gardien à décaler
+10/10/2026 23:59 |  |  | AGRANDIR (essai) | 12 onglets clubs : 30 lignes joueurs et 8 lignes gardiens au lieu de 20 et 5 ; 136 opérations prêtes, rien n'a été modifié
