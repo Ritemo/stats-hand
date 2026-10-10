@@ -1,7 +1,7 @@
-10/10/2026 23:59 |  |  | AGRANDIR (essai) | _Data_Journees : 2376 texte(s) de ligne à décaler (ex. "'!R38C" -> "'!R51C")
-10/10/2026 23:59 |  |  | AGRANDIR (essai) | _Data_Joueurs_J : 0 texte(s) de ligne à décaler, 1920 bloc(s) de 20 lignes à passer à 30
-10/10/2026 23:59 |  |  | AGRANDIR (essai) | _Data_Joueurs : 12 blocs de clubs trouvés, +10 lignes chacun
-10/10/2026 23:59 |  |  | AGRANDIR (essai) | _Data_Gardiens : 12 blocs de clubs trouvés, +3 lignes chacun
-10/10/2026 23:59 |  |  | AGRANDIR (essai) | _Data_Joueurs_J : prolongé de la ligne 241 à la ligne 361
-10/10/2026 23:59 |  |  | AGRANDIR (essai) | _Licences : 29 numéro(s) de ligne de gardien à décaler
-10/10/2026 23:59 |  |  | AGRANDIR (essai) | 12 onglets clubs : 30 lignes joueurs et 8 lignes gardiens au lieu de 20 et 5 ; 136 opérations prêtes, rien n'a été modifié
+11/10/2026 00:01 |  |  | AGRANDIR | _Data_Journees : 2376 texte(s) de ligne à décaler (ex. "'!R38C" -> "'!R51C")
+11/10/2026 00:01 |  |  | AGRANDIR | _Data_Joueurs_J : 0 texte(s) de ligne à décaler, 1920 bloc(s) de 20 lignes à passer à 30
+11/10/2026 00:01 |  |  | AGRANDIR | _Data_Joueurs : 12 blocs de clubs trouvés, +10 lignes chacun
+11/10/2026 00:01 |  |  | AGRANDIR | _Data_Gardiens : 12 blocs de clubs trouvés, +3 lignes chacun
+11/10/2026 00:01 |  |  | AGRANDIR | _Data_Joueurs_J : prolongé de la ligne 241 à la ligne 361
+11/10/2026 00:01 |  |  | AGRANDIR | _Licences : 29 numéro(s) de ligne de gardien à décaler
+11/10/2026 00:01 |  |  | AGRANDI | 12 onglets clubs : 30 lignes joueurs (7 à 36) et 8 lignes gardiens ; tous les chiffres calculés sont identiques à avant
