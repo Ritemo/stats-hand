@@ -12,9 +12,8 @@ import requests
 from fdm import parse_fdm, controles, parse_deroule, parse_events, analyse_events, stats_equipes
 
 UA = {"User-Agent": "Mozilla/5.0 (stats PRHB, import hebdomadaire)"}
-ROW_P, ROW_P_END = 7, 26        # joueurs
-ROW_G, ROW_G_END = 33, 37       # gardiens
-ROW_SCORE_ADV = 38              # buts encaissés saisis à la main
+ROW_P = 7                       # première ligne joueur ; les autres lignes (fin des joueurs, gardiens, score adverse)
+NB_LIGNES = 70                  # sont repérées dans chaque onglet grâce aux libellés de la colonne A (voir Club.layout)
 ROW_HEAD = 5                    # en-têtes « J1 vs ... »
 PLACEHOLDER = "non detaille"
 LIC_TAB, LOG_TAB, CTRL_TAB, MATCH_TAB = "_Licences", "_Robot_Journal", "_Import_Controle", "_Matchs"
@@ -134,9 +133,9 @@ class GBook:
 
     def tabs(self): return list(self._ws)
 
-    def read(self, tab, rng="A1:BT40"):
+    def read(self, tab, rng=f"A1:BT{NB_LIGNES}"):
         v = self._ws[tab].get(rng)
-        return [row + [""] * (72 - len(row)) for row in v] + [[""] * 72 for _ in range(40 - len(v))]
+        return [row + [""] * (72 - len(row)) for row in v] + [[""] * 72 for _ in range(NB_LIGNES - len(v))]
 
     def read_all(self, tab):
         return self._ws[tab].get_all_values() if tab in self._ws else None
@@ -162,8 +161,20 @@ class GBook:
 # ---------------------------------------------------------------- correspondance des joueurs
 class Club:
     def __init__(self, tab, grid, licences):
-        self.tab, self.g = tab, grid
+        self.tab, self.g = tab, [list(x) + [""] * (72 - len(x)) for x in grid] + [[""] * 72 for _ in range(NB_LIGNES - len(grid))]
         self.lic = {l: (t, r) for l, (tb, t, r) in licences.items() if tb == tab}
+        self.layout()
+
+    def layout(self):
+        """Lignes de l'onglet d'après les libellés de la colonne A : « TOTAL ÉQUIPE » (fin des joueurs),
+        « Gardien(ne) » (en-tête des gardiens), « Buts concédés » (score adverse). Fonctionne avant et après l'agrandissement."""
+        a = [norm(str(x[0])) for x in self.g]
+        tot = next((i + 1 for i in range(ROW_P, len(a)) if a[i] == "total equipe"), None)
+        adv = next((i + 1 for i in range(ROW_P, len(a)) if a[i].startswith("buts concedes")), None)
+        gh = next((i + 1 for i in range(tot or ROW_P, len(a)) if a[i] in ("gardien", "gardienne")), None) if tot else None
+        if not (tot and adv and gh and tot < gh < adv):
+            raise SystemExit(f"Onglet {self.tab} : disposition inattendue (TOTAL ÉQUIPE / Gardien(ne) / Buts concédés introuvables en colonne A)")
+        self.p0, self.p1, self.g0, self.g1, self.adv = ROW_P, tot - 1, gh + 2, adv - 1, adv
 
     def name(self, r): return str(self.g[r - 1][0]).strip()
 
@@ -174,22 +185,22 @@ class Club:
 
     def filled(self, j):
         c = self.block(j) - 1
-        cells = [self.g[r - 1][c + k] for r in range(ROW_P, ROW_P_END + 1) for k in range(3)]
-        cells += [self.g[r - 1][c] for r in range(ROW_G, ROW_G_END + 1)] + [self.g[ROW_SCORE_ADV - 1][c]]
+        cells = [self.g[r - 1][c + k] for r in range(self.p0, self.p1 + 1) for k in range(3)]
+        cells += [self.g[r - 1][c] for r in range(self.g0, self.g1 + 1)] + [self.g[self.adv - 1][c]]
         return any(str(x).strip() != "" for x in cells)
 
     def nd_row(self, j):
         """Ligne « Non détaillé » de la journée : le score de l'équipe y est saisi sans détail par joueur (None sinon)."""
         c = self.block(j)
-        rows = [r for r in range(ROW_P, ROW_P_END + 1) if str(self.g[r - 1][c]).strip() != ""]
+        rows = [r for r in range(self.p0, self.p1 + 1) if str(self.g[r - 1][c]).strip() != ""]
         if len(rows) != 1: return None
         r = rows[0]
         return r if (not self.name(r) or norm(self.name(r)) == PLACEHOLDER) else None
 
     def nd_gardien(self):
         """Ligne gardien « Non détaillé » (ou la première ligne gardien libre)."""
-        rows = [r for r in range(ROW_G, ROW_G_END + 1) if norm(self.name(r)) == PLACEHOLDER] or \
-               [r for r in range(ROW_G, ROW_G_END + 1) if not self.name(r)]
+        rows = [r for r in range(self.g0, self.g1 + 1) if norm(self.name(r)) == PLACEHOLDER] or \
+               [r for r in range(self.g0, self.g1 + 1) if not self.name(r)]
         return rows[0] if rows else None
 
     def nd_incomplet(self, j):
@@ -198,7 +209,7 @@ class Club:
         if not r: return False
         c = self.block(j)
         tirs, buts = str(self.g[r - 1][c - 1]).strip(), str(self.g[r - 1][c]).strip()
-        arr = any(str(self.g[x - 1][c - 1]).strip() != "" for x in range(ROW_G, ROW_G_END + 1))
+        arr = any(str(self.g[x - 1][c - 1]).strip() != "" for x in range(self.g0, self.g1 + 1))
         return tirs in ("", buts) or (not arr and self.nd_gardien() is not None)
 
     def completer_nd(self, j, tot, exclus, individuel):
@@ -214,14 +225,14 @@ class Club:
         if tot["tirs"] > tot["buts"] or tot["arrets"] > 0:              # le déroulé contient bien les tirs et les arrêts
             if cell(r, c) in ("", cell(r, c + 1)) and tot["tirs"] > tot["buts"]:
                 cells.append((r, c, tot["tirs"])); det.append(f"{tot['tirs']} tirs")
-            if not any(cell(x, c) != "" for x in range(ROW_G, ROW_G_END + 1)):
+            if not any(cell(x, c) != "" for x in range(self.g0, self.g1 + 1)):
                 rg = self.nd_gardien()
                 if rg:
                     if not self.name(rg): cells.append((rg, 1, "Non détaillé"))
                     cells.append((rg, c, tot["arrets"])); det.append(f"{tot['arrets']} arrêts")
                 else: det.append("arrêts non saisis (plus de ligne gardien libre)")
         num = lambda v: int(v) if str(v).strip().isdigit() else 0
-        deja = sum(num(self.g[x - 1][c + 1]) for x in range(ROW_P, ROW_P_END + 1))
+        deja = sum(num(self.g[x - 1][c + 1]) for x in range(self.p0, self.p1 + 1))
         cible = sum(p["excl"] for p in exclus)
         if deja < cible:
             noms = []
@@ -238,7 +249,7 @@ class Club:
 
     def assign(self, kind, players):
         """Affecte chaque joueur de la feuille à une ligne : exacts d'abord, puis du plus ressemblant au moins ressemblant."""
-        lo, hi = (ROW_P, ROW_P_END) if kind == "J" else (ROW_G, ROW_G_END)
+        lo, hi = (self.p0, self.p1) if kind == "J" else (self.g0, self.g1)
         res, used = {}, set()
         others = {x[1] for l, x in self.lic.items() if x[0] == kind}
         for i, p in enumerate(players):                                     # 1. licence connue
@@ -267,7 +278,7 @@ class Club:
 
     def resolve(self, kind, p, taken):
         """kind 'J' (joueur) ou 'G' (gardien). Renvoie (ligne, mode, score)."""
-        lo, hi = (ROW_P, ROW_P_END) if kind == "J" else (ROW_G, ROW_G_END)
+        lo, hi = (self.p0, self.p1) if kind == "J" else (self.g0, self.g1)
         if p["licence"] in self.lic and self.lic[p["licence"]][0] == kind:
             r = self.lic[p["licence"]][1]
             if lo <= r <= hi and self.name(r) and r not in taken: return r, "licence", 1.0
@@ -296,6 +307,22 @@ def main(cfg_path):
     book = BOOK_FACTORY(cfg["sheet_id"])
     manquants = [t for t in cfg["equipes"].values() if t not in book.tabs()]
     if manquants: raise SystemExit(f"Onglets introuvables : {manquants}. Onglets présents : {book.tabs()}")
+
+    if mode in ("agrandir", "agrandir-test"):          # agrandissement des onglets clubs (voir agrandir.py)
+        import agrandir
+        try:
+            from zoneinfo import ZoneInfo
+            ici0 = datetime.datetime.now(ZoneInfo("Europe/Paris")).replace(tzinfo=None)
+        except Exception:
+            ici0 = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+        journal, code = agrandir.run(book.sh, cfg, mode == "agrandir-test", ici0.strftime("%d/%m/%Y %H:%M"))
+        book.ensure(LOG_TAB, ["Date", "J", "Match", "Statut", "Détail"]); book.append(LOG_TAB, journal)
+        for l in journal: print(" | ".join(str(x) for x in l))
+        try:
+            with open(os.path.join(os.path.dirname(__file__), "derniere_execution_" + os.path.splitext(os.path.basename(cfg_path))[0].replace("config_", "") + ".txt"), "w", encoding="utf-8") as fh:
+                fh.write("\n".join(" | ".join(str(x) for x in l) for l in journal) + "\n")
+        except OSError: pass
+        return code
 
     lic_rows = book.read_all(LIC_TAB) or []
     licences = {r[0]: (r[1], r[2], int(r[3])) for r in lic_rows[1:] if len(r) >= 4 and r[0] and str(r[3]).isdigit()}
@@ -394,12 +421,12 @@ def main(cfg_path):
                     continue
                 if not ecrit:
                     journal.append([now, j, label, "NON DÉTAILLÉE", f"{tab} : seul le score serait importé"]); continue
-                rows = [r for r in range(ROW_P, ROW_P_END + 1) if norm(cl.name(r)) == PLACEHOLDER] or \
-                       [r for r in range(ROW_P, ROW_P_END + 1) if not cl.name(r)]
+                rows = [r for r in range(cl.p0, cl.p1 + 1) if norm(cl.name(r)) == PLACEHOLDER] or \
+                       [r for r in range(cl.p0, cl.p1 + 1) if not cl.name(r)]
                 if not rows:
                     journal.append([now, j, label, "ERREUR", f"{tab} : pas de ligne libre pour « Non détaillé »"]); continue
                 r = rows[0]
-                cells = [(r, 1, "Non détaillé"), (r, c0 + 1, f["score"][side]), (ROW_SCORE_ADV, c0, f["score"][1 - side])]
+                cells = [(r, 1, "Non détaillé"), (r, c0 + 1, f["score"][side]), (cl.adv, c0, f["score"][1 - side])]
                 book.write(tab, cells)
                 for rr, cc, v in cells: cl.g[rr - 1][cc - 1] = v
                 journal.append([now, j, label, "IMPORTÉ", f"{tab} : score seul (feuille de match non détaillée)"])
@@ -421,12 +448,15 @@ def main(cfg_path):
             fictif = max(team["joueurs"], key=lambda p: p["buts"]) if susp else None      # feuille suspecte : ses arrêts ne sont pas fiables non plus
             groupes = {"G": [p for p in team["joueurs"] if p["arrets"] is not None and p is not fictif],
                        "J": [] if susp else [p for p in team["joueurs"] if p["arrets"] is None or p["tirs"] or p["buts"]]}
+            # plus de ligne libre : les chiffres vont sur la ligne « Non détaillé » (totaux d'équipe justes, pas de détail individuel)
+            r_nd = next((x for x in range(cl.p0, cl.p1 + 1) if norm(cl.name(x)) == PLACEHOLDER), None)
+            nd_ok = r_nd is not None and not deja and not susp and not any(str(cl.g[r_nd - 1][c0 - 1 + i]).strip() for i in range(3))
             for k, ps in groupes.items():
                 aff = cl.assign(k, ps)
                 for i, p in enumerate(ps):
                     r, how, sc = aff[i]
                     if how == "a_confirmer": douteux.append(f"{p['nom']} ressemble à « {cl.name(r)} » (ligne {r}) sans certitude")
-                    if how == "plus_de_place": douteux.append(f"{p['nom']} : plus de ligne libre")
+                    if how == "plus_de_place" and not (k == "J" and nd_ok): douteux.append(f"{p['nom']} : plus de ligne libre")
                     plan.append((k, p, r, how, sc))
             # onglet de contrôle
             for k, p, r, how, sc in plan:
@@ -449,7 +479,12 @@ def main(cfg_path):
             if douteux:
                 journal.append([now, j, label, "À CONFIRMER", f"{tab} {'non importé' if not deja else 'non corrigé'} : " + ", ".join(douteux)]); continue
             cells, renommes = [], []
+            surplus = [p for k, p, r, how, sc in plan if how == "plus_de_place"]
+            if surplus:
+                cells += [(r_nd, c0, sum(p["tirs"] for p in surplus)), (r_nd, c0 + 1, sum(p["buts"] for p in surplus)),
+                          (r_nd, c0 + 2, sum(p["excl"] for p in surplus))]
             for k, p, r, how, sc in plan:
+                if how == "plus_de_place": continue
                 if how == "nouveau" or (noms_off and norm(cl.name(r)) != norm(p["nom"])):   # accents et majuscules conservés
                     cells.append((r, 1, p["nom"]))
                     if how != "nouveau": renommes.append(f"{cl.name(r)} → {p['nom']}")
@@ -460,10 +495,10 @@ def main(cfg_path):
                     licences[p["licence"]] = (tab, k, r); cl.lic[p["licence"]] = (k, r)
                     new_lic.append([p["licence"], tab, k, r, p["nom"]])
             if susp and not deja:
-                libres = [r for r in range(ROW_P, ROW_P_END + 1) if norm(cl.name(r)) == PLACEHOLDER] or \
-                         [r for r in range(ROW_P, ROW_P_END + 1) if not cl.name(r)]
+                libres = [r for r in range(cl.p0, cl.p1 + 1) if norm(cl.name(r)) == PLACEHOLDER] or \
+                         [r for r in range(cl.p0, cl.p1 + 1) if not cl.name(r)]
                 if libres: cells += [(libres[0], 1, "Non détaillé"), (libres[0], c0 + 1, f["score"][side])]
-            if not deja: cells.append((ROW_SCORE_ADV, c0, adv))
+            if not deja: cells.append((cl.adv, c0, adv))
             if cells: book.write(tab, cells)
             for rr, cc, v in cells:          # mise à jour de la copie locale
                 cl.g[rr - 1][cc - 1] = v
@@ -471,7 +506,8 @@ def main(cfg_path):
             if deja and not nouveaux and not renommes: continue
             det = (f"{tab} : {len(plan)} lignes" if not deja else f"{tab} (journée déjà saisie)") + \
                   (" (score lu sur la feuille, site pas encore à jour)" if m.get("anticipe") else "") + \
-                  (f", ajoutés : {', '.join(nouveaux)}" if nouveaux else "") + (f", renommés : {', '.join(renommes)}" if renommes else "")
+                  (f", ajoutés : {', '.join(nouveaux)}" if nouveaux else "") + (f", renommés : {', '.join(renommes)}" if renommes else "") + \
+                  (f", comptés sur la ligne « Non détaillé » faute de ligne libre : {', '.join(p['nom'] for p in surplus)}" if surplus else "")
             journal.append([now, j, label, "IMPORTÉ" if not deja else "CORRIGÉ", det])
         completer(m, f, data, tabs, label)
 
