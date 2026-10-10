@@ -6,11 +6,11 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "controle (onglet _Import_Controle seulement), reel (remplit les journées vides) ou rattrapage (reel + noms officiels et joueurs manquants dans les journées déjà saisies)"
+        description: "controle (onglet _Import_Controle seulement), reel (remplit les journées vides), rattrapage (reel + noms officiels et joueurs manquants dans les journées déjà saisies), agrandir-test puis agrandir (30 lignes joueurs et 8 gardiens par onglet club)"
         required: true
         default: controle
         type: choice
-        options: [controle, reel, rattrapage]
+        options: [controle, reel, rattrapage, agrandir-test, agrandir]
 
 permissions:
   contents: write
@@ -29,6 +29,7 @@ jobs:
       - name: Import Honneur masculine
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          # lancement manuel : mode choisi ; lancement programmé : variable du dépôt ROBOT_MODE (controle par défaut)
           ROBOT_MODE: ${{ github.event.inputs.mode || vars.ROBOT_MODE || 'controle' }}
           NOMS_OFFICIELS: ${{ vars.NOMS_OFFICIELS || '0' }}
         run: python robot-fdm/robot/robot.py robot-fdm/robot/config_honneur.json
