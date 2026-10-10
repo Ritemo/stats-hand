@@ -1,9 +1,4 @@
-11/10/2026 00:01 |  |  | AGRANDIR | _Data_Journees : 2376 texte(s) de ligne à décaler (ex. "'!R38C" -> "'!R51C")
-11/10/2026 00:01 |  |  | AGRANDIR | _Data_Joueurs_J : 0 texte(s) de ligne à décaler, 1920 bloc(s) de 20 lignes à passer à 30
-11/10/2026 00:01 |  |  | AGRANDIR | Classement général : 24 texte(s) de ligne à décaler (ex. "'!G38:BR38" -> "'!G51:BR51")
-11/10/2026 00:01 |  |  | AGRANDIR | Comparatif Clubs : 24 texte(s) de ligne à décaler (ex. "'!G38:BR38" -> "'!G51:BR51")
-11/10/2026 00:01 |  |  | AGRANDIR | _Data_Joueurs : 12 blocs de clubs trouvés, +10 lignes chacun
-11/10/2026 00:01 |  |  | AGRANDIR | _Data_Gardiens : 12 blocs de clubs trouvés, +3 lignes chacun
-11/10/2026 00:01 |  |  | AGRANDIR | _Data_Joueurs_J : prolongé de la ligne 241 à la ligne 361
-11/10/2026 00:01 |  |  | AGRANDIR | _Licences : 40 numéro(s) de ligne de gardien à décaler
-11/10/2026 00:01 |  |  | AGRANDI | 12 onglets clubs : 30 lignes joueurs (7 à 36) et 8 lignes gardiens ; tous les chiffres calculés sont identiques à avant
+11/10/2026 00:04 | 5 | J5 HBC DANJOUTIN 23-25 BEEX-VA PM HB (C) | IMPORTÉ | HBC Danjoutin : 12 lignes (score lu sur la feuille, site pas encore à jour), ajoutés : FILZ Enzo
+11/10/2026 00:04 | 5 | J5 HBC DANJOUTIN 23-25 BEEX-VA PM HB (C) | IMPORTÉ | BEEX-VA PM HB (C) : 9 lignes (score lu sur la feuille, site pas encore à jour), ajoutés : GROSJEAN Noe, THIEBAUD Tom
+11/10/2026 00:04 | 5 | J5 HBC FRANOIS (B) 36-22 HBC GILLEY | IMPORTÉ | HBC Franois (B) : 14 lignes, ajoutés : SEGUIN Vaik, TRIFFAULT Titouan, MENDES Theo
+11/10/2026 00:04 |  |  | MATCHS | _Matchs : 1 déroulé(s) ajouté(s), 0 salle(s) relevée(s)
