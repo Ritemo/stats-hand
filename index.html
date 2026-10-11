@@ -229,6 +229,18 @@ h2{font-size:23px;font-weight:700;margin:4px 2px 10px}
 .une{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--orange);border-radius:14px;padding:12px 14px;margin-bottom:22px;color:var(--ink);cursor:pointer;font:inherit}
 .une b{display:block;font-size:16px;line-height:1.3;margin-bottom:4px}.une span{display:block;font-size:14px;line-height:1.45;color:var(--muted)}
 .une small{display:block;margin-top:6px;color:var(--orange);font-weight:700;font-size:13px}
+.une-m{display:block;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--orange);margin-bottom:6px}
+.une-p{color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0}
+.nv2{display:inline-block;margin-left:6px;font-size:10px;line-height:15px;font-weight:700;letter-spacing:.04em;background:var(--orange);color:#fff;border-radius:7px;padding:0 6px;vertical-align:1px}
+.une-a p{line-height:1.55}
+.une-fo{display:block;width:100%;text-align:left;margin:12px 0;padding:10px 12px;border-radius:12px;border:none;border-left:4px solid var(--orange);background:var(--orange-soft);color:var(--ink);font:inherit;cursor:pointer}
+.une-fo small{display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--orange)}
+.une-fo b{display:block;font-size:15px;margin:2px 0 4px;line-height:1.3}.une-fo span{display:block;font-size:14px;line-height:1.45}
+.une-fo em{display:block;font-style:normal;font-weight:700;font-size:13px;margin-top:6px;color:var(--orange)}
+.une-nav{display:flex;justify-content:space-between;gap:10px;margin:14px 0}.une-nav .more{flex:1;margin:0}
+.tabbar button{position:relative}
+.tb-dot{position:absolute;top:5px;left:calc(50% + 7px);width:8px;height:8px;border-radius:50%;background:var(--orange);border:2px solid var(--surface)}
+.tabbar .in.t6 button{padding-left:0;padding-right:0}.tabbar .in.t6 button span{font-size:10px;letter-spacing:-.2px}.tabbar .in.t6 svg{width:22px;height:22px}
 .mini-row{display:flex;justify-content:space-between;gap:6px;padding:7px 10px;border-top:1px solid var(--line);font-size:14px}
 .mini-row:first-child{border-top:0}
 .mini-row span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -569,6 +581,7 @@ const IC={
   search:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>`,
   pin:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>`,
   cal:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>`,
+  news:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 5h13v14H6a2 2 0 0 1-2-2z"/><path d="M17 9h3v8a2 2 0 0 1-2 2"/><path d="M7.5 9h6M7.5 12.5h6M7.5 16h4"/></svg>`,
   goal:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20V6h18v14"/><path d="M3 10h18M8 6v14M16 6v14" stroke-dasharray="2 2.5"/></svg>`
 };
 const refreshBtn=`<button class="icon-btn" data-search aria-label="Rechercher">${IC.search}</button><button class="icon-btn" data-refresh aria-label="Actualiser les stats">${IC.refresh}</button>`;
@@ -604,7 +617,7 @@ function pHome(){
   return `<header class="top slim">${IC.court}<div class="bar-top">
       <div class="brand">${logoHTML(MY_TEAM,40)}<span><b>Honneur <em>masculine</em></b><small>Poule A, saison 2026-2027</small></span></div>${refreshBtn}</div></header>
   <main>
-    ${uneHTML()}${nc}${ld}
+    ${nc}${ld}
     ${!nc&&!ld?`<div class="empty">Ajoute l'onglet Calendrier au fichier pour voir le prochain match et les derniers résultats.</div>`:""}
     ${stamp()}
   </main>`;
@@ -719,10 +732,11 @@ function render(){
   if(!D){ document.getElementById("tabbar").innerHTML=""; app.innerHTML=`<header class="top">${IC.court}<div class="bar-top"><div class="t"><div class="page-title">Stats Hand</div></div>${refreshBtn}</div></header>
     <main>${loading?`<div class="empty">Chargement des stats…</div>`:`<div class="error"><b>Impossible de charger les stats</b>Vérifie ta connexion internet, puis appuie sur le bouton d'actualisation.</div>`}</main>`; return; }
   const {page,arg,arg2}=route();
-  app.innerHTML=({home:pHome,classement:pClassement,buteurs:pButeurs,gardiens:pGardiens,club:()=>pClub(arg),general:pGeneral,journees:()=>pJournees(arg),duel:()=>pDuel(arg,arg2),equipes:pEquipes}[page]||pHome)();
-  const tab={journees:"journees",duel:"journees",general:"general",classement:"general",buteurs:"buteurs",gardiens:"buteurs",equipes:"equipes",club:"equipes"}[page]||"home";
-  const tabs=[["home","Accueil",IC.home],...(D.cal.length?[["journees","Calendrier",IC.cal]]:[]),[D.standings.length?"general":"classement","Classement",IC.trophy],["buteurs","Joueurs",IC.ball],["equipes","Équipes",IC.teams]];
-  document.getElementById("tabbar").innerHTML=`<div class="in">${tabs.map(([p,l,ic])=>`<button data-go="${p==="home"?"":p}" data-tab ${(p===tab||(tab==="general"&&p==="classement"))?'aria-current="page"':""}>${ic}<span>${l}</span></button>`).join("")}</div>`;
+  app.innerHTML=({home:pHome,classement:pClassement,buteurs:pButeurs,gardiens:pGardiens,club:()=>pClub(arg),general:pGeneral,journees:()=>pJournees(arg),duel:()=>pDuel(arg,arg2),equipes:pEquipes,une:()=>pUne(arg)}[page]||pHome)();
+  const tab={journees:"journees",duel:"journees",general:"general",classement:"general",buteurs:"buteurs",gardiens:"buteurs",equipes:"equipes",club:"equipes",une:"une"}[page]||"home";
+  const tabs=[["home","Accueil",IC.home],...(D.cal.some(m=>m.res)?[["une","À la une",IC.news]]:[]),...(D.cal.length?[["journees","Calendrier",IC.cal]]:[]),[D.standings.length?"general":"classement","Classement",IC.trophy],["buteurs","Joueurs",IC.ball],["equipes","Équipes",IC.teams]];
+  const dot=p=>p==="une"&&uneJs().some(uneNew)?'<i class="tb-dot"></i>':"";
+  document.getElementById("tabbar").innerHTML=`<div class="in${tabs.length>5?" t6":""}">${tabs.map(([p,l,ic])=>`<button data-go="${p==="home"?"":p}" data-tab ${(p===tab||(tab==="general"&&p==="classement"))?'aria-current="page"':""}>${ic}${dot(p)}<span>${l}</span></button>`).join("")}</div>`;
   app.querySelectorAll(".chips").forEach(cs=>{const c=cs.querySelector('[aria-pressed="true"]'); if(c) cs.scrollLeft=c.offsetLeft-cs.clientWidth/2+c.clientWidth/2;});
 }
 
@@ -804,11 +818,6 @@ function nextCard(club){
       <span class="nx-t">${logoHTML(m.away,64)}<span>${esc(shortClub(m.away))}</span></span></span>
     <span class="nx-go">Voir le face-à-face ›</span></button>${routeHTML(m)||'<div style="height:12px"></div>'}`;
 }
-function uneHTML(){
-  const m=D.cal.filter(x=>x.res&&(x.home===MY_TEAM||x.away===MY_TEAM)).sort((a,b)=>b.j-a.j)[0]; if(!m) return "";
-  let d=null; try{ d=debrief(m); }catch(e){ return ""; } if(!d) return "";
-  return `<h2>À la une</h2><button class="une" data-go="duel/${m.j}/${slug(m.home)}"><b>${esc(d.title)}</b><span>${esc(d.chapo)}</span><small>Lire le débrief de la J${m.j}</small></button>`;
-}
 function lastDayHTML(){
   const info=calInfo(); if(!info||!info.last) return "";
   const ms=D.cal.filter(m=>m.j===info.last), d=ms.find(m=>m.date)?.date;
@@ -871,7 +880,7 @@ function pDuel(js,hs){
   h+=`<div class="chips">${D.cal.filter(x=>x.j===j).map(x=>`<button class="chip" data-go="duel/${j}/${slug(x.home)}" data-rep aria-pressed="${x===m}">${esc(shortClub(x.home))} - ${esc(shortClub(x.away))}</button>`).join("")}</div>`;
   h+=swipeHint();
   if(!r&&m.info&&m.info.salle) h+=`<h2>Lieu</h2>${routeHTML(m)}`;
-  if(r){ h+=debriefHTML(m); if(m.info&&/^[A-Z]{4}/.test(m.info.fdm||"")) h+=`<a class="fdm-l" href="${fdmUrl(m.info.fdm)}" target="_blank" rel="noopener">Voir la feuille de match officielle (PDF)</a>`; markSeen(m); }
+  if(r){ try{ h+=debriefHTML(m); }catch(e){} if(m.info&&/^[A-Z]{4}/.test(m.info.fdm||"")) h+=`<a class="fdm-l" href="${fdmUrl(m.info.fdm)}" target="_blank" rel="noopener">Voir la feuille de match officielle (PDF)</a>`; markSeen(m); }
   h+=oddsBlock(m);
   if(r){
     const col2=n=>{const s=scorers(n,j);return `<div class="list mini">${s.length?s.map(x=>`<div class="mini-row"><span>${esc(pName(x.name))}</span><b>${x.b}</b></div>`).join(""):`<div class="mini-row"><span>Pas de détail</span></div>`}</div>`;};
@@ -923,6 +932,164 @@ document.addEventListener("touchend",e=>{ if(swX==null) return; const t=e.change
   if(Math.abs(dx)<70||Math.abs(dy)>Math.abs(dx)*0.6||!D) return;
   const R=route(), j=+R.arg, ms=D.cal.filter(x=>x.j===j), i=ms.findIndex(x=>slug(x.home)===R.arg2); if(i<0) return;
   const n=ms[i+(dx<0?1:-1)]; if(n) location.replace("#/duel/"+j+"/"+slug(n.home)); },{passive:true});
+
+/* ============ À LA UNE : un article par journée ============
+   Résumé de toute la journée : résultats, surprise au regard des cotes, classement à l'issue de la journée,
+   performances individuelles, focus sur notre équipe (avec le débrief de son match) et chiffre de la journée.
+   Figé à la journée concernée : le classement et les totaux ne tiennent pas compte des journées suivantes. */
+const UNE_KEY="une-vus"; let UNE_SEEN=null;
+function uneSeen(){ if(UNE_SEEN) return UNE_SEEN; let v=null; try{ v=localStorage.getItem(UNE_KEY); }catch(e){}
+  try{ UNE_SEEN=v?new Set(JSON.parse(v)):null; }catch(e){ UNE_SEEN=null; }
+  if(!UNE_SEEN){ UNE_SEEN=new Set(uneJs().map(uneKey)); uneSave(); }      // première visite : rien n'est « nouveau »
+  return UNE_SEEN; }
+function uneSave(){ try{ localStorage.setItem(UNE_KEY,JSON.stringify([...UNE_SEEN].slice(-200))); }catch(e){} }
+const uneKey=j=>j+"|"+D.cal.filter(m=>m.j===j&&m.res).length;
+const uneJs=()=>D&&D.cal?[...new Set(D.cal.filter(m=>m.res).map(m=>m.j))].sort((a,b)=>b-a):[];
+const uneNew=j=>!uneSeen().has(uneKey(j));
+function uneMark(j){ if(uneNew(j)){ UNE_SEEN.add(uneKey(j)); uneSave(); } }
+
+function journeeArticle(j){
+  const ms=D.cal.filter(m=>m.j===j), done=ms.filter(m=>m.res); if(!done.length) return null;
+  const F=DEB_F, complete=done.length===ms.length;
+  let seed=11; for(const ch of "J"+j+"|"+done.map(m=>m.home+m.res.h+"-"+m.res.a).join(",")) seed=(seed*31+ch.charCodeAt(0))>>>0;
+  const rnd=()=>{seed=(seed+0x6D2B79F5)>>>0;let t=seed;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};
+  const usedT=new Set(), pick=a=>{const f=a.filter(x=>!usedT.has(x.slice(0,18))), r=(f.length?f:a)[Math.floor(rnd()*(f.length?f:a).length)]; usedT.add(r.slice(0,18)); return r;}, cap=s=>s.charAt(0).toUpperCase()+s.slice(1), lc=s=>s.charAt(0).toLowerCase()+s.slice(1);
+  const T=n=>/v[ée]sulien/i.test(n)?"Vesoul":shortClub(n).replace(/^Ent\.\s*/,"").replace(/^ASCAP\s+/,"").trim();
+  const de=x=>/^[aeiouyhéèêàâîôûAEIOUYHÉÈÊÀÂÎÔÛ]/.test(x)?"d'"+x:"de "+x;
+  const plur=(n,w,ws)=>`${n} ${n>1?(ws||w+"s"):w}`;
+  const nbL=["aucune","une","deux","trois","quatre","cinq","six","sept","huit","neuf","dix"], nbf=n=>n<=10?nbL[n]:String(n);
+  const ville=c=>{const k=norm(c), v=VILLES.find(([x])=>k.includes(x)); return v?v[1]:null;};
+  const chez=c=>{const v=ville(c); return v?"à "+v:"sur le terrain "+de(T(c));};
+  const sc=m=>`${m.res.h}-${m.res.a}`;
+  const ordJ=j===1?"1re":j+"e";
+  // ---- classement figé à la journée
+  const RH=D.evo?D.evo.rankHist:{}, games=D.evo?D.evo.games:[];
+  const rk=(c,jj)=>RH[c]&&jj>=1?RH[c][jj-1]:null;
+  const atRank=(r,jj)=>Object.keys(RH).find(c=>RH[c][jj-1]===r)||null;
+  const nC=D.evo?D.evo.nClubs:0;
+  const pts=(c,jj)=>games.filter(g=>g.club===c&&g.j<=jj).reduce((s,g)=>s+(g.bp>g.bc?3:g.bp===g.bc?2:1),0);
+  const leader=atRank(1,j), prevLeader=j>1?atRank(1,j-1):null, second=atRank(2,j);
+  const newLeader=!!(leader&&prevLeader&&leader!==prevLeader);
+  // ---- résultats
+  const R=done.map(m=>{ const w=m.res.h>m.res.a?"h":m.res.h<m.res.a?"a":null, o=oddsOf(m);
+    const W=w?(w==="h"?m.home:m.away):null, L=w?(w==="h"?m.away:m.home):null;
+    const up=!!(o&&w&&o.fav!==w), cote=o&&w?(w==="h"?o.c1:o.c2):null;
+    return {m,w,W,L,marge:Math.abs(m.res.h-m.res.a),tot:m.res.h+m.res.a,up,cote}; });
+  const nDom=R.filter(x=>x.w==="h").length, nExt=R.filter(x=>x.w==="a").length, nNul=R.filter(x=>!x.w).length;
+  const buts=R.reduce((s,x)=>s+x.tot,0), moy=buts/R.length;
+  const upset=R.filter(x=>x.up&&x.cote>=2.2).sort((a,b)=>b.cote-a.cote)[0]||null;
+  const big=R.filter(x=>x.w).sort((a,b)=>b.marge-a.marge)[0]||null;
+  const prolific=[...R].sort((a,b)=>b.tot-a.tot)[0];
+  const leaderRes=prevLeader?R.find(x=>x.m.home===prevLeader||x.m.away===prevLeader):null;
+  const leaderLost=!!(leaderRes&&leaderRes.L===prevLeader);
+  const gapAt=jj=>{const a=atRank(1,jj), b=atRank(2,jj); return a&&b?pts(a,jj)-pts(b,jj):0;};
+  const gap=gapAt(j), gapPrev=j>1?gapAt(j-1):0;
+  // ---- titre
+  let title; const pickJ=a=>a[j%a.length];
+  if(newLeader) title=pickJ([`${T(leader)} prend la tête`,`${T(leader)} s'empare de la première place`,`Changement de leader : ${T(leader)} passe devant`,`${T(leader)} grimpe sur le trône`]);
+  else if(upset&&upset.cote>=3) title=pickJ([`${T(upset.W)} crée l'exploit`,`Coup de tonnerre ${chez(upset.m.home)}`,`${T(upset.W)} fait tomber ${T(upset.L)}`,`La surprise ${de(T(upset.W))}`]);
+  else if(leaderLost) title=pickJ([`${T(prevLeader)} trébuche mais reste en tête`,`Le leader chute, la course est relancée`,`${T(prevLeader)} tombe, sans perdre sa place`]);
+  else if(leader&&j>1&&gap>gapPrev&&gap>=3) title=pickJ([`${T(leader)} creuse l'écart`,`${T(leader)} accentue son avance`,`${T(leader)} prend le large`]);
+  else if(leader&&j>1&&leaderRes&&leaderRes.W===leader) title=pickJ([`${T(leader)} conforte sa place de leader`,`${T(leader)} tient son rang`,`Rien n'arrête ${T(leader)}`]);
+  else if(big&&big.marge>=12) title=pickJ([`${T(big.W)} frappe fort`,`Le carton ${de(T(big.W))}`,`${T(big.W)} sort le grand jeu`]);
+  else if(upset) title=pickJ([`${T(upset.W)} déjoue les pronostics`,`La surprise ${de(T(upset.W))}`]);
+  else title=pickJ([`${cap(ordJ)} journée : ce qu'il faut retenir`,`Les enseignements de la ${ordJ} journée`,`${cap(ordJ)} journée, le résumé`]);
+  // ---- chapeau
+  const bilan=[nDom?`${plur(nDom,"victoire")} à domicile`:"", nExt?`${nExt} à l'extérieur`:"", nNul?plur(nNul,"nul"):""].filter(Boolean);
+  const bil=bilan.length>1?bilan.slice(0,-1).join(", ")+" et "+bilan[bilan.length-1]:bilan[0];
+  let chapo=pick([`La ${ordJ} journée a livré son verdict : `,`Au terme de la ${ordJ} journée, on compte `,`Bilan de la ${ordJ} journée : `])
+    +`${bil}, pour ${buts} buts inscrits (${String(Math.round(moy*10)/10).replace(".",",")} par match).`;
+  if(complete&&leader&&j>1) chapo+=" "+(newLeader?pick([`${T(leader)} en profite pour prendre les commandes.`,`${T(leader)} est le nouveau leader.`])
+    :pick([`${T(leader)} reste en tête.`,`${T(leader)} garde la première place.`]));
+  // ---- récit des résultats
+  const P1=[], my=R.find(x=>x.m.home===MY_TEAM||x.m.away===MY_TEAM);
+  const order=[upset,big,...R].filter((x,i,a)=>x&&x!==my&&a.indexOf(x)===i);
+  let nPor=0; const porL=[n=>`, porté par ${n}`,n=>`, emmené par ${n}`,n=>`, grâce notamment à ${n}`,n=>` avec un grand ${n}`];
+  const conn=["Ailleurs, ","Dans le même temps, ","De son côté, ","Plus loin, "];
+  order.forEach((x,i)=>{ const m=x.m; let s, gen=false;
+    const top=x.w?scorers(x.W,j)[0]:null, por=top&&top.b>=6&&nPor<3&&rnd()<0.7?porL[nPor++](`${nmFull(top.name)} (${plur(top.b,"but")})`):"";
+    if(x===upset){ s=pick([`La surprise du jour est signée ${T(x.W)}, vainqueur ${de(T(x.L))} (${sc(m)}) alors que les cotes ne le donnaient pas favori (${fmtC(x.cote)}).`,
+      `${T(x.W)} a déjoué les pronostics en battant ${T(x.L)} (${sc(m)})${por}. Une victoire cotée à ${fmtC(x.cote)} avant le coup d'envoi.`]); gen=s.startsWith("La"); }
+    else if(!x.w){ s=pick([`${T(m.home)} et ${T(m.away)} se sont quittés dos à dos (${sc(m)}).`,`Pas de vainqueur entre ${T(m.home)} et ${T(m.away)} (${sc(m)}).`,`${T(m.home)} et ${T(m.away)} se sont neutralisés (${sc(m)}).`]); gen=s.startsWith("Pas"); }
+    else if(x.marge>=10){ s=pick([`${T(x.W)} a largement dominé ${T(x.L)} (${sc(m)})${por}.`,`${T(x.W)} n'a pas fait de détail face à ${T(x.L)} (${sc(m)})${por}.`,`Large succès ${de(T(x.W))} contre ${T(x.L)} (${sc(m)})${por}.`]); gen=s.startsWith("Large"); }
+    else if(x.marge<=2){ s=pick([`${T(x.W)} s'est imposé de justesse face à ${T(x.L)} (${sc(m)})${por}.`,`${T(x.W)} a dû batailler jusqu'au bout pour venir à bout ${de(T(x.L))} (${sc(m)}).`,`C'est sur le fil que ${T(x.W)} a battu ${T(x.L)} (${sc(m)}).`]); gen=s.startsWith("C'est"); }
+    else if(x.w==="a"){ s=pick([`${T(x.W)} est allé s'imposer ${chez(x.L)} (${sc(m)})${por}.`,`${T(x.W)} a ramené la victoire de son déplacement ${chez(x.L)} (${sc(m)})${por}.`]); }
+    else { s=pick([`${T(x.W)} a battu ${T(x.L)} (${sc(m)})${por}.`,`${T(x.W)} a pris le meilleur sur ${T(x.L)} (${sc(m)})${por}.`,`Devant son public, ${T(x.W)} a dominé ${T(x.L)} (${sc(m)})${por}.`]); gen=s.startsWith("Devant"); }
+    if(i>0&&conn.length&&rnd()<0.6&&!/^(La surprise|Devant)/.test(s)){ const c=pick(conn); conn.splice(conn.indexOf(c),1); s=c+(gen?lc(s):s); }
+    P1.push(s); });
+  // ---- classement
+  const P2=[];
+  if(leader&&complete){
+    const lp=pts(leader,j);
+    P2.push(`Au classement, ${T(leader)} ${newLeader?"occupe désormais":j===1?"occupe":pick(["conserve","garde"])} la première place avec ${lp} points, `
+      +(second?(gap?`${plur(gap,"longueur")} devant ${T(second)}.`:`à égalité de points avec ${T(second)}.`):"."));
+    if(j>1){ const mv=Object.keys(RH).map(c=>({c,p:rk(c,j-1),n:rk(c,j)})).filter(x=>x.p&&x.n);
+      const up=mv.sort((a,b)=>(b.p-b.n)-(a.p-a.n))[0];
+      if(up&&up.p-up.n>=2&&up.c!==leader) P2.push(pick([`${T(up.c)} réalise la bonne opération de la journée : ${ordD(up.p)} au coup d'envoi, ${ordD(up.n)} désormais.`,`${T(up.c)} gagne ${up.p-up.n} places et pointe au ${ordD(up.n)} rang.`]));
+      const dn=mv.sort((a,b)=>(b.n-b.p)-(a.n-a.p))[0];
+      if(dn&&dn.n-dn.p>=2) P2.push(`À l'inverse, ${T(dn.c)} recule du ${ordD(dn.p)} au ${ordD(dn.n)} rang.`); }
+    const lan=atRank(nC,j); if(lan&&j>=3) P2.push(pick([`${T(lan)} ferme la marche.`,`En bas de tableau, ${T(lan)} occupe la dernière place.`]));
+  }
+  // ---- performances individuelles (déroulé et onglet joueurs par journée)
+  const P3=[], pj=D.evo?D.evo.pj:{}, inJ=c=>done.some(m=>m.home===c||m.away===c);
+  const ind=Object.entries(pj).map(([k,d])=>{const i=k.indexOf("|");return {club:k.slice(0,i),name:k.slice(i+1),b:d.b[j-1]||0,t:d.t[j-1]||0,tot:d.b.slice(0,j).reduce((s,v)=>s+(v||0),0),totP:d.b.slice(0,j-1).reduce((s,v)=>s+(v||0),0)};})
+    .filter(x=>norm(x.name)!==PLACEHOLDER);
+  const bj=ind.filter(x=>x.b>0&&inJ(x.club)).sort((a,b)=>b.b-a.b||(a.t||99)-(b.t||99));
+  if(bj.length){ const b=bj[0], eg=bj.filter(x=>x!==b&&x.b===b.b);
+    P3.push(pick([`Sur le plan individuel, ${nmFull(b.name)} (${T(b.club)}) a été ${F?"la meilleure buteuse":"le meilleur buteur"} de la journée avec ${plur(b.b,"but")}${b.t>b.b?` en ${b.t} tirs`:""}.`,
+      `${F?"Meilleure buteuse":"Meilleur buteur"} de la journée, ${nmFull(b.name)} (${T(b.club)}) a trouvé le chemin des filets à ${b.b} reprises${b.t>b.b?` sur ${b.t} tirs`:""}.`])+(eg.sort((a,b)=>(b.club===MY_TEAM)-(a.club===MY_TEAM)),eg.length?` ${eg.length>3?`Ils sont ${eg.length+1} à avoir atteint ce total, dont`:eg.length>1?`${cap(nbL[eg.length])} autres ${F?"joueuses":"joueurs"} ont fait aussi bien :`:"Même total pour"} ${eg.slice(0,eg.length>3?2:3).map(x=>`${nmFull(x.name)} (${T(x.club)})`).join(", ").replace(/, ([^,]*)$/," et $1")}.`:""));
+    const ef=bj.filter(x=>x!==b&&x.t>=6&&x.b/x.t>=0.75).sort((a,b)=>b.b/b.t-a.b/a.t)[0];
+    if(ef) P3.push(pick([`Mention aussi pour ${nmFull(ef.name)} (${T(ef.club)}), ${plur(ef.b,"but")} en ${ef.t} tirs.`,`Belle efficacité également pour ${nmFull(ef.name)} (${T(ef.club)}) : ${ef.b} sur ${ef.t}.`])); }
+  const sv={}; done.forEach(m=>((m.info&&m.info.ev)||[]).forEach(e=>{ if(e.c==="A"&&e.n){ const c=e.s==="h"?m.home:m.away, k=c+"|"+e.n; sv[k]=(sv[k]||0)+1; } }));
+  const gk=Object.entries(sv).sort((a,b)=>b[1]-a[1])[0];
+  if(gk&&gk[1]>=8){ const i=gk[0].indexOf("|");
+    P3.push(pick([`Dans les buts, ${nmFull(gk[0].slice(i+1))} (${T(gk[0].slice(0,i))}) a signé ${gk[1]} arrêts, le meilleur total de la journée.`,`Côté ${F?"gardiennes":"gardiens"}, ${nmFull(gk[0].slice(i+1))} (${T(gk[0].slice(0,i))}) s'est distingué${F?"e":""} avec ${gk[1]} arrêts.`])); }
+  else { const ga=games.filter(g=>g.j===j&&g.arrets).sort((a,b)=>b.arrets-a.arrets)[0];
+    if(ga&&ga.arrets>=10) P3.push(`Côté ${F?"gardiennes":"gardiens"}, ${T(ga.club)} a signé ${ga.arrets} arrêts, le meilleur total de la journée.`); }
+  const season=[...ind].sort((a,b)=>b.tot-a.tot)[0];
+  if(season&&season.tot&&j>1){ const prev=[...ind].sort((a,b)=>b.totP-a.totP)[0], kept=prev&&prev.name===season.name&&prev.club===season.club;
+    P3.push(`Au classement des ${F?"buteuses":"buteurs"}, ${nmFull(season.name)} (${T(season.club)}) ${kept?pick(["reste en tête","conserve la première place"]):"prend la tête"} avec ${plur(season.tot,"but")}.`); }
+  // ---- notre équipe : on reprend le débrief de son match
+  let focus=null;
+  if(my){ let d=null; try{ d=debrief(my.m); }catch(e){}
+    const r=rk(MY_TEAM,j);
+    focus={team:T(MY_TEAM),title:d?d.title:`${T(my.m.home)} - ${T(my.m.away)} (${sc(my.m)})`,text:(d?d.chapo:"")+(r&&complete?(()=>{const k=norm(MY_TEAM), x=GENTILES.find(([c])=>k.includes(c)); return x?` Les ${F?x[2]:x[1]} pointent au ${ordD(r)} rang à l'issue de la journée.`:` ${T(MY_TEAM)} pointe au ${ordD(r)} rang à l'issue de la journée.`;})():""),
+      go:`duel/${my.m.j}/${slug(my.m.home)}`}; }
+  // ---- le chiffre
+  let fig=null;
+  if(prolific&&prolific.tot>=60) fig=`${prolific.tot} buts, c'est le total du match le plus prolifique de la journée, ${T(prolific.m.home)} - ${T(prolific.m.away)} (${sc(prolific.m)}).`;
+  else if(big&&big.marge>=8) fig=`+${big.marge}, c'est le plus large écart de la journée, signé ${T(big.W)} face à ${T(big.L)}.`;
+  else if(nDom>=R.length-1&&R.length>=3) fig=`${nDom} sur ${R.length}, les équipes qui recevaient ont presque toutes gagné.`;
+  else if(nExt>=Math.ceil(R.length/2)&&R.length>=3) fig=`${nExt} sur ${R.length}, une journée faste pour les équipes en déplacement.`;
+  else fig=`${String(Math.round(moy*10)/10).replace(".",",")}, c'est le nombre moyen de buts par match.`;
+  const d=ms.find(m=>m.date)?.date;
+  return {j,title,chapo,paras:[P1.join(" "),P2.join(" "),P3.join(" ")].filter(Boolean),focus,fig,complete,n:done.length,of:ms.length,date:d};
+}
+
+function pUne(arg){
+  const Js=uneJs();
+  if(!Js.length) return pageHead("À la une",false)+`<main><div class="empty">Les articles apparaîtront après la première journée jouée.</div></main>`;
+  if(arg){ const j=+arg, a=journeeArticle(j);
+    if(!a) return pageHead("À la une")+`<main><div class="empty">Pas encore d'article pour cette journée.</div></main>`;
+    uneMark(j);
+    const txt=[a.title,"",a.chapo,"",...a.paras,...(a.focus?["","Focus "+a.focus.team+" : "+a.focus.title,a.focus.text]:[]),...(a.fig?["","Le chiffre : "+a.fig]:[])].join("\n");
+    DEB_TXT["une|"+j]=txt;
+    const i=Js.indexOf(j), nw=Js[i-1], od=Js[i+1];
+    return pageHead("À la une")+`<main>
+      <div class="deb une-a"><div class="une-m">Journée ${j}${a.date?", "+wkLabel(a.date):""}${a.complete?"":` <span class="une-p">${a.n}/${a.of} matchs</span>`}</div>
+      <h3>${esc(a.title)}</h3><p class="deb-ch">${esc(a.chapo)}</p>${a.paras.map(p=>`<p>${esc(p)}</p>`).join("")}
+      ${a.focus?`<button class="une-fo" data-go="${a.focus.go}"><small>Focus ${esc(a.focus.team)}</small><b>${esc(a.focus.title)}</b><span>${esc(a.focus.text)}</span><em>Lire le débrief du match ›</em></button>`:""}
+      ${a.fig?`<p class="deb-f"><b>Le chiffre :</b> ${esc(a.fig)}</p>`:""}
+      <button class="deb-c" data-deb="${esc("une|"+j)}">Copier l'article</button></div>
+      <h2>Les matchs de la journée</h2><div class="list">${D.cal.filter(m=>m.j===j).map(m=>matchRow(m,{deb:true})).join("")}</div>
+      <div class="une-nav">${od?`<button class="more" data-go="une/${od}" data-rep>‹ Journée ${od}</button>`:"<span></span>"}${nw?`<button class="more" data-go="une/${nw}" data-rep>Journée ${nw} ›</button>`:"<span></span>"}</div>
+      ${stamp()}</main>`; }
+  return pageHead("À la une",false)+`<main>
+    ${Js.map(j=>{ const a=journeeArticle(j); if(!a) return "";
+      return `<button class="une" data-go="une/${j}"><span class="une-m">Journée ${j}${a.date?", "+wkLabel(a.date):""}${a.complete?"":` <span class="une-p">${a.n}/${a.of} matchs</span>`}${uneNew(j)?` <span class="nv2">Nouveau</span>`:""}</span>
+        <b>${esc(a.title)}</b><span>${esc(a.chapo)}</span><small>Lire l'article</small></button>`; }).join("")}
+    <p class="note">Une journée incomplète est signalée par le nombre de matchs joués : son article se complète à chaque nouvelle feuille de match. Un article par journée, écrit à partir des feuilles de match et mis à jour à chaque nouveau résultat. Le débrief détaillé de chaque match reste sur sa page.</p>${stamp()}</main>`;
+}
 
 /* ============ DÉBRIEF DU MATCH (style article) ============
    Écrit à partir des données du match : déroulé nominatif lu par le robot sur la feuille de match, stats de la journée,
@@ -1051,7 +1218,7 @@ function debrief(m){
     const after="", afterS=w&&ra[w]===1&&angle!=="tete"?pick([` ${Wn} s'installe en tête du classement.`,` Au passage, ${Wn} prend la tête du classement.`,` ${Wn} est le nouveau leader.`]):"";
     const C={
       nul:[`${T.h} et ${T.a} se sont quittés sur un match nul (${score})${equal&&equal.t>=3300?", arraché dans les dernières minutes":""}.`,`Pas de vainqueur entre ${T.h} et ${T.a} : ${score} au coup de sifflet final.`],
-      invaincu:[`Invaincu jusque-là, ${Ln} a cédé face à ${Wn} (${score})${after}.`,`${Ln} restait sur ${plur(ctx[l].v,"victoire")}${ctx[l].nul?" et "+plur(ctx[l].nul,"nul"):""} en ${plur(ctx[l].n,"match")}. ${Wn} a mis fin à la série (${score})${after}.`],
+      invaincu:[`Invaincu jusque-là, ${Ln} a cédé face à ${Wn} (${score})${after}.`,`${Ln} restait sur ${plur((ctx[l]||ctx.h).v,"victoire")}${(ctx[l]||ctx.h).nul?" et "+plur((ctx[l]||ctx.h).nul,"nul"):""} en ${plur((ctx[l]||ctx.h).n,"match")}. ${Wn} a mis fin à la série (${score})${after}.`],
       tete:[`En s'imposant ${score} face à ${Ln}, ${Wn} prend la tête du classement.`,`${Wn} a battu ${Ln} (${score}) et s'empare de la première place.`],
       remontada:[`Mené de ${plur(comeback,"but")}, ${Wn} a fini par renverser ${Ln} (${score}).`,`${Wn} est revenu de loin pour s'imposer face à ${Ln} (${score})${after}.`],
       suspense:[`Il a fallu attendre les dernières minutes pour départager ${T.h} et ${T.a} : ${Wn} l'emporte ${score}${after}.`,`${Wn} s'est imposé d'un souffle face à ${Ln} (${score}) au terme d'un final irrespirable${after}.`],
