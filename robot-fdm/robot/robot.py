@@ -9,7 +9,7 @@ Variables d'environnement :
 """
 import os, sys, re, json, html, time, datetime, unicodedata, difflib
 import requests
-from fdm import parse_fdm, controles, parse_deroule, parse_events, analyse_events, stats_equipes
+from fdm import parse_fdm, controles, parse_deroule, parse_events, analyse_events, stats_equipes, evenements
 
 UA = {"User-Agent": "Mozilla/5.0 (stats PRHB, import hebdomadaire)"}
 ROW_P = 7                       # première ligne joueur ; les autres lignes (fin des joueurs, gardiens, score adverse)
@@ -18,8 +18,8 @@ ROW_HEAD = 5                    # en-têtes « J1 vs ... »
 PLACEHOLDER = "non detaille"
 LIC_TAB, LOG_TAB, CTRL_TAB, MATCH_TAB = "_Licences", "_Robot_Journal", "_Import_Controle", "_Matchs"
 MATCH_HEAD = ["J", "Domicile", "Extérieur", "Date", "Salle", "Adresse", "Lat", "Lng", "Equipement",
-              "MT dom", "MT ext", "Deroule", "Buts 7m", "Rouges", "FDM", "Mise a jour", "Exclusions", "Tirs", "V"]
-MATCH_V = "4"   # version du contenu de _Matchs : une ligne d'une version antérieure est relue
+              "MT dom", "MT ext", "Deroule", "Buts 7m", "Rouges", "FDM", "Mise a jour", "Exclusions", "Tirs", "V", "Evts"]
+MATCH_V = "5"   # version du contenu de _Matchs : une ligne d'une version antérieure est relue
 
 
 def norm(s):
@@ -577,6 +577,7 @@ def maj_matchs(book, cfg, matchs, pdf_cache, now, journal):
                             if ev and (tq[0]["buts"], tq[1]["buts"]) == tuple(f["score"]):
                                 d["Deroule"] = " ".join(f"{t}:{h}-{a}" for t, h, a in ev)
                                 d["Exclusions"] = " ".join(f"{('D', 'E')[sd]}:{t}" for t, sd in analyse_events(f, evs)[0])
+                                d["Evts"] = evenements(f, evs)
                             else:
                                 d["Deroule"] = "ND"
                             d["V"] = MATCH_V
@@ -585,7 +586,9 @@ def maj_matchs(book, cfg, matchs, pdf_cache, now, journal):
                             cote = ("D", "E")
                             d["Buts 7m"] = "|".join(f"{cote[i]}:{p['nom']}={p['7m']}" for i, t in enumerate(f["equipes"]) if not feuille_suspecte(t) for p in t["joueurs"] if p["7m"])
                             d["Rouges"] = "|".join(f"{cote[i]}:{p['nom']}" for i, t in enumerate(f["equipes"]) for p in t["joueurs"] if p["dis"])
-                            excl, tirs = analyse_events(f, parse_events(data))
+                            evs = parse_events(data)
+                            excl, tirs = analyse_events(f, evs)
+                            d["Evts"] = evenements(f, evs, {i for i, t in enumerate(f["equipes"]) if feuille_suspecte(t)})
                             d["Exclusions"] = " ".join(f"{cote[sd]}:{t}" for t, sd in excl)
                             d["Tirs"] = "|".join(f"{cote[sd]}:{nom}={v[0]}/{v[1]}" for (sd, nom), v in tirs.items()
                                                  if not feuille_suspecte(f["equipes"][sd]))

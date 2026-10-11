@@ -184,3 +184,26 @@ def stats_equipes(events):
         elif act in ("Tir non-cadré", "Tir"): out[s]["tirs"] += 1
         elif act == "Arrêt": out[s]["arrets"] += 1
     return out
+
+
+CODES = {"But": "B", "But 7m": "P", "Arrêt": "A", "2MN": "X", "Disqualification": "R", "Carton rouge": "R", "Temps mort": "M"}
+
+
+def evenements(fdm, events, sans_nom=()):
+    """Déroulé compact pour le débrief de l'appli : « secondes:code:côté:nom » séparés par « | ».
+    Codes : B but, P but sur 7 m, A arrêt (nom de la gardienne / du gardien), X exclusion 2 min, R carton rouge, M temps mort.
+    Côté : D (domicile) ou E (extérieur). sans_nom : côtés (0/1) dont la feuille est jugée erronée (noms non fiables)."""
+    cote = {}
+    for i, t in enumerate(fdm["equipes"]):
+        for p in t["joueurs"]:
+            cote.setdefault(p["nom"], set()).add(i)
+    out = []
+    for t, h, a, act, nom in events:
+        c = CODES.get(act)
+        if not c: continue
+        if nom in EQUIPE: s, n = EQUIPE[nom], ""                       # feuille sans détail : l'équipe seulement
+        elif nom in cote and len(cote[nom]) == 1: s, n = next(iter(cote[nom])), nom
+        else: continue
+        if s in sans_nom: n = ""
+        out.append(f"{t}:{c}:{'DE'[s]}:{n.replace('|', ' ').replace(':', ' ')}")
+    return "|".join(out)
