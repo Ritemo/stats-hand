@@ -1,5 +1,5 @@
 // Change ce numéro à chaque mise à jour de l'appli pour forcer le rafraîchissement
-const VERSION = "v25";
+const VERSION = "n3f-v19";
 const SHELL = ["./", "index.html", "manifest.json", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", e => {
@@ -7,7 +7,7 @@ self.addEventListener("install", e => {
   self.skipWaiting();
 });
 self.addEventListener("activate", e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k)))));
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k.startsWith("n3f-") && k !== VERSION).map(k => caches.delete(k)))));
   self.clients.claim();
 });
 // Réseau d'abord (toujours la dernière version), cache seulement hors connexion.

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1C1C1C">
-<title>Stats Hand HON M-A</title>
+<title>Stats Hand N3F</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -361,11 +361,11 @@ button:active,.route:active{opacity:.72}
 
 <script>
 /* ============ CONFIGURATION ============ */
-const BASE = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQQZGLWbKFAw9z2IYBoIqk5LVGNu70HT-mFm3ukchTMOOAyKhEqKV8VTlrHBJEZljLVHzpGTNApMpGM/pub?output=csv";
-const GID = { joueurs: "2055642853", gardiens: "1898483188", clubs: "1741053301",
-              journees: "1084857610", joueursJ: "1109594874",
-              matchs: "211389371",   // matchs : gid de l'onglet _Matchs créé par le robot (horaires, salles, momentum, 7 m)
-              calendrier: "1933894624" };   // calendrier : gid de l'onglet Calendrier (à renseigner)   // journees / joueursJ : onglets _Data_Journees et _Data_Joueurs_J
+const BASE = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTQEvx7jxWxdWHj4nMG3XGBZf-J3eoTf5ZpgSciZ2gHBo8rFvdzTiTyiMdyBcRGRAAOXCOmadSHDjgA/pub?output=csv";
+const GID = { joueurs: "1558817234", gardiens: "507833729", clubs: "233541778",
+              journees: "1026016815", joueursJ: "1094642153",
+              matchs: "1359507357",   // matchs : gid de l'onglet _Matchs créé par le robot (horaires, salles, momentum, 7 m)
+              calendrier: "741357139" };   // calendrier : gid de l'onglet Calendrier (à renseigner)   // journees / joueursJ : onglets _Data_Journees et _Data_Joueurs_J
 const MY_TEAM = "Pays Riolais HB";          // équipe mise en avant (orange) dans les classements
 const PLACEHOLDER = "non detaille";          // ligne du score J1, exclue des stats individuelles
 const LOGO_DIR = "logos/";                   // logos : logos/<nom-du-club>.png (voir LISTE-LOGOS.txt)
@@ -405,7 +405,8 @@ function splitName(full){
 }
 const initials=n=>{const s=splitName(n);return((s.first[0]||"")+(s.last[0]||"")).toUpperCase();};
 const nameHTML=n=>{const s=splitName(n);return `${esc(s.first)} <span class="ln">${esc(s.last)}</span>`;};
-const shortClub=n=>n.replace(/\s*\([A-Z]\)\s*$/,"").replace(/\s+Haute-Sa[oô]ne$/i,"").replace(/^(HBC|HB|CA|CS|JA)\s+/,"").replace(/\s+HB$/,"").replace(/^des\s+/,"");
+const SHORT={"ASCAP Pays de Montbéliard HB":"ASCAP Montbéliard","Ent. Saône Mamirolle HB (B)":"Mamirolle","HBC Quingey Val de Loue":"Quingey"};
+const shortClub=n=>SHORT[n]||n.replace(/\s*\([A-Z]\)\s*$/,"").replace(/\s+Haute-Sa[oô]ne$/i,"").replace(/^(HBC|HB|CA|CS|JA)\s+/,"").replace(/\s+HB$/,"").replace(/^des\s+/,"");
 const mono=n=>{const w=n.replace(/\(.*?\)/g,"").split(/[\s-]+/).filter(x=>x&&!/^(de|des|du)$/i.test(x));return w.map(x=>x[0]).join("").toUpperCase().slice(0,4);};
 function logoHTML(club,size){
   return `<span class="logo l${size}"><img src="${LOGO_DIR}${slug(club)}.png" alt="" loading="lazy" onerror="this.outerHTML='<span class=&quot;mono&quot;>${esc(mono(club))}</span>'"></span>`;
@@ -553,9 +554,9 @@ async function load(spin){
     const raw={joueurs,gardiens,clubs,journees,joueursJ,calendrier,matchs},built=build(raw);
     if(!built.clubs.length) throw new Error("format");
     for(const k in oddsCache) delete oddsCache[k];
-    D={...built,at:Date.now(),offline:false}; store.set("hand-cache",{raw,at:D.at});
+    D={...built,at:Date.now(),offline:false}; store.set("hand-n3f-cache",{raw,at:D.at});
   }catch(e){
-    const c=store.get("hand-cache");
+    const c=store.get("hand-n3f-cache");
     if(c) D={...build(c.raw),at:c.at,offline:true}; else D=null;
   }
   loading=false; setSpin(false); render();
@@ -619,7 +620,7 @@ function keeperRow(k,{rank=null,showClub=true,max=1}={}){
 function pHome(){
   const nc=nextCard(MY_TEAM), ld=lastDayHTML();
   return `<header class="top slim">${IC.court}<div class="bar-top">
-      <div class="brand">${logoHTML(MY_TEAM,40)}<span><b>Honneur <em>masculine</em></b><small>Poule A, saison 2026-2027</small></span></div>${refreshBtn}</div></header>
+      <div class="brand">${logoHTML(MY_TEAM,40)}<span><b>Nationale 3 <em>féminine</em></b><small>Poule N3F, saison 2026-2027</small></span></div>${refreshBtn}</div></header>
   <main>
     ${nc}${ld}
     ${!nc&&!ld?`<div class="empty">Ajoute l'onglet Calendrier au fichier pour voir le prochain match et les derniers résultats.</div>`:""}
@@ -631,10 +632,10 @@ function pEquipes(){
   return pageHead("Les équipes",false)+`<main>
     <div class="clubs-grid">${clubs.map(c=>{const st=D.standings.find(x=>x.club===c.name);
       return `<button class="club-card${c.name===MY_TEAM?" mine":""}" data-go="club/${slug(c.name)}">${logoHTML(c.name,64)}<span>${esc(shortClub(c.name))}</span>${st?`<span class="sub">${ordM(st.rank)}, ${st.pts} pts</span>`:""}</button>`;}).join("")}</div>
-    <p class="note">Touchez un club pour voir son classement, son calendrier, ses records et ses joueurs.</p>${stamp()}</main>`;
+    <p class="note">Touchez un club pour voir son classement, son calendrier, ses records et ses joueuses.</p>${stamp()}</main>`;
 }
 const viewSeg=(opts,cur)=>`<div class="seg" role="group">${opts.map(([p,l])=>`<button data-go="${p}" data-rep aria-pressed="${p===cur}">${l}</button>`).join("")}</div>`;
-const SEG_CLASS=[["general","Classement"],["classement","Stats des clubs"]], SEG_JOUEURS=[["buteurs","Buteurs"],["gardiens","Gardiens"]];
+const SEG_CLASS=[["general","Classement"],["classement","Stats des clubs"]], SEG_JOUEURS=[["buteurs","Buteuses"],["gardiens","Gardiennes"]];
 const METRICS={
   marques:{l:"Attaque",get:c=>c.marques,desc:true,show:c=>c.marques,sub:c=>`${c.marques} buts marqués`},
   encaisses:{l:"Défense",get:c=>c.encaisses,desc:false,show:c=>c.encaisses,sub:c=>`${c.encaisses} buts encaissés`},
@@ -668,29 +669,29 @@ function pGeneral(){
     <p class="note">${k==="dom"?"Uniquement les matchs joués à domicile. ":k==="ext"?"Uniquement les matchs joués à l'extérieur. ":""}Victoire 3 points, nul 2, défaite 1. À égalité de points, départage à la différence de buts puis aux buts marqués.</p>${stamp()}</main>`;
 }
 function pButeurs(){
-  let h=viewSeg(SEG_JOUEURS,"buteurs")+chips("buteurs",[["champ","Total"],["moy","Par match"],...(D.hasM?[["sept","7 m"]]:[]),["club","Meilleur par club"]]);
+  let h=viewSeg(SEG_JOUEURS,"buteurs")+chips("buteurs",[["champ","Total"],["moy","Par match"],...(D.hasM?[["sept","7 m"]]:[]),["club","Meilleure par club"]]);
   if(ui.buteurs==="champ"){
     const top=ranked([...D.players].sort(scorerSort).slice(0,30),p=>p.buts+"|"+(pct(p.buts,p.tirs)||0).toFixed(4));
-    h+=`<div class="list">${top.map(p=>playerRow(p,{rank:p.rank,max:top[0]?.buts||1})).join("")}</div><p class="note">À buts égaux, le meilleur pourcentage au tir passe devant. J1 non comptée (feuille de match non détaillée).</p>`;
+    h+=`<div class="list">${top.map(p=>playerRow(p,{rank:p.rank,max:top[0]?.buts||1})).join("")}</div><p class="note">À buts égaux, le meilleur pourcentage au tir passe devant.</p>`;
   }else if(ui.buteurs==="sept"){
     const top=ranked(D.players.filter(p=>p.b7>0).sort((a,b)=>b.b7-a.b7||b.buts-a.buts).slice(0,30),p=>p.b7);
     h+=top.length?`<div class="list">${top.map(p=>playerRow(p,{rank:p.rank,max:top[0].b7,sept:true})).join("")}</div><p class="note">Buts marqués sur jet de 7 m, d'après les feuilles de match (les 7 m manqués n'y figurent pas).</p>`:`<div class="empty">Aucun but sur 7 m relevé pour l'instant.</div>`;
   }else if(ui.buteurs==="moy"){
     const pool=D.players.filter(p=>p.m>=2), avg=p=>p.buts/p.m;
     const top=ranked(pool.sort((a,b)=>avg(b)-avg(a)||b.buts-a.buts).slice(0,30),p=>avg(p).toFixed(4));
-    h+=top.length?`<div class="list">${top.map(p=>playerRow(p,{rank:p.rank,max:top[0]?avg(top[0]):1,moy:true})).join("")}</div><p class="note">Buts par match joué, joueurs ayant disputé au moins 2 matchs. J1 non comptée.</p>`:`<div class="empty">Il faut au moins 2 matchs joués pour ce classement.</div>`;
+    h+=top.length?`<div class="list">${top.map(p=>playerRow(p,{rank:p.rank,max:top[0]?avg(top[0]):1,moy:true})).join("")}</div><p class="note">Buts par match joué, joueuses ayant disputé au moins 2 matchs.</p>`:`<div class="empty">Il faut au moins 2 matchs joués pour ce classement.</div>`;
   }else{
     const best=D.clubs.map(c=>D.players.filter(p=>p.club===c.name).sort(scorerSort)[0]).filter(Boolean).sort(scorerSort);
     h+=`<div class="list">${best.map(p=>playerRow(p,{max:best[0]?.buts||1})).join("")}</div>`;
   }
-  return pageHead("Joueurs",false)+`<main>${h}${stamp()}</main>`;
+  return pageHead("Joueuses",false)+`<main>${h}${stamp()}</main>`;
 }
 function pGardiens(){
   let h=viewSeg(SEG_JOUEURS,"gardiens")+chips("gardiens",[["gardiens","Individuel"],["pct","% arrêt équipe"],["total","Arrêts équipe"]]);
   if(ui.gardiens==="gardiens"){
     const ks=ranked(D.keepers.filter(k=>k.matchs>0).sort((a,b)=>b.arrets-a.arrets||a.matchs-b.matchs).slice(0,20),k=>k.arrets+"|"+k.matchs);
     h+=`<div class="list">${ks.map(k=>keeperRow(k,{rank:k.rank,max:ks[0]?.arrets||1})).join("")}</div>
-      <p class="note">La feuille de match ne donne pas les buts encaissés par gardien : le pourcentage d'arrêt n'existe qu'au niveau de l'équipe (filtre « % arrêt équipe »).</p>`;
+      <p class="note">La feuille de match ne donne pas les buts encaissés par gardienne : le pourcentage d'arrêt n'existe qu'au niveau de l'équipe (filtre « % arrêt équipe »).</p>`;
   }else{
     const byPct=ui.gardiens==="pct";
     const cs=ranked([...D.clubs].sort((a,b)=>byPct?((b.pctArret||0)-(a.pctArret||0)||b.arrets-a.arrets):(b.arrets-a.arrets||(b.pctArret||0)-(a.pctArret||0))),c=>byPct?(c.pctArret||0).toFixed(4):c.arrets+"|"+(c.pctArret||0).toFixed(4));
@@ -701,7 +702,7 @@ function pGardiens(){
       <span class="val"><span class="num">${byPct?fmtPct(c.pctArret):c.arrets}</span></span></button>`}).join("")}</div>
       <p class="note">% d'arrêt équipe = arrêts ÷ (arrêts + buts encaissés), calculé uniquement sur les journées où les arrêts sont saisis.</p>`;
   }
-  return pageHead("Joueurs",false)+`<main>${h}${stamp()}</main>`;
+  return pageHead("Joueuses",false)+`<main>${h}${stamp()}</main>`;
 }
 function pClub(s){
   const c=D.clubs.find(x=>slug(x.name)===s); if(!c) return pageHead("Club introuvable")+`<main><div class="empty">Ce club n'existe pas dans le fichier.</div></main>`;
@@ -710,7 +711,7 @@ function pClub(s){
   const r=k=>clubRank(c,k), maxP=Math.max(1,...ps.map(p=>p.buts)), maxK=Math.max(1,...ks.map(k=>k.arrets));
   const rk=(k,l)=>{const v=r(k);return `<div class="rk${v===1?" best":""}"><div class="num">${ordM(v)}</div><div class="l">${l}</div></div>`;};
   return `<header class="top">${IC.court}<div class="bar-top">${backBtn}<div class="t"></div>${refreshBtn}</div>
-    <div class="club-head">${logoHTML(c.name,72)}<div><h1>${esc(c.name)}</h1><div class="sub">Honneur masculine, poule A</div></div></div>
+    <div class="club-head">${logoHTML(c.name,72)}<div><h1>${esc(c.name)}</h1><div class="sub">Nationale 3 féminine</div></div></div>
     <div class="board"><div><div class="ttl">Buts marqués</div><div class="num">${c.marques}</div><div class="lbl">${ordF(r("marques"))} attaque de la poule</div></div>
       <div><div class="ttl">Buts encaissés</div><div class="num">${c.encaisses}</div><div class="lbl">${ordF(r("encaisses"))} défense de la poule</div></div></div>
     <div class="minis"><div><b>${fmtPct(c.pctTir)}</b>Réussite au tir</div><div><b>${fmtPct(c.pctArret)}</b>Arrêts équipe</div><div><b>${c.excl}</b>Exclusions 2 min</div></div></header>
@@ -724,11 +725,11 @@ function pClub(s){
     <h2>Rang par statistique</h2>
     <div class="ranks">${rk("marques","Attaque")}${rk("encaisses","Défense")}${rk("pctTir","% tir")}${rk("pctArret","% arrêt")}${rk("arrets","Total arrêts")}${rk("excl","Discipline")}</div>`:""}
     ${T==="stats"?`${evoClubHTML(c,"courbes")}${recordsHTML(c)}${numHTML(c)}${D.evo?"":`<div class="empty">Les statistiques détaillées apparaîtront après la première journée.</div>`}`:""}
-    ${T==="effectif"?`<h2>Joueurs</h2>
-    ${ps.length?`<div class="list">${ps.map(p=>playerRow(p,{showClub:false,max:maxP})).join("")}</div>`:`<div class="empty">Aucun joueur saisi.</div>`}
-    <h2 style="margin-top:22px">Gardiens</h2>
-    ${ks.length?`<div class="list">${ks.map(k=>keeperRow(k,{showClub:false,max:maxK})).join("")}</div>`:`<div class="empty">Aucun gardien saisi.</div>`}
-    <p class="note">La J1 compte dans les totaux d'équipe mais pas dans les stats individuelles (feuille de match non détaillée).</p>`:""}
+    ${T==="effectif"?`<h2>Joueuses</h2>
+    ${ps.length?`<div class="list">${ps.map(p=>playerRow(p,{showClub:false,max:maxP})).join("")}</div>`:`<div class="empty">Aucune joueuse saisie.</div>`}
+    <h2 style="margin-top:22px">Gardiennes</h2>
+    ${ks.length?`<div class="list">${ks.map(k=>keeperRow(k,{showClub:false,max:maxK})).join("")}</div>`:`<div class="empty">Aucune gardienne saisie.</div>`}
+    <p class="note">Une journée sans feuille de match détaillée compte dans les totaux d'équipe, pas dans les stats individuelles.</p>`:""}
     ${stamp()}</main>`;
 }
 function render(){
@@ -738,7 +739,7 @@ function render(){
   const {page,arg,arg2}=route();
   app.innerHTML=({home:pHome,classement:pClassement,buteurs:pButeurs,gardiens:pGardiens,club:()=>pClub(arg),general:pGeneral,journees:()=>pJournees(arg),duel:()=>pDuel(arg,arg2),equipes:pEquipes,une:()=>pUne(arg)}[page]||pHome)();
   const tab={journees:"journees",duel:"journees",general:"general",classement:"general",buteurs:"buteurs",gardiens:"buteurs",equipes:"equipes",club:"equipes",une:"une"}[page]||"home";
-  const tabs=[["home","Accueil",IC.home],...(D.cal.some(m=>m.res)?[["une","À la une",IC.news]]:[]),...(D.cal.length?[["journees","Calendrier",IC.cal]]:[]),[D.standings.length?"general":"classement","Classement",IC.trophy],["buteurs","Joueurs",IC.ball],["equipes","Équipes",IC.teams]];
+  const tabs=[["home","Accueil",IC.home],...(D.cal.some(m=>m.res)?[["une","À la une",IC.news]]:[]),...(D.cal.length?[["journees","Calendrier",IC.cal]]:[]),[D.standings.length?"general":"classement","Classement",IC.trophy],["buteurs","Joueuses",IC.ball],["equipes","Équipes",IC.teams]];
   const dot=p=>p==="une"&&uneJs().some(uneNew)?'<i class="tb-dot"></i>':"";
   document.getElementById("tabbar").innerHTML=`<div class="in${tabs.length>5?" t6":""}">${tabs.map(([p,l,ic])=>`<button data-go="${p==="home"?"":p}" data-tab ${(p===tab||(tab==="general"&&p==="classement"))?'aria-current="page"':""}>${ic}${dot(p)}<span>${l}</span></button>`).join("")}</div>`;
   app.querySelectorAll(".chips").forEach(cs=>{const c=cs.querySelector('[aria-pressed="true"]'); if(c) cs.scrollLeft=c.offsetLeft-cs.clientWidth/2+c.clientWidth/2;});
@@ -867,7 +868,7 @@ function pJournees(arg){
     <div class="chips">${info.Js.map(x=>`<button class="chip" data-seg="jour" data-v="${x}" aria-pressed="${x===j}">J${x}</button>`).join("")}</div>
     <h2>Journée ${j}${d?` <span class="h2s">${wkLabel(d)}</span>`:""}</h2>
     <div class="list">${ms.map(m=>matchRow(m,{scorersLine:true,odds:true,deb:true})).join("")}</div>
-    <p class="note">${played?"Sous chaque score, le meilleur buteur de chaque équipe. ":""}Touchez une rencontre pour ouvrir le face-à-face. Les cotes sont indicatives.</p>${oddsReport(j)}${stamp()}</main>`;
+    <p class="note">${played?"Sous chaque score, la meilleure buteuse de chaque équipe. ":""}Touchez une rencontre pour ouvrir le face-à-face. Les cotes sont indicatives.</p>${oddsReport(j)}${stamp()}</main>`;
 }
 function clubData(name){
   const c=D.clubs.find(x=>x.name===name)||{name,marques:0,encaisses:0,pctTir:null,pctArret:null,excl:0,arrets:0};
@@ -888,7 +889,7 @@ function pDuel(js,hs){
   h+=oddsBlock(m);
   if(r){
     const col2=n=>{const s=scorers(n,j);return `<div class="list mini">${s.length?s.map(x=>`<div class="mini-row"><span>${esc(pName(x.name))}</span><b>${x.b}</b></div>`).join(""):`<div class="mini-row"><span>Pas de détail</span></div>`}</div>`;};
-    h+=`<h2>Buteurs du match</h2><div class="two">${col2(m.home)}${col2(m.away)}</div>`;
+    h+=`<h2>Buteuses du match</h2><div class="two">${col2(m.home)}${col2(m.away)}</div>`;
     h+=momentumHTML(m);
   }
   const o=D.cal.find(x=>x.home===m.away&&x.away===m.home);
@@ -909,8 +910,8 @@ function pDuel(js,hs){
   if(!r) h+=fichesHTML(m);
   h+=`<h2>Face-à-face</h2><div class="duel">${rows}</div>`;
   h+=`<h2>À surveiller</h2>`+[m.home,m.away].map(n=>{const ps=D.players.filter(p=>p.club===n).sort(scorerSort).slice(0,3);
-    return `<div class="list" style="margin-bottom:10px"><div class="lh">${logoHTML(n,32)}<b>${esc(n)}</b></div>${ps.length?ps.map(p=>playerRow(p,{showClub:false,max:ps[0].buts||1})).join(""):`<div class="empty">Aucun joueur saisi.</div>`}</div>`;}).join("");
-  h+=`<p class="note">En orange, l'équipe la mieux placée sur chaque ligne. Chiffres de toute la saison à ce jour, stats individuelles hors J1 (non détaillée).</p>${stamp()}</main>`;
+    return `<div class="list" style="margin-bottom:10px"><div class="lh">${logoHTML(n,32)}<b>${esc(n)}</b></div>${ps.length?ps.map(p=>playerRow(p,{showClub:false,max:ps[0].buts||1})).join(""):`<div class="empty">Aucune joueuse saisie.</div>`}</div>`;}).join("");
+  h+=`<p class="note">En orange, l'équipe la mieux placée sur chaque ligne. Chiffres de toute la saison à ce jour, stats individuelles hors journées non détaillées.</p>${stamp()}</main>`;
   return h;
 }
 
@@ -1123,7 +1124,7 @@ function pUne(arg){
    Écrit à partir des données du match : déroulé nominatif lu par le robot sur la feuille de match, stats de la journée,
    parcours et classement des deux équipes. Titre, chapeau, récit en deux temps, chute, joueurs clés et chiffre du match.
    Les tournures sont tirées au sort, mais le tirage dépend du match : un match donné garde toujours le même texte. */
-const DEB_F = false;                        // true pour une équipe féminine (accords : buteuse, gardienne, elles...)
+const DEB_F = true;                        // true pour une équipe féminine (accords : buteuse, gardienne, elles...)
 const GENTILES = [                          // mot du nom du club (minuscules, sans accent), gentilé masculin, féminin
   ["palente","Bisontins","Bisontines"],["lure","Lurons","Luronnes"],["doubs central","Baumois","Baumoises"],["riolais","Riolais","Riolaises"],
   ["maiche","Maîchois","Maîchoises"],["monts de gy","Gylois","Gyloises"],["franois","Franoisiens","Franoisiennes"],["danjoutin","Danjoutinois","Danjoutinoises"],
@@ -1541,7 +1542,7 @@ function shotsHTML(p){
   const O="#FF6D00",K="var(--ink)",G="#B5B0A8";
   return `<div class="chart" style="margin-top:14px"><h3>Détail des tirs</h3>
     <div class="pbar big"><i style="width:${100*p.buts/T}%;background:${O}"></i><i style="width:${100*ar/T}%;background:${K}"></i><i style="width:${100*hc/T}%;background:${G}"></i></div>
-    <div class="shots"><span><i style="background:${O}"></i><b>${p.buts}</b>but${p.buts>1?"s":""}</span><span><i style="background:${K}"></i><b>${ar}</b>arrêté${ar>1?"s":""} par le gardien</span><span><i style="background:${G}"></i><b>${hc}</b>hors cadre</span></div></div>`;
+    <div class="shots"><span><i style="background:${O}"></i><b>${p.buts}</b>but${p.buts>1?"s":""}</span><span><i style="background:${K}"></i><b>${ar}</b>arrêté${ar>1?"s":""} par la gardienne</span><span><i style="background:${G}"></i><b>${hc}</b>hors cadre</span></div></div>`;
 }
 
 /* ============ COTES (modèle de force des équipes) ============
@@ -1633,7 +1634,7 @@ function ficheHTML(name,kind){
   if(ps[0]&&ps[0].sh&&ps[0].tirs>ps[0].buts) I.push(`Ses tirs manqués : ${Math.min(ps[0].ta,ps[0].tirs-ps[0].buts)} arrêté${ps[0].ta>1?"s":""}, ${Math.max(0,ps[0].tirs-ps[0].buts-ps[0].ta)} hors cadre`);
   const b7=ps.filter(p=>p.b7>0).sort((a,b)=>b.b7-a.b7)[0]; if(b7) I.push(`Aux 7 m : ${pName(b7.name)} (${b7.b7} marqué${b7.b7>1?"s":""})`);
   const k=D.keepers.filter(k=>k.club===name&&k.matchs>0).sort((a,b)=>b.arrets-a.arrets)[0];
-  if(k) I.push(`Le gardien : ${pName(k.name)}, ${fmt1(k.arrets/k.matchs)} arrêts par match`);
+  if(k) I.push(`La gardienne : ${pName(k.name)}, ${fmt1(k.arrets/k.matchs)} arrêts par match`);
   const last=X.gs.slice(-3).reverse().map(g=>`${resOf(g)==="V"?"victoire":resOf(g)==="N"?"nul":"défaite"} ${g.bp}-${g.bc} contre ${shortClub(g.adv||"?")}`);
   if(last.length) I.push(`Derniers matchs : ${last.join(", ")}`);
   const ul=(cls,t,a)=>a.length?`<h3 class="${cls}">${t}</h3><ul>${a.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:"";
@@ -1649,7 +1650,7 @@ function fichesHTML(m){
 /* ============ RECHERCHE ============ */
 function openSearch(){
   if(!D) return;
-  openSheet(`<div class="qbar"><input id="q" type="search" placeholder="Joueur ou club" autocomplete="off" enterkeyhint="search"><button data-close>Fermer</button></div><div id="qres" class="list"></div>`,true);
+  openSheet(`<div class="qbar"><input id="q" type="search" placeholder="Joueuse ou club" autocomplete="off" enterkeyhint="search"><button data-close>Fermer</button></div><div id="qres" class="list"></div>`,true);
   setTimeout(()=>{const q=document.getElementById("q"); if(q) q.focus();},250);
 }
 function searchResults(v){
@@ -1674,13 +1675,13 @@ function playerSheet(p){
   openSheet(`<h3>${nameHTML(p.name)}</h3><p class="c">${esc(p.club)}</p><div class="stats">
     <div class="stat"><div class="num">${p.buts}</div><div class="l">Buts</div></div>
     <div class="stat"><div class="num">${fmtPct(pct(p.buts,p.tirs))}</div><div class="l">Réussite au tir (${p.tirs} tirs)</div></div>
-    <div class="stat"><div class="num">${ordM(rc)}</div><div class="l">Buteur du championnat</div></div>
-    <div class="stat"><div class="num">${ordM(rt)}</div><div class="l">Buteur de l'équipe</div></div>
+    <div class="stat"><div class="num">${ordM(rc)}</div><div class="l">Buteuse du championnat</div></div>
+    <div class="stat"><div class="num">${ordM(rt)}</div><div class="l">Buteuse de l'équipe</div></div>
     <div class="stat"><div class="num">${p.excl}</div><div class="l">Exclusions 2 min</div></div>
     <div class="stat"><div class="num">${fmtPct(pct(p.buts,mates.reduce((s,x)=>s+x.buts,0)))}</div><div class="l">Part des buts de l'équipe</div></div>
     ${D.hasM?`<div class="stat"><div class="num">${p.b7}</div><div class="l">Buts sur 7 m</div></div>`:""}${p.red?`<div class="stat"><div class="num">${p.red}</div><div class="l">Carton${p.red>1?"s":""} rouge${p.red>1?"s":""}</div></div>`:""}
     ${p.m?`<div class="stat"><div class="num">${p.m}</div><div class="l">Matchs joués</div></div><div class="stat"><div class="num">${fmt1(p.buts/p.m)}</div><div class="l">Buts par match</div></div>`:""}
-  </div>${shotsHTML(p)}${evoPlayerHTML(p)}<p class="note">Stats individuelles hors J1 (feuille de match non détaillée).</p>`);
+  </div>${shotsHTML(p)}${evoPlayerHTML(p)}<p class="note">Stats individuelles hors journées non détaillées.</p>`);
 }
 
 /* ============ ÉVÉNEMENTS ============ */
@@ -1704,7 +1705,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSheet();});
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&D&&Date.now()-D.at>5*60*1000)load(false);});
 
 (function init(){
-  const c=store.get("hand-cache");
+  const c=store.get("hand-n3f-cache");
   if(c){try{D={...build(c.raw),at:c.at,offline:true};render();}catch(e){}}
   else render();
   load(!c);
