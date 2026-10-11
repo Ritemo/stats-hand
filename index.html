@@ -219,6 +219,16 @@ h2{font-size:23px;font-weight:700;margin:4px 2px 10px}
 .deb ul{margin:0 0 10px;padding-left:18px}.deb li{margin:3px 0;line-height:1.45;font-size:15px}
 .deb-f{background:var(--orange-soft);border-radius:10px;padding:8px 10px}
 .deb-c{display:block;width:100%;margin-top:4px;padding:10px;border-radius:10px;border:1px solid var(--orange);background:transparent;color:var(--orange);font-weight:700;font-size:14px;cursor:pointer}
+.mrow{position:relative}
+.nv{position:absolute;top:3px;left:50%;transform:translateX(-50%);font-size:10px;line-height:14px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:var(--orange);color:#fff;border-radius:7px;padding:0 6px;pointer-events:none}
+.fdm-l{display:block;text-align:center;margin:-10px 0 22px;padding:11px;border:1px solid var(--line);border-radius:10px;color:var(--ink);font-weight:600;font-size:14px;text-decoration:none;background:var(--surface)}
+.swipe-h{text-align:center;color:var(--muted);font-size:13px;margin:-6px 0 14px}
+.deb-more[hidden]{display:none}
+.deb-open{display:block;width:100%;margin:2px 0 4px;padding:9px;border-radius:10px;border:none;background:var(--orange-soft);color:var(--ink);font-weight:700;font-size:14px;cursor:pointer}
+.mr-t{grid-column:1/-1;text-align:center;font-size:13px;font-weight:600;color:var(--ink);margin-top:2px;line-height:1.3}
+.une{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--orange);border-radius:14px;padding:12px 14px;margin-bottom:22px;color:var(--ink);cursor:pointer;font:inherit}
+.une b{display:block;font-size:16px;line-height:1.3;margin-bottom:4px}.une span{display:block;font-size:14px;line-height:1.45;color:var(--muted)}
+.une small{display:block;margin-top:6px;color:var(--orange);font-weight:700;font-size:13px}
 .mini-row{display:flex;justify-content:space-between;gap:6px;padding:7px 10px;border-top:1px solid var(--line);font-size:14px}
 .mini-row:first-child{border-top:0}
 .mini-row span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -594,7 +604,7 @@ function pHome(){
   return `<header class="top slim">${IC.court}<div class="bar-top">
       <div class="brand">${logoHTML(MY_TEAM,40)}<span><b>Honneur <em>masculine</em></b><small>Poule A, saison 2026-2027</small></span></div>${refreshBtn}</div></header>
   <main>
-    ${nc}${ld}
+    ${uneHTML()}${nc}${ld}
     ${!nc&&!ld?`<div class="empty">Ajoute l'onglet Calendrier au fichier pour voir le prochain match et les derniers résultats.</div>`:""}
     ${stamp()}
   </main>`;
@@ -776,7 +786,7 @@ function venueTable(kind){
 const recTxt=x=>x.j?`${x.v} V, ${x.n} N, ${x.d} D`:"Aucun match";
 
 /* ---------- Composants ---------- */
-function matchRow(m,{scorersLine=false,odds=false}={}){
+function matchRow(m,{scorersLine=false,odds=false,deb=false}={}){
   const r=m.res, hw=r&&r.h>r.a, aw=r&&r.a>r.h, mine=m.home===MY_TEAM||m.away===MY_TEAM;
   let sc="";
   if(r&&scorersLine){ const f=c=>{const s=scorers(c,m.j)[0];return s?`${esc(pName(s.name))} (${s.b})`:"";}; const a=f(m.home),b=f(m.away);
@@ -784,7 +794,7 @@ function matchRow(m,{scorersLine=false,odds=false}={}){
   return `<button class="mrow${mine?" mine":""}" data-go="duel/${m.j}/${slug(m.home)}">
     <span class="mr-l"><span class="mr-n${hw?" w":""}">${esc(shortClub(m.home))}</span>${logoHTML(m.home,32)}</span>
     <span class="mr-s">${r?`${r.h}<i>-</i>${r.a}`:`<small>vs</small>${m.info&&m.info.dt?`<small class="hr">${fmtDay(m.info.dt)}</small>`:""}`}</span>
-    <span class="mr-r">${logoHTML(m.away,32)}<span class="mr-n${aw?" w":""}">${esc(shortClub(m.away))}</span></span>${sc}${odds?oddsLine(m):""}</button>`;
+    <span class="mr-r">${logoHTML(m.away,32)}<span class="mr-n${aw?" w":""}">${esc(shortClub(m.away))}</span></span>${sc}${deb&&r?(()=>{try{const d=debrief(m);return d?`<span class="mr-t">${esc(d.title.replace(/\s*\(\d+-\d+\)$/,""))}</span>`:"";}catch(e){return "";}})():""}${odds?oddsLine(m):""}${r&&isNew(m)?`<span class="nv">Nouveau</span>`:""}</button>`;
 }
 function nextCard(club){
   const m=nextMatch(club); if(!m) return "";
@@ -793,6 +803,11 @@ function nextCard(club){
     <span class="nx-teams"><span class="nx-t">${logoHTML(m.home,64)}<span>${esc(shortClub(m.home))}</span></span><span class="nx-vs">VS</span>
       <span class="nx-t">${logoHTML(m.away,64)}<span>${esc(shortClub(m.away))}</span></span></span>
     <span class="nx-go">Voir le face-à-face ›</span></button>${routeHTML(m)||'<div style="height:12px"></div>'}`;
+}
+function uneHTML(){
+  const m=D.cal.filter(x=>x.res&&(x.home===MY_TEAM||x.away===MY_TEAM)).sort((a,b)=>b.j-a.j)[0]; if(!m) return "";
+  let d=null; try{ d=debrief(m); }catch(e){ return ""; } if(!d) return "";
+  return `<h2>À la une</h2><button class="une" data-go="duel/${m.j}/${slug(m.home)}"><b>${esc(d.title)}</b><span>${esc(d.chapo)}</span><small>Lire le débrief de la J${m.j}</small></button>`;
 }
 function lastDayHTML(){
   const info=calInfo(); if(!info||!info.last) return "";
@@ -838,7 +853,7 @@ function pJournees(arg){
   return pageHead("Calendrier",false)+`<main>
     <div class="chips">${info.Js.map(x=>`<button class="chip" data-seg="jour" data-v="${x}" aria-pressed="${x===j}">J${x}</button>`).join("")}</div>
     <h2>Journée ${j}${d?` <span class="h2s">${wkLabel(d)}</span>`:""}</h2>
-    <div class="list">${ms.map(m=>matchRow(m,{scorersLine:true,odds:true})).join("")}</div>
+    <div class="list">${ms.map(m=>matchRow(m,{scorersLine:true,odds:true,deb:true})).join("")}</div>
     <p class="note">${played?"Sous chaque score, le meilleur buteur de chaque équipe. ":""}Touchez une rencontre pour ouvrir le face-à-face. Les cotes sont indicatives.</p>${oddsReport(j)}${stamp()}</main>`;
 }
 function clubData(name){
@@ -854,8 +869,9 @@ function pDuel(js,hs){
   let h=`<header class="top">${IC.court}<div class="bar-top">${backBtn}<div class="t"><div class="page-title">Journée ${j}</div></div>${refreshBtn}</div>
     <div class="duel-head">${side(m.home,"Domicile")}<div class="dh-s">${r?`<span class="num">${r.h}-${r.a}</span>`:`<span class="vs">VS</span>`}<small>${m.info&&m.info.dt?fmtDT(m.info.dt):m.date?wkLabel(m.date):""}</small></div>${side(m.away,"Extérieur")}</div></header><main>`;
   h+=`<div class="chips">${D.cal.filter(x=>x.j===j).map(x=>`<button class="chip" data-go="duel/${j}/${slug(x.home)}" data-rep aria-pressed="${x===m}">${esc(shortClub(x.home))} - ${esc(shortClub(x.away))}</button>`).join("")}</div>`;
+  h+=swipeHint();
   if(!r&&m.info&&m.info.salle) h+=`<h2>Lieu</h2>${routeHTML(m)}`;
-  if(r) h+=debriefHTML(m);
+  if(r){ h+=debriefHTML(m); if(m.info&&/^[A-Z]{4}/.test(m.info.fdm||"")) h+=`<a class="fdm-l" href="${fdmUrl(m.info.fdm)}" target="_blank" rel="noopener">Voir la feuille de match officielle (PDF)</a>`; markSeen(m); }
   h+=oddsBlock(m);
   if(r){
     const col2=n=>{const s=scorers(n,j);return `<div class="list mini">${s.length?s.map(x=>`<div class="mini-row"><span>${esc(pName(x.name))}</span><b>${x.b}</b></div>`).join(""):`<div class="mini-row"><span>Pas de détail</span></div>`}</div>`;};
@@ -886,6 +902,27 @@ function pDuel(js,hs){
 }
 
 
+
+/* ============ DÉBRIEFS LUS (pastille « Nouveau »), GLISSEMENT ENTRE LES MATCHS ============ */
+const SEEN_KEY="deb-vus"; let SEEN=null;
+const debKey=m=>m.j+"|"+m.home+"|"+(m.res?m.res.h+"-"+m.res.a:"");
+function seenSet(){ if(SEEN) return SEEN; let v=null; try{ v=localStorage.getItem(SEEN_KEY); }catch(e){}
+  try{ SEEN=v?new Set(JSON.parse(v)):null; }catch(e){ SEEN=null; }
+  if(!SEEN){ SEEN=new Set((D&&D.cal?D.cal:[]).filter(m=>m.res).map(debKey)); seenSave(); }   // première visite : rien n'est « nouveau »
+  return SEEN; }
+function seenSave(){ try{ localStorage.setItem(SEEN_KEY,JSON.stringify([...SEEN].slice(-500))); }catch(e){} }
+const isNew=m=>!!(m.res&&!seenSet().has(debKey(m)));
+function markSeen(m){ if(m.res&&!seenSet().has(debKey(m))){ SEEN.add(debKey(m)); seenSave(); } }
+const fdmUrl=c=>`https://fdm.fdme.ffhandball.fr/${c[0]}/${c[1]}/${c[2]}/${c[3]}/${c}.pdf`;
+function swipeHint(){ let n=0; try{ n=+(localStorage.getItem("swipe-h")||0); localStorage.setItem("swipe-h",n+1); }catch(e){ n=9; }
+  return n<4?`<p class="swipe-h">Glissez vers la gauche ou la droite pour changer de match</p>`:""; }
+let swX=null, swY=null;
+document.addEventListener("touchstart",e=>{ swX=null; if(!location.hash.startsWith("#/duel/")||e.touches.length!==1) return;
+  if(e.target.closest(".chips,svg,.seg,.sheet")) return; swX=e.touches[0].clientX; swY=e.touches[0].clientY; },{passive:true});
+document.addEventListener("touchend",e=>{ if(swX==null) return; const t=e.changedTouches[0], dx=t.clientX-swX, dy=t.clientY-swY; swX=null;
+  if(Math.abs(dx)<70||Math.abs(dy)>Math.abs(dx)*0.6||!D) return;
+  const R=route(), j=+R.arg, ms=D.cal.filter(x=>x.j===j), i=ms.findIndex(x=>slug(x.home)===R.arg2); if(i<0) return;
+  const n=ms[i+(dx<0?1:-1)]; if(n) location.replace("#/duel/"+j+"/"+slug(n.home)); },{passive:true});
 
 /* ============ DÉBRIEF DU MATCH (style article) ============
    Écrit à partir des données du match : déroulé nominatif lu par le robot sur la feuille de match, stats de la journée,
@@ -1107,7 +1144,7 @@ function debrief(m){
       `Entre la ${mn(sr[0].t)} et la ${mn(sr[sr.length-1].t)}, ${nm(sr[0].n)} écœure les ${g.att} adverses avec ${nb(sr.length)} arrêts consécutifs.`,`${nm(sr[0].n)} sort le grand jeu entre la ${mn(sr[0].t)} et la ${mn(sr[sr.length-1].t)} : ${nb(sr.length)} arrêts d'affilée.`,
       `Dans les buts ${de(T[s])}, ${nm(sr[0].n)} multiplie les parades (${sr.length} de suite entre la ${mn(sr[0].t)} et la ${mn(sr[sr.length-1].t)}).`])});
   });
-  kp.sort((a,b)=>b.w-a.w).slice(0,1).forEach(x=>put(x.t,x.txt));
+  kp.sort((a,b)=>b.w-a.w).slice(0,1).forEach(x=>put(Math.max(x.t,600.2),x.txt));
   reds.forEach(e=>{ if(e.n) put(e.t,pick([`${nm(e.n)} ${de(T[e.s])} est exclu${g.e} définitivement à la ${mn(e.t)}.`,`Carton rouge pour ${nm(e.n)} (${T[e.s]}) à la ${mn(e.t)}.`])); });
   if(w&&N&&!A.some(x=>x[0]>2700&&x[0]<3600)){ const L=X(l), W2=X(w); put(3599,pick([`${L.N} ne ${L.v("reviendra","reviendront")} plus.`,`La fin de match ne change plus rien : ${T[w]} l'emporte ${score}.`,`${W2.N} ${W2.v("gère","gèrent")} son avance jusqu'à la sirène.`.replace("son avance",W2.pl?"leur avance":"son avance"),`${W2.N} ${W2.v("déroule","déroulent")} jusqu'au bout.`])); }
   A.sort((a,b)=>a[0]-b[0]);
@@ -1200,9 +1237,10 @@ function debriefHTML(m){
   const kl="";
   const txt=[d.title,"",d.chapo,"",...d.paras,...(d.fig?["","Le chiffre : "+d.fig]:[])].join("\n");
   DEB_TXT[m.j+"|"+m.home]=txt;
-  return `<h2>Le débrief</h2><div class="deb"><h3>${esc(d.title)}</h3><p class="deb-ch">${esc(d.chapo)}</p>${d.paras.map(p=>`<p>${esc(p)}</p>`).join("")}
+  return `<h2>Le débrief</h2><div class="deb"><h3>${esc(d.title)}</h3><p class="deb-ch">${esc(d.chapo)}</p>
+    <button class="deb-open" data-debmore>Lire la suite</button><div class="deb-more" hidden>${d.paras.map(p=>`<p>${esc(p)}</p>`).join("")}
     ${kl?`<div class="deb-k">${d.F?"Joueuses":"Joueurs"} clés</div><ul>${kl}</ul>`:""}${d.fig?`<p class="deb-f"><b>Le chiffre :</b> ${esc(d.fig)}</p>`:""}
-    <button class="deb-c" data-deb="${esc(m.j+"|"+m.home)}">Copier le débrief</button></div>`;
+    <button class="deb-c" data-deb="${esc(m.j+"|"+m.home)}">Copier le débrief</button></div></div>`;
 }
 const DEB_TXT={};
 
@@ -1229,7 +1267,7 @@ function buildMatchs(raw,names,cal){
     I.ex=(o["exclusions"]||"").split(" ").filter(Boolean).map(x=>[+x.slice(2),x[0]==="D"?"h":"a"]).filter(x=>!isNaN(x[0]));
     I.sh=(o["tirs"]||"").split("|").filter(Boolean).map(x=>{const r=x.slice(2),i=r.lastIndexOf("="),v=r.slice(i+1).split("/");return {club:side(x[0]),nom:r.slice(0,i),a:+v[0]||0,h:+v[1]||0};});
     I.v2=(o["v"]||"")!=="";
-    I.ev=evParse(o["evts"]);
+    I.ev=evParse(o["evts"]); I.fdm=(o["fdm"]||"").trim();
     m.info=I;
   });
   return ok;
@@ -1454,6 +1492,7 @@ function playerSheet(p){
 document.addEventListener("click",e=>{
   const t=e.target;
   if(t.closest("[data-search]")){openSearch();return;}
+  const dm=t.closest("[data-debmore]"); if(dm){ const box=dm.nextElementSibling; box.hidden=false; dm.remove(); return; }
   const db=t.closest("[data-deb]"); if(db){ const txt=DEB_TXT[db.dataset.deb]||"";
     const done=()=>{db.textContent="Débrief copié";setTimeout(()=>db.textContent="Copier le débrief",2000);};
     if(navigator.share&&/Android|iPhone|iPad/i.test(navigator.userAgent)) navigator.share({text:txt}).catch(()=>{});
