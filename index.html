@@ -213,6 +213,7 @@ h2{font-size:23px;font-weight:700;margin:4px 2px 10px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:22px}
 .deb{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 14px 12px;margin-bottom:22px}
 .deb h3{margin:0 0 8px;font-size:17px;line-height:1.3}
+.deb .deb-ch{font-weight:600}
 .deb p{margin:0 0 10px;line-height:1.5;font-size:15px}
 .deb-k{font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:4px 0 4px}
 .deb ul{margin:0 0 10px;padding-left:18px}.deb li{margin:3px 0;line-height:1.45;font-size:15px}
@@ -886,29 +887,44 @@ function pDuel(js,hs){
 
 
 
-/* ============ DÉBRIEF DU MATCH ============
-   Texte écrit à partir des données du match (déroulé nominatif lu par le robot sur la feuille de match,
-   stats de la journée, parcours des deux équipes). Les tournures varient d'un match à l'autre mais restent
-   les mêmes pour un match donné (tirage déterminé par le match). */
-const DEB_F = false;                        // true pour une équipe féminine (accords : buteuse, gardienne, elle...)
+/* ============ DÉBRIEF DU MATCH (style article) ============
+   Écrit à partir des données du match : déroulé nominatif lu par le robot sur la feuille de match, stats de la journée,
+   parcours et classement des deux équipes. Titre, chapeau, récit en deux temps, chute, joueurs clés et chiffre du match.
+   Les tournures sont tirées au sort, mais le tirage dépend du match : un match donné garde toujours le même texte. */
+const DEB_F = false;                        // true pour une équipe féminine (accords : buteuse, gardienne, elles...)
+const GENTILES = [                          // mot du nom du club (minuscules, sans accent), gentilé masculin, féminin
+  ["palente","Bisontins","Bisontines"],["lure","Lurons","Luronnes"],["doubs central","Baumois","Baumoises"],["riolais","Riolais","Riolaises"],
+  ["maiche","Maîchois","Maîchoises"],["monts de gy","Gylois","Gyloises"],["franois","Franoisiens","Franoisiennes"],["danjoutin","Danjoutinois","Danjoutinoises"],
+  ["vesulien","Vésuliens","Vésuliennes"],["gilley","Gillois","Gilloises"],["pontarlier","Pontissaliens","Pontissaliennes"],
+  ["montbeliard","Montbéliardais","Montbéliardaises"],["beex","Montbéliardais","Montbéliardaises"],["auxois","Montbardois","Montbardoises"],["arbois","Arboisiens","Arboisiennes"],
+  ["longvic","Longviciens","Longviciennes"],["chevigny","Chevignois","Chevignoises"],["mamirolle","Mamirollais","Mamirollaises"],
+  ["quingey","Quingeois","Quingeoises"],["ledonienne","Lédoniens","Lédoniennes"]];
+const VILLES = [                            // mot du nom du club, ville utilisée dans les textes (« Rioz s'impose »)
+  ["riolais","Rioz"],["doubs central","Baume-les-Dames"],["lure","Lure"],["maiche","Maîche"],["monts de gy","Gy"],["franois","Franois"],
+  ["danjoutin","Danjoutin"],["vesulien","Vesoul"],["gilley","Gilley"],["pontarlier","Pontarlier"],["beex","Montbéliard"],["montbeliard","Montbéliard"],
+  ["auxois","Montbard"],["arbois","Arbois"],["longvic","Longvic"],["chevigny","Chevigny"],["mamirolle","Mamirolle"],["quingey","Quingey"],["ledonienne","Lons-le-Saunier"]];
 function evParse(s){
   return (s||"").split("|").filter(Boolean).map(x=>{const p=x.split(":");return {t:+p[0],c:p[1],s:p[2]==="D"?"h":"a",n:p.slice(3).join(":").trim()};})
     .filter(e=>!isNaN(e.t)&&e.c).sort((a,b)=>a.t-b.t);
 }
+function nmFull(n){ const s=splitName(n), cw=x=>x.toLowerCase().replace(/(^|[\s\-'])(\p{L})/gu,(y,p,c)=>p+c.toUpperCase());
+  return (s.first?cw(s.first)+" ":"")+cw(s.last||n); }
 function debrief(m){
   const r=m.res; if(!r) return null;
   const I=m.info||{}, ev=I.ev||[], F=DEB_F;
   let seed=0; for(const ch of m.j+"|"+m.home+"|"+m.away) seed=(seed*31+ch.charCodeAt(0))>>>0;
   const rnd=()=>{seed=(seed+0x6D2B79F5)>>>0;let t=seed;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};
   const pick=a=>a[Math.floor(rnd()*a.length)];
-  const g={e:F?"e":"",il:F?"elle":"il",un:F?"une":"un",gk:F?"gardienne":"gardien",but:F?"buteuse":"buteur",j:F?"joueuse":"joueur",le:F?"la":"le"};
-  const T={h:shortClub(m.home),a:shortClub(m.away)}, O={h:"a",a:"h"}, club={h:m.home,a:m.away};
+  const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+  const g={e:F?"e":"",il:F?"elle":"il",Il:F?"Elle":"Il",gk:F?"gardienne":"gardien",but:F?"buteuse":"buteur",j:F?"joueuse":"joueur",
+    att:F?"attaquantes":"attaquants",aut:F?"autrice":"auteur",un:F?"une":"un"};
+  const tN=n=>/v[ée]sulien/i.test(n)?"Vesoul":shortClub(n).replace(/^Ent\.\s*/,"").replace(/^ASCAP\s+/,"").trim();
+  const O={h:"a",a:"h"}, club={h:m.home,a:m.away}, T={h:tN(m.home),a:tN(m.away)};
   const de=x=>/^[aeiouyhéèêàâîôûAEIOUYHÉÈÊÀÂÎÔÛ]/.test(x)?"d'"+x:"de "+x;
   const mn=t=>{const v=Math.min(60,Math.max(1,Math.ceil(t/60)));return v===1?"1re":v+"e";};
-  const sc=(h,a)=>`${h}-${a}`;
-  const nm=n=>n?nmFull(n):"";
-  const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+  const sc=(h,a)=>`${h}-${a}`, nm=n=>n?nmFull(n):"";
   const plur=(n,w,ws)=>`${n} ${n>1?(ws||w+"s"):w}`;
+  const nbL=["zéro","un","deux","trois","quatre","cinq","six","sept","huit","neuf","dix"], nb=n=>n<=10?nbL[n]:String(n);
   // ---- chronologie des buts
   let G=[]; const goalsEv=ev.filter(e=>e.c==="B"||e.c==="P");
   if(goalsEv.length&&goalsEv.filter(e=>e.s==="h").length===r.h&&goalsEv.filter(e=>e.s==="a").length===r.a){
@@ -917,181 +933,278 @@ function debrief(m){
     let h0=0,a0=0; I.der.forEach(([t,h,a])=>{ while(h0<h){h0++;G.push({t,s:"h",n:"",h:h0,a:a0});} while(a0<a){a0++;G.push({t,s:"a",n:"",h:h0,a:a0});} });
     if(h0!==r.h||a0!==r.a) G=[];
   }
-  const at=t=>{let x={h:0,a:0};for(const q of G){if(q.t<=t)x=q;else break;}return x;};
-  const w=r.h>r.a?"h":r.h<r.a?"a":null, l=w&&O[w], marge=Math.abs(r.h-r.a);
+  const N=G.length, at=t=>{let x={h:0,a:0};for(const q of G){if(q.t<=t)x=q;else break;}return x;};
+  const w=r.h>r.a?"h":r.h<r.a?"a":null, l=w&&O[w], marge=Math.abs(r.h-r.a), score=sc(r.h,r.a);
   const lead=(q,s)=>s==="h"?q.h-q.a:q.a-q.h;
-  // ---- statistiques individuelles du match
+  // ---- statistiques individuelles
   const goals={h:{},a:{}}, pens={h:{},a:{}}, saves={h:{},a:{}}, savesT={h:[],a:[]}, excl={h:[],a:[]}, reds=[], tms={h:[],a:[]};
   ev.forEach(e=>{ if(e.c==="B"||e.c==="P"){ if(e.n){goals[e.s][e.n]=(goals[e.s][e.n]||0)+1; if(e.c==="P") pens[e.s][e.n]=(pens[e.s][e.n]||0)+1;} }
     else if(e.c==="A"){ savesT[e.s].push(e); if(e.n) saves[e.s][e.n]=(saves[e.s][e.n]||0)+1; }
     else if(e.c==="X") excl[e.s].push(e); else if(e.c==="R") reds.push(e); else if(e.c==="M") tms[e.s].push(e); });
   const pj=D.evo?D.evo.pj:{}, fnd=(s,n)=>{const k=Object.keys(pj).find(k=>k.startsWith(club[s]+"|")&&norm(k.slice(club[s].length+1))===norm(n));return k?pj[k]:null;};
-  if(!Object.keys(goals.h).length&&!Object.keys(goals.a).length){        // pas de déroulé nominatif : buts de la feuille saisie
-    ["h","a"].forEach(s=>scorers(club[s],m.j).forEach(x=>goals[s][x.name]=x.b)); }
+  if(!Object.keys(goals.h).length&&!Object.keys(goals.a).length) ["h","a"].forEach(s=>scorers(club[s],m.j).forEach(x=>goals[s][x.name]=x.b));
   const shots=(s,n)=>{const d=fnd(s,n);return d&&d.t[m.j-1]>0?d.t[m.j-1]:null;};
   const game=s=>(D.evo?D.evo.games:[]).find(x=>x.club===club[s]&&x.j===m.j)||null;
-  const top=s=>Object.entries(goals[s]).sort((a,b)=>b[1]-a[1]||(shots(s,a[0])||99)-(shots(s,b[0])||99));
-  // ---- parcours avant le match
-  const before=s=>(D.evo?D.evo.games:[]).filter(x=>x.club===club[s]&&x.j<m.j).sort((a,b)=>a.j-b.j).map(resOf);
-  const run=(arr,k)=>{let n=0;for(let i=arr.length-1;i>=0&&arr[i]===k;i--)n++;return n;};
-  const ctx={}; ["h","a"].forEach(s=>{const b=before(s);ctx[s]={n:b.length,v:b.filter(x=>x==="V").length,d:b.filter(x=>x==="D").length,sv:run(b,"V"),sd:run(b,"D")};});
-  // classement après la journée (seulement si c'est la dernière journée jouée)
-  let rankAfter=null, rankBefore=null;
-  if(D.evo&&D.evo.maxJ===m.j&&w){ const rh=D.evo.rankHist[club[w]]; if(rh){rankAfter=rh[m.j-1]; rankBefore=m.j>1?rh[m.j-2]:null;} }
+  const top=s=>Object.entries(goals[s]).filter(([n])=>norm(n)!==PLACEHOLDER).sort((a,b)=>b[1]-a[1]||(shots(s,a[0])||99)-(shots(s,b[0])||99));
+  // ---- parcours et classement
+  const gamesOf=s=>(D.evo?D.evo.games:[]).filter(x=>x.club===club[s]).sort((a,b)=>a.j-b.j);
+  const before=s=>gamesOf(s).filter(x=>x.j<m.j).map(resOf);
+  const runOf=(arr,k)=>{let n=0;for(let i=arr.length-1;i>=0&&arr[i]===k;i--)n++;return n;};
+  const ctx={}; ["h","a"].forEach(s=>{const b=before(s);ctx[s]={n:b.length,v:b.filter(x=>x==="V").length,nul:b.filter(x=>x==="N").length,d:b.filter(x=>x==="D").length,sv:runOf(b,"V"),sd:runOf(b,"D")};});
+  const RH=D.evo?D.evo.rankHist:{}, nC=D.evo?D.evo.nClubs:12;
+  const rk=(s,j)=>RH[club[s]]&&j>=1?RH[club[s]][j-1]:null;
+  const rb={h:rk("h",m.j-1),a:rk("a",m.j-1)}, latest=D.evo&&D.evo.maxJ===m.j, ra={h:rk("h",m.j),a:rk("a",m.j)};     // classement à l'issue de la journée du match
+  // ---- désignations des équipes, avec les accords
+  const gent={}, ville={}; ["h","a"].forEach(s=>{const k=norm(club[s]);const x=GENTILES.find(([c])=>k.includes(c));gent[s]=x?(F?x[2]:x[1]):null;
+    const v=VILLES.find(([c])=>k.includes(c)); ville[s]=v&&norm(v[1])!==norm(T[s])?v[1]:null;});
+  const used={h:0,a:0}, lastF={h:null,a:null};
+  const mk=(s,f)=>{ let o;
+    if(f==="gent") o={t:"les "+gent[s],pl:true,fe:F,de:"des "+gent[s],a:"aux "+gent[s]};
+    else if(f==="role"){ const x=s==="h"?(F?"locales":"locaux"):(F?"visiteuses":"visiteurs"); o={t:"les "+x,pl:true,fe:F,de:"des "+x,a:"aux "+x}; }
+    else if(f==="leader") o={t:"le leader",pl:false,fe:false,de:"du leader",a:"au leader"};
+    else if(f==="lanterne") o={t:"la lanterne rouge",pl:false,fe:true,de:"de la lanterne rouge",a:"à la lanterne rouge"};
+    else if(f==="ville") o={t:ville[s],pl:false,fe:false,de:de(ville[s]),a:"à "+ville[s]};
+    else o={t:T[s],pl:false,fe:false,de:de(T[s]),a:"à "+T[s]};
+    o.N=cap(o.t); o.v=(a,b)=>o.pl?b:a; o.ag=b=>b+(o.fe?"e":"")+(o.pl?"s":""); return o; };
+  const X=(s,first)=>{ const fs=["nom","nom"]; if(gent[s]) fs.push("gent","gent","gent"); if(ville[s]) fs.push("ville","ville"); fs.push("role");
+    if(rb[s]===1&&m.j>2) fs.push("leader"); if(rb[s]===nC&&m.j>3) fs.push("lanterne");
+    const f=used[s]===0||first?"nom":pick(fs.filter(x=>x!==lastF[s])); used[s]++; lastF[s]=f; return mk(s,f); };
   // ---- moments du match
-  const N=G.length, F10=at(600), HT=at(1800);
+  const F10=at(600), HT=at(1800);
   let maxL={h:{d:0},a:{d:0}}, ties=0, changes=0, prevSign=0;
-  G.forEach((q,i)=>{ ["h","a"].forEach(s=>{const d=lead(q,s); if(d>maxL[s].d) maxL[s]={d,t:q.t,q};});
+  G.forEach(q=>{ ["h","a"].forEach(s=>{const d=lead(q,s); if(d>maxL[s].d) maxL[s]={d,t:q.t,q};});
     const sg=Math.sign(q.h-q.a); if(sg===0) ties++; else { if(prevSign&&sg!==prevSign) changes++; prevSign=sg; } });
-  const neverBehind=w&&G.every(q=>lead(q,w)>=0), alwaysAhead=w&&G.every(q=>lead(q,w)>0);
-  let decisive=null;                                                   // but qui donne l'avantage définitif au vainqueur
-  if(w&&N){ for(let i=N-1;i>=0;i--){ const q=G[i], prev=i?G[i-1]:{h:0,a:0}; if(q.s===w&&lead(q,w)>=1&&lead(prev,w)<=0){decisive=q;break;} } }
+  const neverBehind=w&&N&&G.every(q=>lead(q,w)>=0), alwaysAhead=w&&N&&G.every(q=>lead(q,w)>0);
+  let decisive=null; if(w&&N){ for(let i=N-1;i>=0;i--){ const q=G[i], p=i?G[i-1]:{h:0,a:0}; if(q.s===w&&lead(q,w)>=1&&lead(p,w)<=0){decisive=q;break;} } }
   let equal=null; if(!w&&N){ for(let i=N-1;i>=0;i--){ if(G[i].h===G[i].a){equal=G[i];break;} } }
   const runs=[]; for(let i=0;i<N;){ let k=i; while(k+1<N&&G[k+1].s===G[i].s) k++;
-    const sub=G.slice(i,k+1), cnt={}; sub.forEach(q=>{if(q.n)cnt[q.n]=(cnt[q.n]||0)+1;});
-    const best=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0];
+    const cnt={}; G.slice(i,k+1).forEach(q=>{if(q.n)cnt[q.n]=(cnt[q.n]||0)+1;}); const best=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0];
     runs.push({s:G[i].s,k:k-i+1,t0:G[i].t,t1:G[k].t,from:i?G[i-1]:{h:0,a:0},to:G[k],star:best&&best[1]>=2?best:null}); i=k+1; }
-  const runEnd=x=>{ const d=lead(x.to,x.s), d0=lead(x.from,x.s), S=sc(x.to.h,x.to.a);
-    if(d===0) return pick([` : retour à égalité (${S})`,`, et le score revient à égalité (${S})`]);
-    if(d>0&&d0<0) return pick([` : changement de leader (${S})`,`, et le match bascule (${S})`]);
-    if(d>0&&d0===0) return pick([`, et ${T[x.s]} prend le large (${S})`,` : ${T[x.s]} fait la différence (${S})`]);
-    if(d<0) return pick([` : l'écart retombe à ${plur(-d,"but")} (${S})`,`, et il n'y a plus que ${plur(-d,"but")} d'écart (${S})`]);
-    return pick([` (${S})`,`, ${S} au bout`]); };
-  const bigRun=s=>runs.filter(x=>x.s===s).sort((a,b)=>b.k-a.k)[0]||null;
-  const firstGoal=s=>G.find(q=>q.s===s);
-  const last=N?G[N-1]:null;
-  // séries d'arrêts : au moins 3 arrêts d'un même gardien sans encaisser, en moins de 8 minutes
+  const worstQ=w&&N?G.reduce((x,q)=>lead(q,w)<lead(x,w)?q:x,G[0]):null, deficit=worstQ?Math.max(0,-lead(worstQ,w)):0;
+  const comeback=deficit>=5||(deficit>=3&&worstQ.t>=1500)?deficit:0;
+  const lateDecided=w&&marge<=2&&decisive&&decisive.t>=3000;
+  const firstGoal=s=>G.find(q=>q.s===s), last=N?G[N-1]:null;
   const saveRun=s=>{ let best=null, cur=[]; const opp=G.filter(q=>q.s===O[s]).map(q=>q.t);
     savesT[s].forEach(e=>{ if(cur.length&&(cur[cur.length-1].n!==e.n||opp.some(t=>t>cur[cur.length-1].t&&t<e.t)||e.t-cur[0].t>480)) cur=[]; cur.push(e);
       if(cur.length>=3&&(!best||cur.length>best.length)) best=[...cur]; }); return best; };
   const lateSaves=s=>savesT[s].filter(e=>e.t>=3300&&Math.abs(at(e.t).h-at(e.t).a)<=2);
-  const shorthanded=s=>savesT[s].filter(e=>excl[s].some(x=>e.t>x.t&&e.t<=x.t+120));
-  // ---- titre
-  const W=w&&T[w], L=w&&T[l], score=sc(r.h,r.a);
-  const worstQ=w&&N?G.reduce((x,q)=>lead(q,w)<lead(x,w)?q:x,G[0]):null, deficit=worstQ?Math.max(0,-lead(worstQ,w)):0;
-  const comeback=deficit>=5||(deficit>=3&&worstQ.t>=1500)?deficit:0;
-  const unbeatenL=w&&ctx[l].n>=3&&ctx[l].d===0, winlessW=w&&ctx[w].n>=2&&ctx[w].v===0;
-  const lateDecided=w&&marge<=2&&decisive&&decisive.t>=3000;
-  let title;
-  if(!w) title=pick([`${T.h} et ${T.a} se neutralisent`,`Partage des points entre ${T.h} et ${T.a}`,`${T.h} et ${T.a} dos à dos`]);
-  else if(unbeatenL) title=pick([`${W} fait tomber l'invaincu`,`${W} met fin à l'invincibilité ${de(L)}`,`Première défaite pour ${L}, ${W} s'impose`]);
-  else if(comeback&&marge<10) title=pick([`${W} renverse ${L}`,`Remontée gagnante pour ${W}`,`${W} revient de loin`]);
-  else if(lateDecided) title=pick([`${W} s'impose sur le fil`,`${W} arrache la victoire`,`Final à suspense, ${W} l'emporte`]);
-  else if(marge>=10) title=pick([`${W} déroule face à ${L}`,`Démonstration ${de(W)}`,`${W} écrase ${L}`]);
-  else if(winlessW) title=pick([`${W} débloque son compteur`,`Enfin la victoire pour ${W}`,`${W} lance sa saison`]);
-  else if(neverBehind&&marge>=5) title=pick([`${W} maîtrise ${L}`,`${W} n'a jamais tremblé`,`Victoire nette ${de(W)}`]);
-  else title=pick([`${W} s'impose face à ${L}`,`Victoire ${de(W)} contre ${L}`,`${W} prend le dessus sur ${L}`]);
-  if(w&&rankAfter===1&&rankBefore!==1) title+=pick([" et prend la tête"," et s'empare de la première place"]);
-  title+=` (${score})`;
-  // ---- premier paragraphe : contexte, entame, mi-temps
-  const P1=[], P2=[], A2=[];   // phrases datées (secondes), triées puis réparties en deux paragraphes
-  const P2push=(t,x)=>A2.push([t,x]);
-  if(w&&unbeatenL) P1.push(pick([`${L} restait sur ${ctx[l].v} victoire${ctx[l].v>1?"s":""} en ${ctx[l].n} match${ctx[l].n>1?"s":""}.`,`Invaincu jusque-là (${ctx[l].v} victoire${ctx[l].v>1?"s":""}${ctx[l].n>ctx[l].v?", "+(ctx[l].n-ctx[l].v)+" nul"+(ctx[l].n-ctx[l].v>1?"s":""):""}), ${L} tombe pour la première fois.`]));
-  else if(w&&winlessW) P1.push(pick([`Toujours sans victoire avant ce match, ${W} décroche enfin son premier succès.`,`${W} attendait sa première victoire depuis le début de saison : c'est chose faite.`]));
-  else if(w&&ctx[w].sv>=2) P1.push(pick([`${W} enchaîne une ${ctx[w].sv+1}e victoire de suite.`,`Et de ${ctx[w].sv+1} victoires d'affilée pour ${W}.`]));
-  else if(w&&ctx[l].sd>=2) P1.push(pick([`${L} concède une ${ctx[l].sd+1}e défaite consécutive.`]));
+  const goalsIn=(s,t0,t1)=>G.filter(q=>q.s===s&&q.t>t0&&q.t<=t1).length;
+  // ---- journal de l'article : phrases datées, réparties ensuite entre les deux mi-temps
+  const A=[]; const put=(t,x,k)=>{ if(x) A.push([t,x,k||""]); };
+  const angle=!w?"nul":(ctx[l].n>=3&&ctx[l].d===0)?"invaincu":(ra[w]===1&&rb[w]!==1&&m.j>1)?"tete":comeback&&marge<10?"remontada"
+    :lateDecided?"suspense":marge>=10?"demo":(ctx[w].n>=2&&ctx[w].v===0)?"premiere":ctx[w].sv>=2?"serie":(neverBehind&&marge>=5)?"maitrise":"std";
+  // titre
+  const Wn=w&&T[w], Ln=w&&T[l], Wg=w&&(gent[w]?"les "+gent[w]:T[w]);
+  const TT={
+    nul:[`${T.h} et ${T.a} dos à dos`,`Partage des points entre ${T.h} et ${T.a}`,`${T.h} et ${T.a} se neutralisent`,`Ni vainqueur ni vaincu entre ${T.h} et ${T.a}`,`Un nul qui ne fait les affaires de personne`],
+    invaincu:[`${Wn} fait tomber l'invaincu`,`${Ln} chute pour la première fois`,`${Wn} met fin à la série ${de(Ln)}`,`L'invincibilité ${de(Ln)} s'arrête à ${Wn}`,`${Wn} brise l'élan ${de(Ln)}`],
+    tete:[`${Wn} prend le pouvoir`,`${Wn} s'empare de la première place`,`${Wn} grimpe sur le trône`,`${Wn} passe en tête`,`Nouveau leader : ${Wn}`],
+    remontada:[`${Wn} renverse ${Ln}`,`${Wn} revient de loin`,`Remontée gagnante pour ${Wn}`,`${Wn} ne lâche rien et s'impose`,`Le retour gagnant ${de(Wn)}`],
+    suspense:[`${Wn} s'impose sur le fil`,`${Wn} arrache la victoire`,`Final à suspense, ${Wn} l'emporte`,`${Wn} gagne au bout du suspense`,`${Wn} fait la différence dans le money time`,`Victoire à l'arraché pour ${Wn}`],
+    demo:[`${Wn} déroule face à ${Ln}`,`Démonstration ${de(Wn)}`,`${Wn} écrase ${Ln}`,`Récital ${de(Wn)} contre ${Ln}`,`${Wn} sans pitié pour ${Ln}`],
+    premiere:[`${Wn} débloque son compteur`,`Enfin la victoire pour ${Wn}`,`${Wn} lance sa saison`,`Premier succès pour ${Wn}`],
+    serie:[`${Wn} enchaîne`,`${Wn} poursuit sa série`,`${Wn} ne s'arrête plus`,`Et de ${ctx[w]?ctx[w].sv+1:0} pour ${Wn}`],
+    maitrise:[`${Wn} maîtrise ${Ln}`,`${Wn} n'a jamais tremblé`,`Victoire nette ${de(Wn)}`,`${Wn} sans trembler face à ${Ln}`,`${Wn} contrôle son sujet`],
+    std:[`${Wn} s'impose face à ${Ln}`,`Victoire ${de(Wn)} contre ${Ln}`,`${Wn} prend le dessus sur ${Ln}`,`${Wn} fait le travail`,`${Wn} repart avec la victoire`,`Les points pour ${Wn}`]};
+  const title=pick(TT[angle])+` (${score})`;
+  // chapeau
+  let chapo;
+  { const Wx=w?X(w,true):null, Lx=w?X(l,true):null;
+    const rangs=rb.h&&rb.a&&m.j>2?` (${ordD(rb[w||"h"])} contre ${ordD(rb[l||"a"])} au coup d'envoi)`:"";
+    const after="", afterS=w&&ra[w]===1&&angle!=="tete"?pick([` ${Wn} s'installe en tête du classement.`,` Au passage, ${Wn} prend la tête du classement.`,` ${Wn} est le nouveau leader.`]):"";
+    const C={
+      nul:[`${T.h} et ${T.a} se sont quittés sur un match nul (${score})${equal&&equal.t>=3300?", arraché dans les dernières minutes":""}.`,`Pas de vainqueur entre ${T.h} et ${T.a} : ${score} au coup de sifflet final.`],
+      invaincu:[`Invaincu jusque-là, ${Ln} a cédé face à ${Wn} (${score})${after}.`,`${Ln} restait sur ${plur(ctx[l].v,"victoire")}${ctx[l].nul?" et "+plur(ctx[l].nul,"nul"):""} en ${plur(ctx[l].n,"match")}. ${Wn} a mis fin à la série (${score})${after}.`],
+      tete:[`En s'imposant ${score} face à ${Ln}, ${Wn} prend la tête du classement.`,`${Wn} a battu ${Ln} (${score}) et s'empare de la première place.`],
+      remontada:[`Mené de ${plur(comeback,"but")}, ${Wn} a fini par renverser ${Ln} (${score}).`,`${Wn} est revenu de loin pour s'imposer face à ${Ln} (${score})${after}.`],
+      suspense:[`Il a fallu attendre les dernières minutes pour départager ${T.h} et ${T.a} : ${Wn} l'emporte ${score}${after}.`,`${Wn} s'est imposé d'un souffle face à ${Ln} (${score}) au terme d'un final irrespirable${after}.`],
+      demo:[`${Wn} n'a laissé aucune chance à ${Ln} (${score})${after}.`,`Large succès ${de(Wn)}, qui a surclassé ${Ln} (${score})${after}.`],
+      premiere:[`${Wn} attendait ce moment depuis le début de saison : ${pick(["premier succès","première victoire"])} face à ${Ln} (${score}).`],
+      serie:[`${Wn} enchaîne une ${ctx[w]?ctx[w].sv+1:0}e victoire de rang, cette fois face à ${Ln} (${score})${after}.`],
+      maitrise:[`${Wn} a dominé ${Ln} de bout en bout (${score})${after}.`,`Jamais mené, ${Wn} a pris le meilleur sur ${Ln} (${score})${after}.`],
+      std:[`${Wn} a pris le meilleur sur ${Ln} (${score})${rangs}${after}.`,`Victoire ${de(Wn)} face à ${Ln}, ${score}${after}.`]};
+    if(w&&N&&(angle==="std"||angle==="serie"||angle==="maitrise")){ const hd=lead(HT,w);
+      if(hd<=0) C[angle].push(`${hd<0?"Mené":"Accroché"} à la pause (${sc(HT.h,HT.a)}), ${Wn} a fait la différence en seconde période face à ${Ln} (${score})${after}.`,
+        `Tout s'est joué après la pause : ${Wn} a pris le meilleur sur ${Ln} (${score}) après avoir été ${hd<0?"mené":"tenu en échec"} à la mi-temps (${sc(HT.h,HT.a)})${after}.`);
+      else if(hd>=5) C[angle].push(`${Wn} a fait la différence dès la première période face à ${Ln} (${sc(HT.h,HT.a)} à la pause, ${score} au final)${after}.`);
+      else C[angle].push(`En tête dès la pause (${sc(HT.h,HT.a)}), ${Wn} a confirmé en seconde période face à ${Ln} (${score})${after}.`); }
+    chapo=pick(C[angle])+afterS; used.h=used.a=0; lastF.h=lastF.a=null; }
+  // ---- première période
   if(N){
     const d10=F10.h-F10.a, fast=d10>=3?"h":d10<=-3?"a":null;
-    if(fast){ const fg=firstGoal(O[fast]); runs.forEach(x=>{if(x.s===fast&&x.t1<=720) x.used=true;});
-      P2push(...[600,pick([`${T[fast]} démarre pied au plancher : ${sc(F10.h,F10.a)} après dix minutes.`,`Entame canon ${de(T[fast])}, qui mène ${sc(F10.h,F10.a)} à la 10e.`,`${T[fast]} frappe d'entrée et compte déjà ${Math.abs(d10)} buts d'avance à la 10e (${sc(F10.h,F10.a)}).`])
-        +(fg&&fg.t>=540?pick([` ${T[O[fast]]} n'ouvre son compteur qu'à la ${mn(fg.t)}.`,` Il faut attendre la ${mn(fg.t)} pour voir ${T[O[fast]]} marquer.`]):"")]);
+    if(fast){ const S=X(fast), fg=firstGoal(O[fast]); runs.forEach(x=>{if(x.s===fast&&x.t1<=720) x.used=true;});
+      put(600,pick([`${S.N} ${S.v("démarre","démarrent")} pied au plancher : ${sc(F10.h,F10.a)} après dix minutes.`,
+        `Entame canon ${S.de}, ${S.pl?"qui mènent":"qui mène"} ${sc(F10.h,F10.a)} à la 10e.`,
+        `${S.N} ${S.v("frappe","frappent")} d'entrée et ${S.v("compte","comptent")} déjà ${nb(Math.abs(d10))} buts d'avance à la 10e (${sc(F10.h,F10.a)}).`,
+        `D'entrée, ${S.t} ${S.v("prend","prennent")} les commandes : ${sc(F10.h,F10.a)} à la 10e.`,
+        `${S.N} ${S.v("impose","imposent")} d'emblée son rythme et ${S.v("fait","font")} rapidement le break (${sc(F10.h,F10.a)}, 10e).`.replace("son rythme",S.pl?"leur rythme":"son rythme"),
+        `Le match démarre sur un tempo imposé par ${S.t} (${sc(F10.h,F10.a)} à la 10e).`])
+        +(fg&&fg.t>=540?pick([` Il faut attendre la ${mn(fg.t)} pour voir ${T[O[fast]]} trouver la faille.`,` ${T[O[fast]]} n'ouvre son compteur qu'à la ${mn(fg.t)}.`]):""));
       const back=G.filter(q=>q.t<=1800&&q.t>600).find(q=>lead(q,fast)<=1&&lead(q,fast)>=0);
-      if(back) P2push(...[back.t,pick([`${T[O[fast]]} recolle à ${sc(back.h,back.a)} à la ${mn(back.t)}.`,`Mais ${T[O[fast]]} revient à ${sc(back.h,back.a)} (${mn(back.t)}).`])]);
-    } else if(Math.abs(d10)<=1) P2push(...[600,pick([`Début de match équilibré (${sc(F10.h,F10.a)} à la 10e).`,`Les deux équipes se tiennent de près en début de rencontre (${sc(F10.h,F10.a)} à la 10e).`,`Entame serrée, ${sc(F10.h,F10.a)} après dix minutes.`])]);
-    const r1=runs.filter(x=>x.t1<=1800&&x.k>=4&&!(fast&&x.s===fast&&x.t1<=720)).sort((a,b)=>b.k-a.k)[0];
-    if(r1){ r1.used=true; } if(r1) P2push(...[r1.t1,pick([`Une série de ${r1.k}-0 entre la ${mn(r1.t0)} et la ${mn(r1.t1)} donne de l'air à ${T[r1.s]}`,`${T[r1.s]} place un ${r1.k}-0 (${mn(r1.t0)}-${mn(r1.t1)})`,`Un ${r1.k}-0 ${de(T[r1.s])} change la physionomie du match`])
-      +(r1.star?`, avec ${r1.star[1]} buts ${de(nm(r1.star[0]))}`:"")+runEnd(r1)+"."]);
-    const dh=HT.h-HT.a, HTp=x=>P2push(1800.5,x);
-    if(dh===0) HTp(pick([`À la pause, rien n'est fait : ${sc(HT.h,HT.a)}.`,`Les deux équipes rentrent au vestiaire à égalité (${sc(HT.h,HT.a)}).`]));
-    else { const s=dh>0?"h":"a", n=Math.abs(dh);
-      HTp(n>=5?pick([`${T[s]} rentre au vestiaire avec ${n} buts d'avance (${sc(HT.h,HT.a)}).`,`À la mi-temps, ${T[s]} a déjà fait le trou : ${sc(HT.h,HT.a)}.`])
-        :n<=2?pick([`${T[s]} vire en tête d'une courte longueur à la pause (${sc(HT.h,HT.a)}).`,`À la mi-temps, ${T[s]} mène ${sc(HT.h,HT.a)}, rien n'est joué.`])
-        :pick([`${T[s]} mène ${sc(HT.h,HT.a)} à la pause.`,`À la mi-temps, avantage ${T[s]} (${sc(HT.h,HT.a)}).`])); }
+      if(back){ const B=X(O[fast]); put(back.t,pick([`${B.N} ${B.v("recolle","recollent")} à ${sc(back.h,back.a)} à la ${mn(back.t)}.`,`Mais ${B.t} ${B.v("revient","reviennent")} à ${sc(back.h,back.a)} (${mn(back.t)}).`,`${B.N} ${B.v("réagit","réagissent")} et ${B.v("revient","reviennent")} à une longueur (${sc(back.h,back.a)}, ${mn(back.t)}).`])); }
+    } else if(Math.abs(d10)<=1) put(600,pick([`Début de match équilibré (${sc(F10.h,F10.a)} à la 10e).`,`Les deux équipes se tiennent de près en début de rencontre (${sc(F10.h,F10.a)} à la 10e).`,
+      `Entame serrée : ${sc(F10.h,F10.a)} après dix minutes.`,`Personne ne prend vraiment l'ascendant dans le premier quart d'heure${F10.h===F10.a?" ("+sc(F10.h,F10.a)+" à la 10e)":""}.`,`Les débats sont équilibrés en début de partie (${sc(F10.h,F10.a)}, 10e).`]));
+    const r1=runs.filter(x=>x.t1<=1800&&x.k>=4&&!x.used).sort((a,b)=>b.k-a.k)[0];
+    if(r1){ r1.used=true; put(r1.t1,runTxt(r1)); }
+    const dh=HT.h-HT.a;
+    if(dh===0) put(1800.5,pick([`À la pause, rien n'est fait : ${sc(HT.h,HT.a)}.`,`Les deux équipes rentrent au vestiaire à égalité (${sc(HT.h,HT.a)}).`,`Tout reste à faire à la mi-temps (${sc(HT.h,HT.a)}).`]));
+    else { const s=dh>0?"h":"a", n=Math.abs(dh), S=X(s);
+      put(1800.5,n>=5?pick([`${S.N} ${S.v("rentre","rentrent")} au vestiaire avec ${nb(n)} buts d'avance (${sc(HT.h,HT.a)}).`,`À la mi-temps, ${S.t} ${S.v("a","ont")} déjà fait le trou : ${sc(HT.h,HT.a)}.`,`${sc(HT.h,HT.a)} à la pause : ${S.t} ${S.v("tient","tiennent")} déjà le bon bout.`])
+        :n<=2?pick([`${S.N} ${S.v("vire","virent")} en tête d'une courte longueur à la pause (${sc(HT.h,HT.a)}).`,`À la mi-temps, ${S.t} ${S.v("mène","mènent")} ${sc(HT.h,HT.a)}, rien n'est joué.`,`Courte avance ${S.de} à la pause (${sc(HT.h,HT.a)}).`])
+        :pick([`${S.N} ${S.v("mène","mènent")} ${sc(HT.h,HT.a)} à la pause.`,`À la mi-temps, l'avantage est pour ${S.t} (${sc(HT.h,HT.a)}).`,`${S.N} ${S.v("vire","virent")} en tête à la pause (${sc(HT.h,HT.a)}).`])); }
   }
-  // ---- second paragraphe : seconde période, buts et arrêts qui comptent
+  function runTxt(x){ const S=X(x.s), d=lead(x.to,x.s), d0=lead(x.from,x.s), Sc=sc(x.to.h,x.to.a);
+    let s=pick([`${S.N} ${S.v("place","placent")} un ${x.k}-0 entre la ${mn(x.t0)} et la ${mn(x.t1)}`,`Un ${x.k}-0 ${S.de} entre la ${mn(x.t0)} et la ${mn(x.t1)} change la donne`,
+      `${S.N} ${S.v("enchaîne","enchaînent")} ${nb(x.k)} buts sans réponse (${mn(x.t0)}-${mn(x.t1)})`,`Entre la ${mn(x.t0)} et la ${mn(x.t1)}, ${S.t} ${S.v("passe","passent")} un ${x.k}-0`,
+      `${S.N} ${S.v("signe","signent")} une série de ${x.k}-0 (${mn(x.t0)}-${mn(x.t1)})`]);
+    if(x.star) s+=pick([`, avec ${nb(x.star[1])} buts ${de(nm(x.star[0]))}`,`, dont ${nb(x.star[1])} réalisations ${de(nm(x.star[0]))}`,`, avec ${nm(x.star[0])} en fer de lance (${x.star[1]} buts)`]);
+    if(d===0) s+=pick([` : retour à égalité (${Sc})`,`, et le score revient à égalité (${Sc})`,` : tout est à refaire (${Sc})`]);
+    else if(d>0&&d0<0) s+=pick([` : changement de leader (${Sc})`,`, et le match bascule (${Sc})`,` : le score a changé de camp (${Sc})`]);
+    else if(d>0&&d0===0) s+=pick([` : l'écart est fait (${Sc})`,`, et l'écart se creuse (${Sc})`]);
+    else if(d<0) s+=pick([` : l'écart retombe à ${plur(-d,"but")} (${Sc})`,`, et il n'y a plus que ${plur(-d,"but")} d'écart (${Sc})`]);
+    else s+=pick([` (${Sc})`,`, ${Sc} au bout`,` : ${Sc}`]);
+    return s+"."; }
+  // ---- seconde période
   if(N){
     const h2={h:r.h-HT.h,a:r.a-HT.a};
-    if(w&&comeback){ const worst=worstQ;
-      P2push(worstQ.t,pick([`Mené de ${comeback} buts à la ${mn(worst.t)} (${sc(worst.h,worst.a)}), ${W} ne lâche rien.`,`À la ${mn(worst.t)}, ${W} est mené de ${comeback} buts (${sc(worst.h,worst.a)}) mais ne lâche rien.`])); }
+    if(w&&comeback){ const S=X(w);
+      put(worstQ.t,pick([`${S.ag("Mené").replace(/^./,c=>c)} de ${plur(comeback,"but")} à la ${mn(worstQ.t)} (${sc(worstQ.h,worstQ.a)}), ${S.t} ${S.v("ne lâche","ne lâchent")} rien.`,
+        `À la ${mn(worstQ.t)}, ${S.t} ${S.v("est","sont")} ${S.ag("mené")} de ${plur(comeback,"but")} (${sc(worstQ.h,worstQ.a)}). Le plus dur reste à faire.`,
+        `${S.N} ${S.v("compte","comptent")} jusqu'à ${plur(comeback,"but")} de retard (${sc(worstQ.h,worstQ.a)}, ${mn(worstQ.t)}), mais ${S.v("garde","gardent")} la tête froide.`])); }
     const mx=w&&maxL[w].d>=6&&maxL[w].t>1800?maxL[w]:null;
-    if(mx&&!comeback) P2push(mx.t,pick([`L'écart grimpe jusqu'à ${mx.d} buts à la ${mn(mx.t)} (${sc(mx.q.h,mx.q.a)}).`,`${W} compte jusqu'à ${mx.d} longueurs d'avance à la ${mn(mx.t)} (${sc(mx.q.h,mx.q.a)}).`,`À la ${mn(mx.t)}, l'avance ${de(W)} culmine à ${mx.d} buts (${sc(mx.q.h,mx.q.a)}).`]));
-    const r2=runs.filter(x=>x.t0>1800&&x.k>=4).sort((a,b)=>b.k-a.k)[0];
-    if(r2&&!(mx&&r2.s===w&&r2.to.t===mx.t)) r2.used=true;
-    if(r2&&r2.used) P2push(r2.t1,pick([`Un ${r2.k}-0 ${de(T[r2.s])} entre la ${mn(r2.t0)} et la ${mn(r2.t1)}`,`${T[r2.s]} enchaîne ${r2.k} buts sans réponse (${mn(r2.t0)}-${mn(r2.t1)})`])
-      +(r2.star?`, dont ${r2.star[1]} signés ${nm(r2.star[0])}`:"")+runEnd(r2)+(w&&r2.s===l&&marge>=3?pick([", sans suffire.",", mais pas assez pour inquiéter "+W+"."]):"."));
-    if(w&&h2[l]>h2[w]&&marge>=3&&!(r2&&r2.s===l)) P2push(3599,pick([`${L} remporte la seconde période (${h2.h}-${h2.a}) sans jamais vraiment menacer.`,`${L} gagne la seconde mi-temps ${h2[l]}-${h2[w]}, trop tard.`]));
+    if(mx&&!comeback){ const S=X(w); put(mx.t,pick([`L'écart grimpe jusqu'à ${nb(mx.d)} buts à la ${mn(mx.t)} (${sc(mx.q.h,mx.q.a)}).`,`${S.N} ${S.v("compte","comptent")} jusqu'à ${nb(mx.d)} longueurs d'avance à la ${mn(mx.t)} (${sc(mx.q.h,mx.q.a)}).`,
+      `À la ${mn(mx.t)}, l'avance ${S.de} culmine à ${nb(mx.d)} buts (${sc(mx.q.h,mx.q.a)}).`,`${S.N} ${S.v("creuse","creusent")} l'écart jusqu'à +${mx.d} (${sc(mx.q.h,mx.q.a)}, ${mn(mx.t)}) et ${S.v("tue","tuent")} le suspense.`])); }
+    const r2=runs.filter(x=>x.t0>1800&&x.k>=4&&!x.used&&!(mx&&x.s===w&&x.to.t===mx.t)).sort((a,b)=>b.k-a.k)[0];
+    if(r2){ r2.used=true; put(r2.t1,runTxt(r2).replace(/\.$/,"")+(w&&r2.s===l&&marge>=3?pick([", sans suffire.",", mais trop tard.",", un sursaut sans lendemain."]):".")); }
+    if(w&&h2[l]>h2[w]&&marge>=3&&!(r2&&r2.s===l)){ const S=X(l); put(3599,pick([`${S.N} ${S.v("remporte","remportent")} la seconde période (${h2.h}-${h2.a}), sans jamais vraiment revenir.`,`${S.N} ${S.v("gagne","gagnent")} la deuxième mi-temps ${h2[l]}-${h2[w]}, mais le mal était fait.`])); }
     const inRun=x=>[r2].some(y=>y&&x.t>=y.t0&&x.t<=y.t1);
-    if(decisive&&!decisive.n&&lateDecided) P2push(decisive.t,pick([`${W} repasse devant à la ${mn(decisive.t)} (${sc(decisive.h,decisive.a)}) et ne sera plus rejoint`,`${W} reprend l'avantage à la ${mn(decisive.t)} (${sc(decisive.h,decisive.a)}), cette fois pour de bon.`]));
+    if(decisive&&!decisive.n&&lateDecided){ const S=X(w); put(decisive.t,pick([`${S.N} ${S.v("repasse","repassent")} devant à la ${mn(decisive.t)} (${sc(decisive.h,decisive.a)}), cette fois pour de bon.`,`${S.N} ${S.v("reprend","reprennent")} l'avantage à la ${mn(decisive.t)} (${sc(decisive.h,decisive.a)}) et ne le ${S.v("lâche","lâchent")} plus.`])); }
     if(decisive&&decisive.n&&decisive.t>=1800&&(lateDecided||comeback||marge<=3)&&!(decisive.t<3000&&inRun(decisive))){
-      const fin=decisive.t>=3540?pick([" dans la dernière minute"," à moins d'une minute de la fin"]):"";
-      P2push(decisive.t,decisive.t>=3000?pick([`C'est ${nm(decisive.n)} qui donne la victoire à ${W}${fin||" à la "+mn(decisive.t)} (${sc(decisive.h,decisive.a)}).`,`Le but de la victoire porte la signature de ${nm(decisive.n)}${fin||", à la "+mn(decisive.t)} (${sc(decisive.h,decisive.a)}).`])
-        :pick([`À la ${mn(decisive.t)}, ${nm(decisive.n)} fait passer ${W} devant pour de bon (${sc(decisive.h,decisive.a)}).`,`${nm(decisive.n)} redonne l'avantage à ${W} à la ${mn(decisive.t)} (${sc(decisive.h,decisive.a)}), et cette fois pour de bon.`])); }
-    if(!w&&equal&&equal.t>=3000) P2push(equal.t,`${equal.n?nm(equal.n):T[equal.s]} égalise à la ${mn(equal.t)} (${sc(equal.h,equal.a)})`+(equal.t>=3570?pick([", sur la sirène."," dans les toutes dernières secondes."]):"."));
-    if(last&&last.t>=3575&&last.n&&(marge<=1)&&last.s===(w||last.s)&&!(decisive&&decisive===last))
-      P2push(last.t,pick([`${nm(last.n)} trouve le chemin des filets sur la sirène.`,`Le dernier but, sur la sirène, est l'œuvre de ${nm(last.n)}.`]));
-    if(w&&neverBehind&&marge>=3&&!comeback&&deficit===0) P2push(3600,alwaysAhead?pick([`${W} n'a pas été mené une seule seconde.`,`De la première à la dernière minute, ${W} a toujours eu l'avantage au score.`]):pick([`${W} n'a jamais été mené.`]));
-    if(changes>=4) P2push(3600,pick([`Un match à rebondissements : ${changes} changements de leader et ${ties} égalités.`,`Pas moins de ${changes} changements de leader dans cette rencontre.`]));
+      const fin=decisive.t>=3540?pick([" dans la dernière minute"," à moins d'une minute de la fin"," à quelques secondes de la sirène"]):"";
+      put(decisive.t,decisive.t>=3000?pick([`C'est ${nm(decisive.n)} qui offre la victoire à ${T[w]}${fin||" à la "+mn(decisive.t)} (${sc(decisive.h,decisive.a)}).`,`Le but de la victoire porte la signature de ${nm(decisive.n)}${fin||", à la "+mn(decisive.t)} (${sc(decisive.h,decisive.a)}).`,
+          `${nm(decisive.n)} fait basculer le match${fin||" à la "+mn(decisive.t)} (${sc(decisive.h,decisive.a)}).`,`${fin?cap(fin.trim()):"À la "+mn(decisive.t)}, ${nm(decisive.n)} trouve la faille et donne l'avantage décisif à ${T[w]} (${sc(decisive.h,decisive.a)}).`])
+        :pick([`À la ${mn(decisive.t)}, ${nm(decisive.n)} fait passer ${T[w]} devant pour de bon (${sc(decisive.h,decisive.a)}).`,`${nm(decisive.n)} redonne l'avantage à ${T[w]} à la ${mn(decisive.t)} (${sc(decisive.h,decisive.a)}), et cette fois pour de bon.`])); }
+    if(!w&&equal&&equal.t>=3000) put(equal.t,`${equal.n?nm(equal.n):T[equal.s]} égalise à la ${mn(equal.t)} (${sc(equal.h,equal.a)})`+(equal.t>=3570?pick([", sur la sirène."," dans les toutes dernières secondes."]):"."));
+    if(last&&last.t>=3575&&last.n&&marge<=1&&!(decisive&&decisive===last)&&!(equal&&equal===last))
+      put(last.t,pick([`${nm(last.n)} trouve le chemin des filets sur la sirène.`,`Le dernier but, sur la sirène, est l'œuvre de ${nm(last.n)}.`]));
     if(w&&marge<=3&&!(decisive&&decisive.t>=3000)){ const ten=G.filter(q=>q.t>=3240&&q.s===l&&lead(q,w)<=1).pop();
-      if(ten) P2push(ten.t,pick([`${L} revient à ${sc(ten.h,ten.a)} à la ${mn(ten.t)}, mais ${W} tient bon.`,`Le suspense dure jusqu'au bout : ${L} recolle à ${sc(ten.h,ten.a)} à la ${mn(ten.t)}, sans parvenir à égaliser.`])); }
+      if(ten){ const L=X(l), W2=X(w); put(ten.t,pick([`${L.N} ${L.v("revient","reviennent")} à ${sc(ten.h,ten.a)} à la ${mn(ten.t)}, mais ${W2.t} ${W2.v("tient","tiennent")} bon.`,`Le suspense dure jusqu'au bout : ${L.t} ${L.v("recolle","recollent")} à ${sc(ten.h,ten.a)} à la ${mn(ten.t)}, sans parvenir à égaliser.`])); } }
+    if(w&&neverBehind&&marge>=3&&!comeback&&deficit===0){ const S=X(w); put(3600,alwaysAhead?pick([`${S.N} n'${S.v("a","ont")} pas été ${S.ag("mené")} une seule seconde.`,`De la première à la dernière minute, ${S.t} ${S.v("a","ont")} toujours eu l'avantage au score.`,`${S.N} ${S.v("a","ont")} mené de bout en bout.`]):pick([`${S.N} n'${S.v("a","ont")} jamais été ${S.ag("mené")}.`])); }
+    if(changes>=4) put(3600,pick([`Un match à rebondissements : ${changes} changements de leader et ${plur(ties,"égalité")}.`,`Pas moins de ${changes} changements de leader dans cette rencontre.`]));
   }
+  // temps morts qui ont pesé
+  ["h","a"].forEach(s=>tms[s].forEach(e=>{ if(e.t<300||e.t>3540) return; const f=goalsIn(s,e.t,e.t+300), c=goalsIn(O[s],e.t,e.t+300);
+    if(f-c>=3&&f>=3){ const S=X(s); put(e.t+1,pick([`Le temps mort demandé par ${S.t} à la ${mn(e.t)} porte ses fruits : ${f}-${c} dans les cinq minutes qui suivent.`,`Après un temps mort à la ${mn(e.t)}, ${S.t} ${S.v("repart","repartent")} de plus belle (${f}-${c} en cinq minutes).`])); } }));
+  // supériorité numérique bien exploitée (servira pour « le chiffre »)
+  const supNum=[];
+  ["h","a"].forEach(s=>{ let bon=0; excl[O[s]].forEach(x=>{const f=goalsIn(s,x.t,x.t+120), c=goalsIn(O[s],x.t,x.t+120); bon+=f-c;});
+    if(excl[O[s]].length>=3&&bon>=4) supNum.push({s,bon,n:excl[O[s]].length}); });
   // gardiens
   const kp=[];
-  ["h","a"].forEach(s=>{ const sr=saveRun(s), ls=lateSaves(s), shd=shorthanded(s);
-    if(ls.length>=2&&ls[0].n) kp.push({w:3+(s===w),t:ls[ls.length-1].t,txt:pick([`Dans le money time, ${nm(ls[0].n)} sort ${ls.length} arrêts qui pèsent lourd.`,`${cap(g.le)} ${g.gk} ${de(T[s])}, ${nm(ls[0].n)}, réalise ${ls.length} arrêts décisifs dans les cinq dernières minutes.`])});
-    else if(sr&&sr[0].n) kp.push({w:2+(s===w),t:sr[sr.length-1].t,txt:pick([`${nm(sr[0].n)} (${T[s]}) enchaîne ${sr.length} arrêts de suite entre la ${mn(sr[0].t)} et la ${mn(sr[sr.length-1].t)}.`,`Entre la ${mn(sr[0].t)} et la ${mn(sr[sr.length-1].t)}, ${nm(sr[0].n)} écœure les attaquant${F?"e":""}s adverses avec ${sr.length} arrêts consécutifs.`])});
-    else if(shd.length>=2&&shd[0].n) kp.push({w:1+(s===w),t:shd[shd.length-1].t,txt:`${nm(shd[0].n)} tient la baraque en infériorité numérique (${shd.length} arrêts à ${F?"cinq":"cinq"} contre six).`});
+  ["h","a"].forEach(s=>{ const sr=saveRun(s), ls=lateSaves(s);
+    if(ls.length>=2&&ls[0].n) kp.push({w:3+(s===w),t:ls[ls.length-1].t,txt:pick([`Dans le money time, ${nm(ls[0].n)} sort ${nb(ls.length)} arrêts qui pèsent lourd.`,`${cap(g.gk)} ${de(T[s])}, ${nm(ls[0].n)} réalise ${nb(ls.length)} arrêts décisifs dans les cinq dernières minutes.`,`${nm(ls[0].n)} ferme la porte dans les dernières minutes (${ls.length} arrêts).`])});
+    else if(sr&&sr[0].n) kp.push({w:2+(s===w),t:sr[sr.length-1].t,txt:pick([`${nm(sr[0].n)} (${T[s]}) enchaîne ${nb(sr.length)} arrêts de suite entre la ${mn(sr[0].t)} et la ${mn(sr[sr.length-1].t)}.`,
+      `Entre la ${mn(sr[0].t)} et la ${mn(sr[sr.length-1].t)}, ${nm(sr[0].n)} écœure les ${g.att} adverses avec ${nb(sr.length)} arrêts consécutifs.`,`${nm(sr[0].n)} sort le grand jeu entre la ${mn(sr[0].t)} et la ${mn(sr[sr.length-1].t)} : ${nb(sr.length)} arrêts d'affilée.`,
+      `Dans les buts ${de(T[s])}, ${nm(sr[0].n)} multiplie les parades (${sr.length} de suite entre la ${mn(sr[0].t)} et la ${mn(sr[sr.length-1].t)}).`])});
   });
-  kp.sort((a,b)=>b.w-a.w).slice(0,1).forEach(x=>P2push(x.t,x.txt));
-  reds.forEach(e=>{ if(e.n) P2push(e.t,pick([`${nm(e.n)} ${de(T[e.s])} est exclu${g.e} définitivement à la ${mn(e.t)}.`,`Carton rouge pour ${nm(e.n)} (${T[e.s]}) à la ${mn(e.t)}.`])); });
-  if(w&&N&&!A2.some(x=>x[0]>2700)) P2push(3599,pick([`${L} ne reviendra plus.`,`La fin de match ne change plus rien : ${W} l'emporte ${score}.`,`${W} gère son avance jusqu'à la sirène.`]));
-  A2.sort((a,b)=>a[0]-b[0]).forEach(x=>(x[0]<=1800.5?P1:P2).push(x[1]));
+  kp.sort((a,b)=>b.w-a.w).slice(0,1).forEach(x=>put(x.t,x.txt));
+  reds.forEach(e=>{ if(e.n) put(e.t,pick([`${nm(e.n)} ${de(T[e.s])} est exclu${g.e} définitivement à la ${mn(e.t)}.`,`Carton rouge pour ${nm(e.n)} (${T[e.s]}) à la ${mn(e.t)}.`])); });
+  if(w&&N&&!A.some(x=>x[0]>2700&&x[0]<3600)){ const L=X(l), W2=X(w); put(3599,pick([`${L.N} ne ${L.v("reviendra","reviendront")} plus.`,`La fin de match ne change plus rien : ${T[w]} l'emporte ${score}.`,`${W2.N} ${W2.v("gère","gèrent")} son avance jusqu'à la sirène.`.replace("son avance",W2.pl?"leur avance":"son avance"),`${W2.N} ${W2.v("déroule","déroulent")} jusqu'au bout.`])); }
+  A.sort((a,b)=>a[0]-b[0]);
+  const P1=A.filter(x=>x[0]<=1800.5).map(x=>x[1]), P2=A.filter(x=>x[0]>1800.5).map(x=>x[1]);
+  // ---- chute : classement, prochain rendez-vous
+  let chute="";
+  if(w&&latest){ const S=X(w), nx=D.cal.filter(x=>x.j>m.j&&(x.home===club[w]||x.away===club[w])).sort((a,b)=>a.j-b.j)[0];
+    const opts=[];
+    if(ra[w]===1) opts.push(`${S.N} ${S.v("pointe","pointent")} désormais en tête du classement.`,`Au classement, ${S.t} ${S.v("occupe","occupent")} la première place.`);
+    else if(ra[w]&&rb[w]&&ra[w]<rb[w]) opts.push(`${S.N} ${S.v("gagne","gagnent")} ${plur(rb[w]-ra[w],"place")} au classement (${ordD(ra[w])}).`);
+    if(nx){ const adv=nx.home===club[w]?nx.away:nx.home, dom=nx.home===club[w];
+      opts.push(dom?pick([`Prochain rendez-vous : la réception ${de(tN(adv))}.`,`${S.N} ${S.v("recevra","recevront")} ${tN(adv)} lors de la prochaine journée.`]):pick([`Prochaine étape : un déplacement à ${tN(adv)}.`,`${S.N} ${S.v("se déplacera","se déplaceront")} à ${tN(adv)} lors de la prochaine journée.`])); }
+    if(opts.length&&rnd()<0.8) chute=pick(opts);
+  }
+  const aller=D.cal.find(x=>x.home===m.away&&x.away===m.home&&x.j<m.j&&x.res);
+  if(aller&&w&&!chute){ const won=(aller.home===club[w]?aller.res.h>aller.res.a:aller.res.a>aller.res.h); chute=won?`${T[w]} avait déjà gagné à l'aller (${sc(aller.res.h,aller.res.a)}).`:`${T[w]} prend sa revanche du match aller (${sc(aller.res.h,aller.res.a)}).`; }
+  // ---- joueurs clés : cités dans le texte, à la manière d'un article
+  const P3=[];
+  // (calculés plus bas, puis insérés avant la chute)
   // ---- joueurs clés
   const key=[], seen=new Set();
-  const rankLeague=n=>{const ps=[...D.players].sort((a,b)=>b.buts-a.buts);const i=ps.findIndex(p=>norm(p.name)===norm(n));return i===0&&ps[0].buts>(ps[1]?ps[1].buts:0)?ps[0].buts:null;};
-  const scorerLine=(s,n,b)=>{ const t=shots(s,n), p=pens[s][n]||0, eff=t?b/t:null;
-    let x=t?(b===t&&b>=4?pick([`${b} buts sans le moindre échec`,`${b} sur ${t}, 100 % de réussite`]):pick([`${b} buts sur ${t} tirs`,`${b} buts (${Math.round(b/t*100)} % de réussite)`,`${b} sur ${t} au tir`]))
+  const totJ=Object.entries(pj).filter(([k])=>norm(k.split("|").slice(1).join("|"))!==PLACEHOLDER)
+    .map(([k,d])=>({n:k.split("|").slice(1).join("|"),b:d.b.slice(0,m.j).reduce((a,v)=>a+(v||0),0)})).sort((a,b)=>b.b-a.b);
+  const lead1=n=>totJ.length&&norm(totJ[0].n)===norm(n)&&totJ[0].b>(totJ[1]?totJ[1].b:0)?totJ[0].b:null;   // meilleur buteur à l'issue de la journée
+  const record=(s,n,b)=>{const d=fnd(s,n); if(!d) return null; const prev=d.b.slice(0,m.j-1).filter(v=>v!=null);
+    if(prev.length>=2&&b>=5&&b>Math.max(...prev)) return "rec"; if(prev.length>=2&&b>=1&&prev.every(v=>v===0)) return "first"; return null;};
+  const scorerLine=(s,n,b)=>{ const t=shots(s,n), p=pens[s][n]||0;
+    let x=t?(b===t&&b>=4?pick([`${b} buts sans le moindre échec`,`${b} sur ${t}, 100 % de réussite`,`un sans-faute à ${b} sur ${t}`]):pick([`${b} buts sur ${t} tirs`,`${b} buts (${Math.round(b/t*100)} % de réussite)`,`${b} sur ${t} au tir`,`${b} réalisations en ${t} tentatives`]))
       :pick([`${b} buts`,`${b} réalisations`]);
-    if(p) x+=`, dont ${p} sur penalty`;
-    if(eff!==null&&eff>=0.8&&eff<1&&b>=5) x+=pick([", quasi infaillible",", une efficacité redoutable"]);
-    const lg=rankLeague(n); if(lg&&(s===w||!w)) x+=pick([`. ${cap(g.il)} reste en tête des ${g.but}s de la poule (${lg} buts)`,`. Meilleur${g.e} ${g.but} de la poule avec ${lg} buts`]);
+    if(p) x+=x.includes("(")?`, dont ${p} sur penalty`:pick([`, dont ${p} sur penalty`,` (${p} sur jet de 7 m)`]);
+    const rc=record(s,n,b); if(rc==="rec") x+=pick([`, son meilleur total de la saison`,`, record personnel de la saison`]); else if(rc==="first") x+=pick([`, ${g.il} débloque son compteur de la saison`]);
+    const lg=lead1(n); if(lg&&(s===w||!w)) x+=pick([`. ${g.Il} reste en tête des ${g.but}s de la poule (${lg} buts)`,`. Meilleur${g.e} ${g.but} de la poule avec ${lg} buts`,`, et toujours le titre de meilleur${g.e} ${g.but} de la poule en ligne de mire (${lg} buts)`]);
     return x; };
-  const add=(s,n,txt)=>{ if(!n||seen.has(n)) return; seen.add(n); key.push({s,n,txt}); };
-  const tw=w?top(w):[], tl=w?top(l):[];
-  if(w){ tw.slice(0,3).filter((x,i)=>i===0||x[1]>=4).forEach(([n,b])=>add(w,n,scorerLine(w,n,b)));
-    if(decisive&&decisive.n&&(lateDecided||marge<=2)&&!seen.has(decisive.n)) add(w,decisive.n,`l'auteur${F?"e":""} du but de la victoire à la ${mn(decisive.t)}`); }
+  const add=(s,n,txt)=>{ if(!n||seen.has(n)||norm(n)===PLACEHOLDER) return; seen.add(n); key.push({s,n,txt}); };
+  if(w){ top(w).slice(0,3).filter((x,i)=>i===0||x[1]>=4).forEach(([n,b])=>add(w,n,scorerLine(w,n,b)));
+    if(decisive&&decisive.n&&(lateDecided||marge<=2)) add(w,decisive.n,`${g.aut} du but de la victoire à la ${mn(decisive.t)}`); }
   else ["h","a"].forEach(s=>top(s).slice(0,2).filter((x,i)=>i===0||x[1]>=4).forEach(([n,b])=>add(s,n,scorerLine(s,n,b))));
-  const gks=[]; ["h","a"].forEach(s=>Object.entries(saves[s]).forEach(([n,v])=>{const gm=game(O[s]);
-    const multi=Object.keys(saves[s]).length>1, pct=!multi?v/(v+(s==="h"?r.a:r.h)):null; gks.push({s,n,v,pct});}));
+  const gks=[]; ["h","a"].forEach(s=>Object.entries(saves[s]).forEach(([n,v])=>{ const multi=Object.keys(saves[s]).length>1; gks.push({s,n,v,pct:!multi?v/(v+(s==="h"?r.a:r.h)):null}); }));
   gks.sort((a,b)=>(b.s===w)-(a.s===w)||b.v-a.v).filter(x=>(x.v>=10&&(x.pct===null||x.pct>=0.3))||(x.pct!==null&&x.pct>=0.35&&x.v>=6)).slice(0,1).forEach(x=>{
     const opp=gks.filter(y=>y.s!==x.s).reduce((s,y)=>s+y.v,0);
-    add(x.s,x.n,pick([`${x.v} arrêts`,`${x.v} parades`])+(x.pct!==null?` (${Math.round(x.pct*100)} %)`:"")+(opp&&x.v-opp>=3?pick([`, contre ${opp} en face`,`, ${x.v-opp} de plus que le camp d'en face`]):"")); });
-  if(w&&tl.length&&tl[0][1]>=5) add(l,tl[0][0],(pick([`côté ${L}, `,`chez ${L}, `])+scorerLine(l,tl[0][0],tl[0][1])));
+    add(x.s,x.n,pick([`${x.v} arrêts`,`${x.v} parades`,`un mur avec ${x.v} arrêts`])+(x.pct!==null?` (${Math.round(x.pct*100)} %)`:"")+(opp&&x.v-opp>=3?pick([`, contre ${opp} en face`,`, ${x.v-opp} de plus que le camp d'en face`]):"")); });
+  if(w){ const tl=top(l); if(tl.length&&tl[0][1]>=5) add(l,tl[0][0],pick([`côté ${T[l]}, `,`chez ${T[l]}, `,`dans le camp d'en face, `])+scorerLine(l,tl[0][0],tl[0][1])); }
   // ---- le chiffre
   const figs=[]; const gH=game("h"), gA=game("a");
   const pt=x=>x&&x.tirs?x.bp/x.tirs:null, pa=x=>x&&x.arrets!=null?x.arrets/(x.arrets+x.bc):null;
-  if(pt(gH)!==null&&pt(gA)!==null&&Math.abs(pt(gH)-pt(gA))>=0.10){ const s=pt(gH)>pt(gA)?"h":"a", X=s==="h"?gH:gA, Y=s==="h"?gA:gH;
-    figs.push({w:Math.abs(pt(gH)-pt(gA)),txt:`${Math.round(pt(X)*100)} % de réussite au tir pour ${T[s]} (${X.bp} sur ${X.tirs}), contre ${Math.round(pt(Y)*100)} % pour ${T[O[s]]}.`}); }
-  const br=[bigRun("h"),bigRun("a")].filter(Boolean).sort((a,b)=>b.k-a.k)[0];
-  if(br&&br.k>=5&&!br.used) figs.push({w:br.k/30,txt:`${br.k}-0 : la plus longue série du match, signée ${T[br.s]} entre la ${mn(br.t0)} et la ${mn(br.t1)}.`});
-  ["h","a"].forEach(s=>{const n=Object.keys(goals[s]).length; if(n>=7) figs.push({w:n/70,txt:`${n} ${g.but}s différent${F?"e":""}s pour ${T[s]}.`});});
+  if(pt(gH)!==null&&pt(gA)!==null&&Math.abs(pt(gH)-pt(gA))>=0.10){ const s=pt(gH)>pt(gA)?"h":"a", P=s==="h"?gH:gA, Q=s==="h"?gA:gH;
+    figs.push({w:Math.abs(pt(gH)-pt(gA)),txt:pick([`${Math.round(pt(P)*100)} % de réussite au tir pour ${T[s]} (${P.bp} sur ${P.tirs}), contre ${Math.round(pt(Q)*100)} % pour ${T[O[s]]}.`,`${P.bp} buts en ${P.tirs} tirs pour ${T[s]} : ${Math.round(pt(P)*100)} % de réussite, contre ${Math.round(pt(Q)*100)} % en face.`])}); }
+  const br=runs.filter(x=>!x.used).sort((a,b)=>b.k-a.k)[0];
+  if(br&&br.k>=5) figs.push({w:br.k/30,txt:`${br.k}-0 : la plus longue série du match, signée ${T[br.s]} entre la ${mn(br.t0)} et la ${mn(br.t1)}.`});
+  ["h","a"].forEach(s=>{const n=Object.keys(goals[s]).filter(x=>norm(x)!==PLACEHOLDER).length; if(n>=7) figs.push({w:n/70,txt:pick([`${n} ${g.but}s différent${F?"e":""}s pour ${T[s]}.`,`${T[s]} a trouvé le chemin des filets par ${n} ${g.j}s différent${F?"e":""}s.`])});});
   ["h","a"].forEach(s=>{const x=pa(s==="h"?gH:gA); if(x!==null&&x>=0.4) figs.push({w:x-0.25,txt:`${Math.round(x*100)} % d'arrêts pour ${T[s]} sur l'ensemble du match.`});});
+  supNum.forEach(x=>figs.push({w:x.bon/40+(x.s===w?0.05:0),txt:pick([`+${x.bon} : le bilan ${de(T[x.s])} pendant les ${x.n} exclusions adverses.`,`À six contre cinq, ${T[x.s]} a fait mal : +${x.bon} sur les ${x.n} exclusions adverses.`])}));
   if(excl.h.length+excl.a.length>=8) figs.push({w:0.05,txt:`${excl.h.length+excl.a.length} exclusions de deux minutes dans ce match (${excl.h.length} pour ${T.h}, ${excl.a.length} pour ${T.a}).`});
   const fig=figs.sort((a,b)=>b.w-a.w)[0]||null;
-  return {title,paras:[P1.join(" "),P2.join(" ")].filter(Boolean),key:key.slice(0,5),fig:fig&&fig.txt,
-    F,noms:G.some(q=>q.n)};
+  // phrases d'article sur les joueurs
+  { const done=new Set(), stat=(s,n,b)=>{const t=shots(s,n);return t?`${b} sur ${t}`:plur(b,"but");};
+    const extra=(s,n,b)=>{ const rc=record(s,n,b), lg=lead1(n), a=nm(n); let x="";
+      if(rc==="rec") x+=pick([` ${a} signe au passage son meilleur total de la saison.`,` Un record personnel cette saison pour ${a}.`]);
+      else if(rc==="first") x+=` ${a} inscrit au passage ${b>1?"ses premiers buts":"son premier but"} de la saison.`;
+      if(lg&&(s===w||!w)) x+=pick([` ${a} conforte sa place de meilleur${g.e} ${g.but} de la poule (${lg} buts).`,` De quoi rester en tête des ${g.but}s de la poule pour ${a} (${lg} buts).`]);
+      return x; };
+    if(w){ const tw=top(w).filter(([n])=>!(decisive&&decisive.n===n&&lateDecided)), S=X(w);
+      const A1=tw[0], B1=tw[1]&&tw[1][1]>=4?tw[1]:null;
+      if(A1&&A1[1]>=4){ const a=nm(A1[0]), b=B1&&nm(B1[0]);
+        P3.push(B1?pick([`En attaque, ${a} (${stat(w,A1[0],A1[1])}) et ${b} (${stat(w,B1[0],B1[1])}) ont fait la différence`+"."+extra(w,A1[0],A1[1])+``,
+            `${S.N} ${S.v("a pu","ont pu")} compter sur ${g.un} ${a} en grande forme (${stat(w,A1[0],A1[1])}), bien ${F?"épaulée":"épaulé"} par ${b} (${stat(w,B1[0],B1[1])})`+"."+extra(w,A1[0],A1[1])+``,
+            `${a} a fait souffrir la défense adverse avec ${plur(A1[1],"but")}, et ${b} en a ajouté ${B1[1]}.`+extra(w,A1[0],A1[1]),
+            `Portée par ${a} (${stat(w,A1[0],A1[1])}) et ${b} (${stat(w,B1[0],B1[1])}), l'attaque ${S.de} a fait mal`+"."+extra(w,A1[0],A1[1])+``])
+          :pick([`${a} a porté l'attaque ${S.de} avec ${plur(A1[1],"but")}`+"."+extra(w,A1[0],A1[1])+``,`${cap(g.aut)} de ${plur(A1[1],"but")} (${stat(w,A1[0],A1[1])}), ${a} a été le fer de lance ${S.de}`+"."+extra(w,A1[0],A1[1])+``]));
+        if(B1) P3[P3.length-1]+=extra(w,B1[0],B1[1]);
+        done.add(A1[0]); if(B1) done.add(B1[0]); } }
+    const gk=["h","a"].flatMap(s=>Object.entries(saves[s]).map(([n,v])=>({s,n,v,pct:Object.keys(saves[s]).length===1?v/(v+(s==="h"?r.a:r.h)):null})))
+      .sort((a,b)=>(b.s===w)-(a.s===w)||b.v-a.v).find(x=>(x.v>=10&&(x.pct===null||x.pct>=0.3))||(x.pct!==null&&x.pct>=0.35&&x.v>=6));
+    if(gk&&!P2.join(" ").includes(nm(gk.n))){ const opp=["h","a"].filter(s=>s!==gk.s).flatMap(s=>Object.values(saves[s])).reduce((a,b)=>a+b,0);
+      P3.push(gk.s===w?pick([`Derrière, ${nm(gk.n)} a signé ${gk.v} arrêts${gk.pct!==null?" ("+Math.round(gk.pct*100)+" %)":""}.`,`Dans les buts, ${nm(gk.n)} (${gk.v} arrêts) a fait le reste.`,`${cap(g.un)} ${nm(gk.n)} ${F?"impériale":"impérial"} dans ses buts (${gk.v} arrêts) a complété le travail.`])
+        :pick([`Côté ${T[gk.s]}, ${nm(gk.n)} a pourtant multiplié les parades (${gk.v} arrêts${opp&&gk.v>opp?", contre "+opp+" en face":""}).`,`Malgré la défaite, ${nm(gk.n)} s'est mis${g.e} en évidence dans les buts ${de(T[gk.s])} (${gk.v} arrêts).`])); }
+    if(w){ const tl=top(l); if(tl.length&&tl[0][1]>=5&&!P2.join(" ").includes(nm(tl[0][0]))){ const n=nm(tl[0][0]);
+      const pk=a=>{const b=a.filter(x=>!P3.some(p=>p.toLowerCase().includes("côté "+T[l].toLowerCase()))||!x.toLowerCase().includes("côté "));return pick(b.length?b:a);};
+      P3.push(marge>=5?pk([`En face, ${n} (${plur(tl[0][1],"but")}) a été ${F?"la seule":"le seul"} à surnager.`,`Côté ${T[l]}, ${n} (${stat(l,tl[0][0],tl[0][1])}) a longtemps tenu les siens à flot.`,`Seul${g.e} ${n} (${plur(tl[0][1],"but")}) a vraiment surnagé côté ${T[l]}.`+extra(l,tl[0][0],tl[0][1])])
+        :pk([`En face, ${n} a tout tenté (${stat(l,tl[0][0],tl[0][1])}).`+extra(l,tl[0][0],tl[0][1]),`${n} (${plur(tl[0][1],"but")}) a porté ${T[l]} jusqu'au bout.`+extra(l,tl[0][0],tl[0][1])])); } }
+    if(!w){ ["h","a"].forEach(s=>{const t=top(s); if(t.length&&t[0][1]>=5) P3.push(pick([`Côté ${T[s]}, ${nm(t[0][0])} a inscrit ${plur(t[0][1],"but")}.`+extra(s,t[0][0],t[0][1]),`${nm(t[0][0])} (${stat(s,t[0][0],t[0][1])}) a été ${F?"la meilleure":"le meilleur"} ${g.but} ${de(T[s])}.`]));}); }
+  }
+  if(P3.length) P2.push(...P3);
+  if(chute) P2.push(chute);
+  return {title,chapo,paras:[P1.join(" "),P2.join(" ")].filter(Boolean),key:key.slice(0,5),fig:fig&&fig.txt,F};
 }
+function ordD(n){ return n===1?"1er":n+"e"; }
 function debriefHTML(m){
   const d=debrief(m); if(!d||(!d.paras.length&&!d.key.length)) return "";
-  const kl=d.key.map(k=>`<li><b>${esc(nmFull(k.n))}</b> : ${esc(k.txt)}</li>`).join("");
-  const txt=[d.title,"",...d.paras,"",...(d.key.length?["Joueu"+(d.F?"ses":"rs")+" clés :",...d.key.map(k=>"- "+nmFull(k.n)+" : "+k.txt)]:[]),...(d.fig?["","Le chiffre : "+d.fig]:[])].join("\n");
+  const kl="";
+  const txt=[d.title,"",d.chapo,"",...d.paras,...(d.fig?["","Le chiffre : "+d.fig]:[])].join("\n");
   DEB_TXT[m.j+"|"+m.home]=txt;
-  return `<h2>Le débrief</h2><div class="deb"><h3>${esc(d.title)}</h3>${d.paras.map(p=>`<p>${esc(p)}</p>`).join("")}
+  return `<h2>Le débrief</h2><div class="deb"><h3>${esc(d.title)}</h3><p class="deb-ch">${esc(d.chapo)}</p>${d.paras.map(p=>`<p>${esc(p)}</p>`).join("")}
     ${kl?`<div class="deb-k">${d.F?"Joueuses":"Joueurs"} clés</div><ul>${kl}</ul>`:""}${d.fig?`<p class="deb-f"><b>Le chiffre :</b> ${esc(d.fig)}</p>`:""}
     <button class="deb-c" data-deb="${esc(m.j+"|"+m.home)}">Copier le débrief</button></div>`;
 }
 const DEB_TXT={};
-function nmFull(n){ const s=splitName(n), cw=x=>x.toLowerCase().replace(/(^|[\s\-'])(\p{L})/gu,(y,p,c)=>p+c.toUpperCase());
-  return (s.first?cw(s.first)+" ":"")+cw(s.last||n); }
 
 /* ============ ONGLET _Matchs : horaire, salle, momentum, 7 m, cartons rouges ============ */
 function buildMatchs(raw,names,cal){
