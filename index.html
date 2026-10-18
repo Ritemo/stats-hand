@@ -248,6 +248,19 @@ h2{font-size:23px;font-weight:700;margin:4px 2px 10px}
 .une-st dt{font-weight:700;color:var(--muted)}.une-st dd{margin:0}
 .une .une-r{display:inline-block;margin-top:8px;font-size:13px;font-weight:700;color:var(--ink);background:var(--orange-soft);border-radius:8px;padding:2px 8px}
 .une .une-r.V{color:var(--good-t)}.une .une-r.D{color:#c62828}
+.ntfy-b{display:flex;align-items:center;justify-content:center;gap:8px}.ntfy-b svg{width:18px;height:18px}
+.ntfy{margin:0 0 10px 20px;line-height:1.5}
+.ntfy-o{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px}.ntfy-o b{display:block}.ntfy-o .c{display:block;font-size:14px;color:var(--muted)}.ntfy li{margin-bottom:8px}
+.ntfy-t{display:block;margin:6px 0;font-family:ui-monospace,Menlo,monospace;font-size:16px;font-weight:700;background:var(--orange-soft);border-radius:8px;padding:6px 10px;word-break:break-all}
+.pj-link{margin-top:12px}
+.pj-strip{display:flex;gap:2px;margin-top:5px}.pj-strip i{flex:1;height:7px;border-radius:2px;background:var(--orange)}
+.pm{display:flex;flex-direction:column}
+.pm-row{display:grid;grid-template-columns:28px 1fr auto;column-gap:10px;align-items:center;text-align:left;padding:8px 2px;border-top:1px solid var(--line);color:var(--ink);font:inherit;width:100%}
+.pm-row:first-child{border-top:0}.pm-row .res{width:26px;height:26px;font-size:13px}
+.pm-a{font-size:14px;line-height:1.25}.pm-a small{display:block;color:var(--muted);font-size:12.5px}
+.pm-v{font-size:14px;color:var(--muted);text-align:right}.pm-v b{font-family:"Barlow Condensed",sans-serif;font-size:20px;color:var(--ink)}
+.pm-x{grid-column:2/-1;font-size:12.5px;color:var(--muted)}.pm-x:empty{display:none}
+.pm-f{font-size:14px;margin:0 0 8px}
 .mini-row{display:flex;justify-content:space-between;gap:6px;padding:7px 10px;border-top:1px solid var(--line);font-size:14px}
 .mini-row:first-child{border-top:0}
 .mini-row span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -370,6 +383,8 @@ const GID = { joueurs: "2055642853", gardiens: "1898483188", clubs: "1741053301"
               matchs: "211389371",   // matchs : gid de l'onglet _Matchs créé par le robot (horaires, salles, momentum, 7 m)
               calendrier: "1933894624" };   // calendrier : gid de l'onglet Calendrier (à renseigner)   // journees / joueursJ : onglets _Data_Journees et _Data_Joueurs_J
 const MY_TEAM = "Pays Riolais HB";          // équipe mise en avant (orange) dans les classements
+const NTFY_TOPIC_TOUS = "prhb-honneur-tous-r7k2q";   // abonnement « tous les résultats » (« ntfy_topic_tous » du robot)
+const NTFY_TOPIC = "prhb-honneur-r7k2q";           // abonnement ntfy des notifications du robot (même nom que « ntfy_topic » dans la configuration du robot)
 const PLACEHOLDER = "non detaille";          // ligne du score J1, exclue des stats individuelles
 const LOGO_DIR = "logos/";                   // logos : logos/<nom-du-club>.png (voir LISTE-LOGOS.txt)
 
@@ -591,6 +606,7 @@ const IC={
   pin:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>`,
   cal:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>`,
   news:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 5h13v14H6a2 2 0 0 1-2-2z"/><path d="M17 9h3v8a2 2 0 0 1-2 2"/><path d="M7.5 9h6M7.5 12.5h6M7.5 16h4"/></svg>`,
+  bell:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg>`,
   goal:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20V6h18v14"/><path d="M3 10h18M8 6v14M16 6v14" stroke-dasharray="2 2.5"/></svg>`
 };
 const refreshBtn=`<button class="icon-btn" data-search aria-label="Rechercher">${IC.search}</button><button class="icon-btn" data-refresh aria-label="Actualiser les stats">${IC.refresh}</button>`;
@@ -613,11 +629,11 @@ function playerRow(p,{showClub=true,rank=null,max=1,moy=false,sept=false}={}){
     <span class="val"><span class="num">${sept?p.b7:moy?fmt1(v):p.buts}</span><span class="s">${sept?"sur 7 m":moy?p.buts+" buts":avg!=null?fmt1(avg)+" / match":"buts"}</span></span></button>`;
 }
 function keeperRow(k,{rank=null,showClub=true,max=1}={}){
-  return `<div class="row${showClub&&k.club===MY_TEAM?" mine":""}">${rank!=null?`<span class="rank ${rank===1?"p1":""}">${rank}</span>`:""}
+  return `<button class="row${showClub&&k.club===MY_TEAM?" mine":""}" data-keeper="${esc(k.club+"|"+k.name)}">${rank!=null?`<span class="rank ${rank===1?"p1":""}">${rank}</span>`:""}
     <span class="avatar">${esc(initials(k.name))}</span>
     <span class="who"><span class="n">${nameHTML(k.name)}</span><span class="c">${showClub?esc(shortClub(k.club))+", ":""}${k.matchs} match${k.matchs>1?"s":""}, ${k.matchs?fmt1(k.arrets/k.matchs):0} par match</span>
     <span class="meter"><i style="width:${Math.round(100*k.arrets/max)}%"></i></span></span>
-    <span class="val"><span class="num">${k.arrets}</span><span class="s">arrêts</span></span></div>`;
+    <span class="val"><span class="num">${k.arrets}</span><span class="s">arrêts</span></span></button>`;
 }
 
 /* ============ PAGES ============ */
@@ -628,6 +644,7 @@ function pHome(){
   <main>
     ${nc}${ld}
     ${!nc&&!ld?`<div class="empty">Ajoute l'onglet Calendrier au fichier pour voir le prochain match et les derniers résultats.</div>`:""}
+    <button class="more ntfy-b" data-notif>${IC.bell}Être prévenu des résultats</button>
     ${stamp()}
   </main>`;
 }
@@ -670,6 +687,7 @@ function pGeneral(){
     ${logoHTML(x.club,32)}<span class="who"><span class="n">${esc(x.club)}</span><span class="c">${x.j} J, ${x.v} V, ${x.n} N, ${x.d} D, diff. ${sign(x.diff)}</span>
     <span class="meter"><i style="width:${Math.round(100*x.pts/max)}%"></i></span></span>
     <span class="val"><span class="num">${x.pts}</span><span class="s">pts</span></span></button>`).join("")}</div>
+    ${k==="all"&&D.cal.some(m=>m.res)&&D.cal.some(m=>!m.res)?`<button class="more pj-link" data-go="projection">Projection de fin de saison ›</button>`:""}
     <p class="note">${k==="dom"?"Uniquement les matchs joués à domicile. ":k==="ext"?"Uniquement les matchs joués à l'extérieur. ":""}Victoire 3 points, nul 2, défaite 1. À égalité de points, départage à la différence de buts puis aux buts marqués.</p>${stamp()}</main>`;
 }
 function pButeurs(){
@@ -741,8 +759,8 @@ function render(){
   if(!D){ document.getElementById("tabbar").innerHTML=""; app.innerHTML=`<header class="top">${IC.court}<div class="bar-top"><div class="t"><div class="page-title">Stats Hand</div></div>${refreshBtn}</div></header>
     <main>${loading?`<div class="empty">Chargement des stats…</div>`:`<div class="error"><b>Impossible de charger les stats</b>Vérifie ta connexion internet, puis appuie sur le bouton d'actualisation.</div>`}</main>`; return; }
   const {page,arg,arg2}=route();
-  app.innerHTML=({home:pHome,classement:pClassement,buteurs:pButeurs,gardiens:pGardiens,club:()=>pClub(arg),general:pGeneral,journees:()=>pJournees(arg),duel:()=>pDuel(arg,arg2),equipes:pEquipes,une:()=>pUne(arg)}[page]||pHome)();
-  const tab={journees:"journees",duel:"journees",general:"general",classement:"general",buteurs:"buteurs",gardiens:"buteurs",equipes:"equipes",club:"equipes",une:"une"}[page]||"home";
+  app.innerHTML=({home:pHome,classement:pClassement,buteurs:pButeurs,gardiens:pGardiens,club:()=>pClub(arg),general:pGeneral,journees:()=>pJournees(arg),duel:()=>pDuel(arg,arg2),equipes:pEquipes,une:()=>pUne(arg),projection:pProjection}[page]||pHome)();
+  const tab={journees:"journees",duel:"journees",general:"general",classement:"general",buteurs:"buteurs",gardiens:"buteurs",equipes:"equipes",club:"equipes",une:"une",projection:"general"}[page]||"home";
   const tabs=[["home","Accueil",IC.home],...(D.cal.some(m=>m.res)?[["une","À la une",IC.news]]:[]),...(D.cal.length?[["journees","Calendrier",IC.cal]]:[]),[D.standings.length?"general":"classement","Classement",IC.trophy],["buteurs","Joueurs",IC.ball],["equipes","Équipes",IC.teams]];
   const dot=p=>p==="une"&&uneJs().some(uneNew)?'<i class="tb-dot"></i>':"";
   document.getElementById("tabbar").innerHTML=`<div class="in${tabs.length>5?" t6":""}">${tabs.map(([p,l,ic])=>`<button data-go="${p==="home"?"":p}" data-tab ${(p===tab||(tab==="general"&&p==="classement"))?'aria-current="page"':""}>${ic}${dot(p)}<span>${l}</span></button>`).join("")}</div>`;
@@ -880,7 +898,8 @@ function clubData(name){
   return {c,st,gs,n:(st&&st.j)||gs.length,streak:streak(name)};
 }
 function pDuel(js,hs){
-  const j=+js, m=D.cal.find(x=>x.j===j&&slug(x.home)===hs);
+  const j=+js, m=D.cal.find(x=>x.j===j&&(hs==="nous"?(x.home===MY_TEAM||x.away===MY_TEAM):slug(x.home)===hs))
+    ||(hs.length>2?D.cal.find(x=>x.j===j&&slug(x.home).includes(hs)):null);   // lien d'une notification : nom court de l'équipe qui reçoit
   if(!m) return pageHead("Rencontre introuvable")+`<main><div class="empty">Cette rencontre n'est pas dans le calendrier.</div></main>`;
   const A=clubData(m.home), B=clubData(m.away), r=m.res;
   const side=(n,l)=>`<button class="dh-t" data-go="club/${slug(n)}">${logoHTML(n,64)}<span>${esc(shortClub(n))}</span><small>${l}</small></button>`;
@@ -1121,7 +1140,139 @@ function pUne(arg){
     ${Js.map(j=>{ const a=journeeArticle(j); if(!a) return "";
       return `<button class="une" data-go="une/${j}"><span class="une-m">Journée ${j}${a.date?", "+wkLabel(a.date):""}${a.complete?"":` <span class="une-p">${a.n}/${a.of} matchs</span>`}${uneNew(j)?` <span class="nv2">Nouveau</span>`:""}</span>
         <b>${esc(a.title)}</b><span>${esc(a.chapo)}</span>${a.focus?`<span class="une-r ${a.focus.res}">${esc(a.focus.card)}</span>`:""}<small>Lire l'article</small></button>`; }).join("")}
-    <p class="note">Une journée incomplète est signalée par le nombre de matchs joués : son article se complète à chaque nouvelle feuille de match. Un article par journée, écrit à partir des feuilles de match et mis à jour à chaque nouveau résultat. Le débrief détaillé de chaque match reste sur sa page.</p>${stamp()}</main>`;
+    <p class="note">Une journée incomplète est signalée par le nombre de matchs joués : son article se complète à chaque nouvelle feuille de match. Un article par journée, écrit à partir des feuilles de match et mis à jour à chaque nouveau résultat. Le débrief détaillé de chaque match reste sur sa page.</p><button class="more ntfy-b" data-notif>${IC.bell}Être prévenu des nouveaux articles</button>${stamp()}</main>`;
+}
+
+/* ============ NOTIFICATIONS (service gratuit ntfy, envoyées par le robot) ============ */
+function notifSheet(){
+  DEB_TXT.ntfy=NTFY_TOPIC; DEB_TXT.ntfyT=NTFY_TOPIC_TOUS;
+  const box=(t,k,titre,txt)=>`<div class="ntfy-o"><b>${titre}</b><span class="c">${txt}</span><span class="ntfy-t">${esc(t)}</span><button class="deb-c" data-copy="${k}">Copier le nom</button></div>`;
+  openSheet(`<h3>Être prévenu des résultats</h3>
+    <ol class="ntfy">
+      <li>Installe l'appli gratuite <b>ntfy</b> (Play Store ou App Store).</li>
+      <li>Dans ntfy, touche <b>+</b> puis saisis le nom d'<b>un</b> des deux abonnements :</li>
+    </ol>
+    ${box(NTFY_TOPIC_TOUS,"ntfyT","Tous les résultats","Chaque match du championnat dès que sa feuille est lue, avec les meilleurs buteurs, et les journées complètes.")}
+    ${box(NTFY_TOPIC,"ntfy",esc(shortClub(MY_TEAM))+" seulement","Le match de "+esc(shortClub(MY_TEAM))+" avec ses buteurs, et les journées complètes.")}
+    <p class="note">Le match de ${esc(shortClub(MY_TEAM))} et les journées complètes sont dans les deux : inutile de t'abonner aux deux. Touche une notification pour ouvrir le débrief ou l'article. Le samedi soir et le dimanche, le robot passe toutes les 10 minutes : compte 10 à 25 minutes après la fin du match. Sans appli, abonnement possible depuis le navigateur sur <a href="https://ntfy.sh/${encodeURIComponent(NTFY_TOPIC_TOUS)}" target="_blank" rel="noopener">ntfy.sh</a>.</p>`);
+}
+
+/* ============ PROJECTION DE FIN DE SAISON ============
+   Les matchs restants sont simulés 5 000 fois avec le modèle des cotes (force des équipes + avantage du terrain,
+   écart tiré au hasard autour de la prévision). On compte la place finale de chaque équipe dans chaque simulation.
+   Le tirage est fixé par les données : la page affiche toujours les mêmes chiffres tant qu'aucun résultat n'arrive. */
+let PROJ=null;
+function projection(){
+  const key=D.at+"|"+D.cal.filter(m=>m.res).length; if(PROJ&&PROJ.key===key) return PROJ;
+  const games=D.evo?D.evo.games:[], teams=[...new Set(games.map(g=>g.club))]; if(!teams.length) return null;
+  const rest=D.cal.filter(m=>!m.res&&teams.includes(m.home)&&teams.includes(m.away));
+  const M=modelBefore(999); if(!M) return null;
+  const base={}; teams.forEach(t=>{ const gs=games.filter(g=>g.club===t);
+    base[t]={pts:gs.reduce((s,g)=>s+(g.bp>g.bc?3:g.bp===g.bc?2:1),0),diff:gs.reduce((s,g)=>s+g.bp-g.bc,0),bp:gs.reduce((s,g)=>s+g.bp,0),j:gs.length}; });
+  const avg=games.reduce((s,g)=>s+g.bp,0)/Math.max(1,games.length);
+  let seed=7; for(const ch of D.cal.filter(m=>m.res).map(m=>m.j+m.home+m.res.h+"-"+m.res.a).join("|")) seed=(seed*31+ch.charCodeAt(0))>>>0;   // même tirage tant que les résultats ne changent pas
+  const rnd=()=>{seed=(seed+0x6D2B79F5)>>>0;let t=seed;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};
+  const gauss=()=>{let u=0,v=0;while(!u)u=rnd();while(!v)v=rnd();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);};
+  const N=5000, n=teams.length, pos={}, ptsS={}; teams.forEach(t=>{pos[t]=new Array(n).fill(0); ptsS[t]=[];});
+  const exp=rest.map(m=>({h:m.home,a:m.away,d:(M.r[m.home]||0)-(M.r[m.away]||0)+ODDS.home}));
+  for(let s=0;s<N;s++){
+    const st={}; teams.forEach(t=>st[t]={pts:base[t].pts,diff:base[t].diff,bp:base[t].bp});
+    for(const e of exp){ const k=Math.round(e.d+M.sigma*gauss()), H=st[e.h], A=st[e.a];
+      H.pts+=k>0?3:k===0?2:1; A.pts+=k<0?3:k===0?2:1; H.diff+=k; A.diff-=k; H.bp+=avg+k/2; A.bp+=avg-k/2; }
+    teams.slice().sort((a,b)=>st[b].pts-st[a].pts||st[b].diff-st[a].diff||st[b].bp-st[a].bp||rnd()-0.5).forEach((t,i)=>{pos[t][i]++;});
+    teams.forEach(t=>ptsS[t].push(st[t].pts));
+  }
+  const q=(arr,p)=>{const a=arr.slice().sort((x,y)=>x-y);return a[Math.min(a.length-1,Math.floor(p*a.length))];};
+  const rows=teams.map(t=>{ const P=pos[t].map(c=>c/N), mean=ptsS[t].reduce((s,v)=>s+v,0)/N;
+    let lo=0,acc=0; while(acc+P[lo]<0.1&&lo<n-1){acc+=P[lo];lo++;} let hi=n-1; acc=0; while(acc+P[hi]<0.1&&hi>0){acc+=P[hi];hi--;}
+    return {club:t,now:base[t].pts,j:base[t].j,mean,p10:q(ptsS[t],0.1),p90:q(ptsS[t],0.9),P,p1:P[0],top3:P[0]+P[1]+(P[2]||0),last:P[n-1],lo:lo+1,hi:hi+1,
+      exp:P.reduce((s,p,i)=>s+p*(i+1),0)}; }).sort((a,b)=>a.exp-b.exp||b.mean-a.mean);
+  return PROJ={key,rows,rest:rest.length,n,played:D.cal.filter(m=>m.res).length};
+}
+const pctP=p=>p>=0.995?"> 99 %":p<=0?"-":p<0.005?"< 1 %":Math.round(p*100)+" %";
+function pProjection(){
+  const P=projection();
+  if(!P) return pageHead("Projection")+`<main><div class="empty">Il faut quelques résultats pour lancer la projection.</div></main>`;
+  if(!P.rest) return pageHead("Projection")+`<main><div class="empty">Tous les matchs sont joués : le classement est définitif.</div></main>`;
+  const me=P.rows.find(r=>r.club===MY_TEAM);
+  const strip=r=>`<span class="pj-strip" aria-hidden="true">${r.P.map((p,i)=>`<i style="opacity:${p<0.005?0.08:0.18+0.82*Math.min(1,p/Math.max(...r.P))}" title="${i+1}e : ${pctP(p)}"></i>`).join("")}</span>`;
+  return pageHead("Projection")+`<main>
+    ${me?`<div class="deb"><div class="une-m">${esc(shortClub(MY_TEAM))}</div>
+      <p style="margin:0 0 6px"><b>${pctP(me.p1)}</b> de chances de finir premier, <b>${pctP(me.top3)}</b> sur le podium.</p>
+      <p class="c" style="margin:0">Place la plus probable : entre le ${ordD(me.lo)} et le ${ordD(me.hi)} rang (8 cas sur 10). Points en fin de saison : entre ${me.p10} et ${me.p90} (${me.now} aujourd'hui).</p></div>`:""}
+    <h2>Toutes les équipes <span class="h2s">${P.rest} matchs restants</span></h2>
+    <div class="list">${P.rows.map((r,i)=>`<button class="row pj${r.club===MY_TEAM?" mine":""}" data-go="club/${slug(r.club)}">
+      <span class="rank">${i+1}</span>${logoHTML(r.club,32)}<span class="who"><span class="n">${esc(shortClub(r.club))}</span>
+      <span class="c">${[r.p1>=0.005?"1er "+pctP(r.p1):"",r.top3>=0.005?"podium "+pctP(r.top3):"",r.last>=0.005?"dernier "+pctP(r.last):""].filter(Boolean).join(", ")||"milieu de tableau"}</span>${strip(r)}</span>
+      <span class="val"><span class="num">${Math.round(r.mean)}</span><span class="s">pts prévus</span></span></button>`).join("")}</div>
+    <p class="note">Chaque saison restante est simulée 5 000 fois à partir des cotes (force de chaque équipe d'après ses résultats, adversaires et avantage du terrain). La bande sous chaque nom montre les places possibles, de la 1re à la ${P.n}e : plus la case est foncée, plus la place est probable. Une estimation, pas une prédiction : blessures, effectifs et forme du moment n'y sont pas. ${P.played<40?"Peu de matchs joués : à prendre avec beaucoup de recul.":""}</p>${stamp()}</main>`;
+}
+
+/* ============ FICHE JOUEUR : MATCH PAR MATCH ============ */
+const nnP=s=>norm(s).replace(/\([^)]*\)/g,"").replace(/[^a-z]/g,"");
+function playerMatches(p){
+  const E=D.evo, d=E&&E.pj[p.club+"|"+p.name]; if(!d) return [];
+  const me=nnP(p.name), out=[];
+  for(let j=1;j<=E.maxJ;j++){
+    const b=d.b[j-1], t=d.t[j-1]; if(b==null&&t==null) continue;
+    const m=D.cal.find(x=>x.j===j&&(x.home===p.club||x.away===p.club)); if(!m||!m.res) continue;
+    const s=m.home===p.club?"h":"a", I=m.info||{};
+    const ev=(I.ev||[]).filter(e=>e.s===s&&e.n&&nnP(e.n)===me);
+    const m7=(I.m7||[]).filter(x=>x.club===p.club&&nnP(x.nom)===me).reduce((a,x)=>a+x.n,0);
+    out.push({j,m,s,b:b||0,t:t||0,m7,ex:ev.filter(e=>e.c==="X").length,goals:ev.filter(e=>e.c==="B"||e.c==="P").map(e=>e.t),named:!!(I.ev||[]).some(e=>e.n)});
+  }
+  return out;
+}
+function playerMatchesHTML(p){
+  const L=playerMatches(p); if(!L.length) return "";
+  const rows=L.map(x=>{ const r=x.m.res, my=x.s==="h"?r.h:r.a, op=x.s==="h"?r.a:r.h, res=my>op?"V":my<op?"D":"N", adv=x.s==="h"?x.m.away:x.m.home;
+    return `<button class="pm-row" data-go="duel/${x.j}/${slug(x.m.home)}"><span class="res ${res}">${res}</span><span class="pm-a">J${x.j} ${x.s==="h"?"contre":"à"} ${esc(shortClub(adv))}<small>${my}-${op}</small></span>
+      <span class="pm-v"><b>${x.b}</b>${x.t>x.b?`/${x.t}`:""}</span><span class="pm-x">${x.m7?`${x.m7} sur 7 m`:""}${x.m7&&x.ex?", ":""}${x.ex?`${x.ex} × 2 min`:""}</span></button>`; }).join("");
+  // séries et moments des buts (déroulé nominatif)
+  const sc=L.map(x=>x.b>0); let cur=0; for(let i=sc.length-1;i>=0&&sc[i];i--) cur++;
+  let best=0,run=0; sc.forEach(v=>{run=v?run+1:0;best=Math.max(best,run);});
+  const G=L.filter(x=>x.named).flatMap(x=>x.goals), h1=G.filter(t=>t<=1800).length, late=G.filter(t=>t>3000).length;
+  const facts=[];
+  if(cur>=2) facts.push(`a marqué lors de ${cur===L.length?"tous ses":`ses ${cur} derniers`} matchs`);
+  else if(best>=3) facts.push(`meilleure série : ${best} matchs de suite avec au moins un but`);
+  if(G.length>=6) facts.push(`${Math.round(100*h1/G.length)} % de ses buts en 1re mi-temps, ${Math.round(100*(G.length-h1)/G.length)} % en 2e`);
+  if(late>=3) facts.push(`${late} buts dans les 10 dernières minutes`);
+  return `<div class="chart" style="margin-top:14px"><h3>Match par match</h3>
+    ${facts.length?`<p class="pm-f">${esc(cap1(facts.join(" ; ")))}.</p>`:""}
+    <div class="pm">${rows}</div><div class="legend"><span>Buts / tirs, 7 m et exclusions d'après les feuilles de match</span></div></div>`;
+}
+const cap1=s=>s.charAt(0).toUpperCase()+s.slice(1);
+
+/* ============ FICHE GARDIEN ============ */
+function keeperMatches(k){
+  const me=nnP(k.name), out=[];
+  D.cal.filter(m=>m.res&&(m.home===k.club||m.away===k.club)).sort((a,b)=>a.j-b.j).forEach(m=>{
+    const I=m.info||{}, ev=I.ev||[]; if(!ev.some(e=>e.n)) return;
+    const s=m.home===k.club?"h":"a", sv=ev.filter(e=>e.c==="A"&&e.s===s&&e.n);
+    const mine=sv.filter(e=>nnP(e.n)===me).length; if(!mine) return;
+    const others=sv.length-mine, conc=s==="h"?m.res.a:m.res.h;
+    out.push({j:m.j,m,s,sv:mine,solo:!others,conc,pct:!others?mine/(mine+conc):null});
+  });
+  return out;
+}
+function keeperSheet(k){
+  const rk=[...D.keepers].filter(x=>x.matchs>0).sort((a,b)=>b.arrets-a.arrets||a.matchs-b.matchs).findIndex(x=>x.club===k.club&&x.name===k.name)+1;
+  const L=keeperMatches(k), best=L.reduce((a,x)=>!a||x.sv>a.sv?x:a,null), solo=L.filter(x=>x.solo);
+  const pctAll=solo.length?solo.reduce((s,x)=>s+x.sv,0)/solo.reduce((s,x)=>s+x.sv+x.conc,0):null;
+  const rows=L.map(x=>{ const r=x.m.res, my=x.s==="h"?r.h:r.a, op=x.s==="h"?r.a:r.h, res=my>op?"V":my<op?"D":"N", adv=x.s==="h"?x.m.away:x.m.home;
+    return `<button class="pm-row" data-go="duel/${x.j}/${slug(x.m.home)}"><span class="res ${res}">${res}</span><span class="pm-a">J${x.j} ${x.s==="h"?"contre":"à"} ${esc(shortClub(adv))}<small>${my}-${op}</small></span>
+      <span class="pm-v"><b>${x.sv}</b></span><span class="pm-x">${x.pct!=null?fmtPct(x.pct)+" d'arrêts":DEB_F?"gardiennes en alternance":"gardiens en alternance"}</span></button>`; }).join("");
+  const g=DEB_F?"gardienne":"gardien";
+  openSheet(`<h3>${nameHTML(k.name)}</h3><p class="c">${esc(k.club)}, ${g}</p><div class="stats">
+    <div class="stat"><div class="num">${k.arrets}</div><div class="l">Arrêts</div></div>
+    <div class="stat"><div class="num">${k.matchs?fmt1(k.arrets/k.matchs):"-"}</div><div class="l">Arrêts par match</div></div>
+    <div class="stat"><div class="num">${rk?ordM(rk):"-"}</div><div class="l">${cap1(g)} du championnat</div></div>
+    <div class="stat"><div class="num">${k.matchs}</div><div class="l">Matchs</div></div>
+    ${best?`<div class="stat"><div class="num">${best.sv}</div><div class="l">Meilleur match (J${best.j})</div></div>`:""}
+    ${pctAll!=null?`<div class="stat"><div class="num">${fmtPct(pctAll)}</div><div class="l">Arrêts sur tirs cadrés${solo.length<L.length?` (matchs ${DEB_F?"seule":"seul"} dans le but)`:""}</div></div>`:""}
+  </div>${L.length?`<div class="chart" style="margin-top:14px"><h3>Match par match</h3><div class="pm">${rows}</div>
+    <div class="legend"><span>Arrêts d'après le déroulé des feuilles de match. % d'arrêts : arrêts / (arrêts + buts encaissés), seulement quand ${DEB_F?"elle était seule":"il était seul"} dans le but.</span></div></div>`
+    :`<p class="note">Le détail match par match apparaît dès que le déroulé nominatif des feuilles de match est disponible.</p>`}`);
 }
 
 /* ============ DÉBRIEF DU MATCH (style article) ============
@@ -1685,7 +1836,7 @@ function playerSheet(p){
     <div class="stat"><div class="num">${fmtPct(pct(p.buts,mates.reduce((s,x)=>s+x.buts,0)))}</div><div class="l">Part des buts de l'équipe</div></div>
     ${D.hasM?`<div class="stat"><div class="num">${p.b7}</div><div class="l">Buts sur 7 m</div></div>`:""}${p.red?`<div class="stat"><div class="num">${p.red}</div><div class="l">Carton${p.red>1?"s":""} rouge${p.red>1?"s":""}</div></div>`:""}
     ${p.m?`<div class="stat"><div class="num">${p.m}</div><div class="l">Matchs joués</div></div><div class="stat"><div class="num">${fmt1(p.buts/p.m)}</div><div class="l">Buts par match</div></div>`:""}
-  </div>${shotsHTML(p)}${evoPlayerHTML(p)}<p class="note">Stats individuelles hors J1 (feuille de match non détaillée).</p>`);
+  </div>${shotsHTML(p)}${evoPlayerHTML(p)}${playerMatchesHTML(p)}<p class="note">Stats individuelles hors J1 (feuille de match non détaillée).</p>`);
 }
 
 /* ============ ÉVÉNEMENTS ============ */
@@ -1702,6 +1853,11 @@ document.addEventListener("click",e=>{
   if(t.closest("[data-back]")){ if(depth>0){depth--;history.back();} else location.hash="#/"; return; }
   const s=t.closest("[data-seg]"); if(s){ui[s.dataset.seg]=s.dataset.v;render();return;}
   const p=t.closest("[data-player]"); if(p){playerSheet(D.players[+p.dataset.player]);return;}
+  const kp=t.closest("[data-keeper]"); if(kp){const k=D.keepers.find(x=>x.club+"|"+x.name===kp.dataset.keeper); if(k) keeperSheet(k); return;}
+  if(t.closest("[data-notif]")){notifSheet();return;}
+  const cp=t.closest("[data-copy]"); if(cp){ const txt=DEB_TXT[cp.dataset.copy]||"", lab=cp.textContent;
+    const ok=()=>{cp.textContent="Copié";setTimeout(()=>cp.textContent=lab,2000);};
+    if(navigator.clipboard) navigator.clipboard.writeText(txt).then(ok,()=>{}); return; }
   const g=t.closest("[data-go]"); if(g){ closeSheet(); if(g.dataset.go.startsWith("club/")) ui.clubTab="resume"; if(g.dataset.go.startsWith("journees")) ui.jour="";
     if(g.hasAttribute("data-rep")||g.hasAttribute("data-tab")){ if(g.hasAttribute("data-tab")){depth=0;navStack.length=0;} location.replace("#/"+g.dataset.go); } else go(g.dataset.go); return;}
 });
