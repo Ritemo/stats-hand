@@ -10,11 +10,11 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "controle (onglet _Import_Controle seulement), reel (remplit les journées vides), rattrapage (reel + noms officiels et joueurs manquants dans les journées déjà saisies), agrandir-test puis agrandir (30 lignes joueurs et 8 gardiens par onglet club)"
+        description: "controle (onglet _Import_Controle seulement), reel (remplit les journées vides), rattrapage (reel + noms officiels et joueurs manquants dans les journées déjà saisies), agrandir-test puis agrandir (30 lignes joueurs et 8 gardiens par onglet club), test-notif (envoie une notification de test)"
         required: true
         default: controle
         type: choice
-        options: [controle, reel, rattrapage, agrandir-test, agrandir]
+        options: [controle, reel, rattrapage, test-notif, agrandir-test, agrandir]
 
 permissions:
   contents: write
