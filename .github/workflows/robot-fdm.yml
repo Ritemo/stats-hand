@@ -2,7 +2,11 @@ name: Robot feuilles de match
 
 on:
   schedule:
-    - cron: "0 5 * * *"   # tous les jours à 5 h UTC (7 h en été, 6 h en hiver) : horaires, salles, résultats
+    # Les heures sont en UTC (heure de Paris moins 2 h en été, moins 1 h en hiver).
+    - cron: "0 5 * * *"            # tous les jours à 5 h UTC (7 h en été, 6 h en hiver) : horaires, salles, résultats
+    - cron: "30,40,50 16 * * 6"    # samedi soir : toutes les 10 min à partir de 16 h 30 UTC (18 h 30 en été, 17 h 30 en hiver)...
+    - cron: "*/10 17-22 * * 6"     # ... jusqu'à 22 h 50 UTC (0 h 50 en été, 23 h 50 en hiver)
+    - cron: "*/10 12-19 * * 0"     # dimanche : toutes les 10 min de 12 h à 19 h 50 UTC (14 h-21 h 50 en été, 13 h-20 h 50 en hiver)
   workflow_dispatch:
     inputs:
       mode:
@@ -15,12 +19,17 @@ on:
 permissions:
   contents: write
 
+# Un seul passage à la fois : si un passage dure plus de 10 min, le suivant attend au lieu de se chevaucher.
+concurrency:
+  group: robot-fdm
+  cancel-in-progress: false
+
 jobs:
   import:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
@@ -45,5 +54,10 @@ jobs:
         run: |
           git config user.name "robot-fdm"
           git config user.email "robot-fdm@users.noreply.github.com"
+          # passages du week-end sans nouveauté : pas de commit (sinon un commit et un redéploiement du site toutes les 10 min)
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "${{ github.event.schedule }}" != "0 5 * * *" ] \
+             && ! grep -hv "RIEN À FAIRE" robot-fdm/robot/derniere_execution_*.txt | grep -q . ; then
+            echo "Rien de nouveau, pas de trace enregistrée."; exit 0
+          fi
           git add robot-fdm/robot/derniere_execution*.txt || true
           git diff --cached --quiet || (git commit -m "Robot : passage du $(date +%d/%m/%Y)" && git push)
