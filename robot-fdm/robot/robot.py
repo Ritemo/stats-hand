@@ -6,6 +6,10 @@ Variables d'environnement :
                reel : remplit les onglets clubs (uniquement les journées encore vides)
   NOMS_OFFICIELS  1 pour réécrire les noms avec l'orthographe de la feuille de match
   GOOGLE_CREDENTIALS  contenu JSON de la clé du compte de service
+  ROBOT_MODE=test-notif  envoie seulement une notification de test (pour vérifier l'abonnement ntfy)
+Notifications (service gratuit ntfy.sh), deux abonnements possibles dans la configuration :
+  « ntfy_topic »       : le match de « notre_equipe » et chaque journée complète ;
+  « ntfy_topic_tous »  : chaque nouveau résultat du championnat, plus les journées complètes.
 """
 import os, sys, re, json, html, time, datetime, unicodedata, difflib
 import requests
@@ -115,6 +119,89 @@ def salle_rencontre(poule_url, rid):
         adr = ", ".join(x for x in [(e.get("rue") or "").strip(), " ".join(x for x in [(e.get("codePostal") or "").strip(), (e.get("ville") or "").strip()] if x)] if x)
         return {"salle": (e.get("libelle") or "").strip(), "adresse": adr, "lat": e.get("latitude") or "", "lng": e.get("longitude") or ""}
     return None
+
+
+def court_brut(nom):
+    """Nom court tiré du nom d'onglet (« CA Pontarlier HB (B) » -> « Pontarlier ») : sert aussi au lien vers l'appli."""
+    n = re.sub(r"\s*\([A-Z]\)\s*$", "", nom)
+    n = re.sub(r"^(HBC|HB|CA|CS|JA|AS|US|ALC|ASCAP|Ent\.?)\s+", "", n)
+    n = re.sub(r"\s+(HB|HS|Haute-Sa[oô]ne)$", "", n).replace("des Monts", "Monts")
+    return n.strip()
+
+
+NOMS_USAGE = {"Pays de Montbeliard": "Montbéliard", "BEEX-VA PM": "Montbéliard", "Saone Mamirolle": "Mamirolle", "Ledonienne": "Lédonienne",
+              "Maiche": "Maîche", "Palente Besancon": "Palente Besançon", "Vesulien": "Vesoul", "Quingey Val de Loue": "Quingey",
+              "Chevigny St Sauveur": "Chevigny"}
+
+
+def court(nom):
+    """Nom d'usage dans les notifications, avec les accents (« JA Maiche » -> « Maîche »)."""
+    n = court_brut(nom); return NOMS_USAGE.get(n, n)
+
+
+def notifier(cfg, titre, message, lien="", cibles=("ntfy_topic", "ntfy_topic_tous")):
+    """Envoie une notification ntfy sur les abonnements demandés (ne bloque jamais le robot)."""
+    if os.environ.get("NTFY_OFF") == "1": return False
+    ok = False
+    for c in cibles:
+        topic = (cfg.get(c) or "").strip()
+        if not topic: continue
+        try:
+            r = requests.post("https://ntfy.sh/", json={"topic": topic, "title": titre, "message": message,
+                              **({"click": lien} if lien else {})}, timeout=15)
+            print(f"notification {c} ({r.status_code}) : {titre}")
+            ok = ok or r.ok
+        except requests.RequestException as e:
+            print(f"notification {c} non envoyée : {e}")
+    return ok
+
+
+def slug(s):
+    return re.sub(r"[^a-z0-9]+", "-", norm(s)).strip("-")
+
+
+def notifications(cfg, joues, matchs, clubs, journal, pdf_cache):
+    """Après un passage : notre match importé, journée devenue complète. Chaque match n'est importé qu'une fois,
+    donc chaque notification ne part qu'une fois."""
+    lab = lambda m: f"J{m['j']} {m['dom']} {m['sd']}-{m['se']} {m['ext']}"
+    importes = [m for m in joues if any(l[2] == lab(m) and l[3] == "IMPORTÉ" for l in journal)]
+    if not importes: return
+    nous, url = cfg.get("notre_equipe", ""), cfg.get("app_url", "")
+    complet = lambda j: all(cfg["equipes"].get(x["dom"]) in clubs and cfg["equipes"].get(x["ext"]) in clubs
+                            and clubs[cfg["equipes"][x["dom"]]].filled(j) and clubs[cfg["equipes"][x["ext"]]].filled(j)
+                            for x in matchs if x["j"] == j)
+    js = sorted({m["j"] for m in importes}); faits = set()
+    def ini(nom):            # « BANGOURA Come » -> « C. Bangoura »
+        toks = str(nom).split(); up = [t for t in toks if t.isupper() and len(t) > 1]; lo = [t for t in toks if t not in up]
+        return ((lo[0][:1] + ". ") if lo else "") + " ".join(up or toks).title()
+    def buteurs(m, side, n):
+        try:
+            f = parse_fdm(pdf_cache[m["code"]])
+            return sorted([p for p in f["equipes"][side]["joueurs"] if p["buts"] > 0], key=lambda p: -p["buts"])[:n]
+        except Exception: return []
+    for m in importes:
+        tabs = [cfg["equipes"].get(m["dom"]), cfg["equipes"].get(m["ext"])]
+        sc = (int(m["sd"]), int(m["se"])); titre = f"J{m['j']} : {court(tabs[0])} {sc[0]}-{sc[1]} {court(tabs[1])}"
+        if nous and nous in tabs:          # notre match : message détaillé, sur les deux abonnements
+            side = tabs.index(nous); a, b = sc[side], sc[1 - side]
+            res = "Victoire" if a > b else "Défaite" if a < b else "Match nul"
+            top = buteurs(m, side, 3)
+            msg = f"{res} de {court(nous)}." + (" Buteurs : " + ", ".join(f"{ini(p['nom'])} {p['buts']}" for p in top) + "." if top else "")
+            if complet(m["j"]): msg += " La journée est complète : l'article À la une est prêt."; faits.add(m["j"])
+            notifier(cfg, titre, msg + " Débrief dans l'appli.", f"{url}#/duel/{m['j']}/nous" if url else "")
+        else:                              # autre match : abonnement « tous les résultats » seulement
+            w = 0 if sc[0] > sc[1] else 1 if sc[1] > sc[0] else None
+            msg = (f"Victoire de {court(tabs[w])}." if w is not None else "Match nul.")
+            tops = [(t, buteurs(m, k, 1)) for k, t in enumerate(tabs)]
+            tops = [f"{ini(b[0]['nom'])} {b[0]['buts']} ({court(t)})" for t, b in tops if b]
+            if tops: msg += " Meilleurs buteurs : " + ", ".join(tops) + "."
+            notifier(cfg, titre, msg + " Débrief dans l'appli.", f"{url}#/duel/{m['j']}/{slug(court_brut(tabs[0]))}" if url else "",
+                     cibles=("ntfy_topic_tous",))
+    for j in js:
+        if j in faits or not complet(j): continue
+        n = sum(1 for x in matchs if x["j"] == j)
+        notifier(cfg, f"Journée {j} terminée", f"Les {n} matchs sont joués : l'article À la une de la {j}e journée est prêt.",
+                 f"{url}#/une/{j}" if url else "")
 
 
 def fdm_url(code):
@@ -302,6 +389,12 @@ def main(cfg_path):
     # rattrapage : comme reel, et en plus, pour les journées déjà saisies, met les noms à l'orthographe
     # officielle et ajoute les joueurs absents du fichier (sans toucher aux chiffres déjà saisis)
     ecrit = mode in ("reel", "rattrapage")
+
+    if mode == "test-notif":
+        ok = notifier(cfg, f"Test : {cfg.get('nom', 'stats')}", "Les notifications du robot fonctionnent. Tu seras prévenu des résultats.",
+                      cfg.get("app_url", ""))
+        print("notification de test envoyée" if ok else "pas de notification : ntfy_topic absent de la configuration ou envoi impossible")
+        return 0 if ok else 1
 
     noms_off = os.environ.get("NOMS_OFFICIELS", "0") == "1" or os.environ.get("ROBOT_MODE", "").strip().lower() == "rattrapage"
     book = BOOK_FACTORY(cfg["sheet_id"])
@@ -512,6 +605,10 @@ def main(cfg_path):
         completer(m, f, data, tabs, label)
 
     if ecrit:
+        try:
+            notifications(cfg, joues, matchs, clubs, journal, pdf_cache)
+        except Exception as e:
+            print(f"notifications : {e}")
         try:
             maj_matchs(book, cfg, matchs, pdf_cache, now, journal)
         except Exception as e:

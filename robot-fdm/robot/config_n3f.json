@@ -3,6 +3,10 @@
   "sheet_id": "1bFnSlIoJ8UMcl6yyvGi6OhxzJTprp04G0fQuj0fx8i0",
   "poule_url": "https://www.ffhandball.fr/competitions/saison-2026-2027-22/regional/f001-nationale-3f-32422/poule-190560/",
   "journees": 22,
+  "notre_equipe": "Pays Riolais HB",
+  "app_url": "https://ritemo.github.io/stats-n3f/",
+  "ntfy_topic": "prhb-n3f-r7k2q",
+  "ntfy_topic_tous": "prhb-n3f-tous-r7k2q",
   "equipes": {
     "ALC LONGVIC (B)": "ALC Longvic (B)",
     "AS AUXOIS": "AS Auxois",

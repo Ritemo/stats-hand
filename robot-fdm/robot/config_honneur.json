@@ -3,6 +3,10 @@
   "sheet_id": "1J52Ra-9AspvEoIDa4R31qqO0adcvNuylc_y7Hjbj-vo",
   "poule_url": "https://www.ffhandball.fr/competitions/saison-2026-2027-22/regional/m003-honneur-masculine-32524/poule-191000/",
   "journees": 22,
+  "notre_equipe": "Pays Riolais HB",
+  "app_url": "https://ritemo.github.io/stats-hand/",
+  "ntfy_topic": "prhb-honneur-r7k2q",
+  "ntfy_topic_tous": "prhb-honneur-tous-r7k2q",
   "equipes": {
     "BEEX-VA PM HB (C)": "BEEX-VA PM HB (C)",
     "CA PONTARLIER HB (B)": "CA Pontarlier HB (B)",
