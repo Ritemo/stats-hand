@@ -1,13 +1,17 @@
-// Change ce numéro à chaque mise à jour de l'appli pour forcer le rafraîchissement
-const VERSION = "hon-v31";
-const SHELL = ["./", "index.html", "manifest.json", "icon-192.png", "icon-512.png"];
+// Service worker commun aux deux applis : le préfixe vient de config.js (« hon » garçons, « n3f » filles).
+// Change ce numéro à chaque mise à jour de l'appli pour forcer le rafraîchissement.
+importScripts("config.js");
+const VERSION = self.APP.id + "-v33";
+const SHELL = ["./", "index.html", "config.js", "manifest.json", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)));
   self.skipWaiting();
 });
 self.addEventListener("activate", e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => (k.startsWith("hon-") || /^v\d+$/.test(k)) && k !== VERSION).map(k => caches.delete(k)))));
+  // chaque appli ne supprime que ses propres caches (les anciens caches des garçons s'appelaient « v27 », « v26 »...)
+  const mien = k => k.startsWith(self.APP.id + "-") || (self.APP.id === "hon" && /^v\d+$/.test(k));
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => mien(k) && k !== VERSION).map(k => caches.delete(k)))));
   self.clients.claim();
 });
 // Réseau d'abord (toujours la dernière version), cache seulement hors connexion.
