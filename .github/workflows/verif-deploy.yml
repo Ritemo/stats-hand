@@ -1,0 +1,68 @@
+name: Vérification et mise en ligne
+
+# À chaque dépôt de fichiers, l'appli est d'abord testée avec les vraies données (tests/verif.js).
+# Si tout est bon, elle est mise en ligne sur GitHub Pages. Sinon la mise en ligne est bloquée :
+# l'ancienne version reste en place et une alerte part sur ntfy (abonnement prhb-alerte-r7k2q).
+# Réglage à faire une fois : Settings > Pages > Build and deployment > Source : « GitHub Actions ».
+on:
+  push:
+    branches: [main]
+    paths-ignore:                 # les passages du robot ne changent pas l'appli : pas de nouvelle mise en ligne
+      - "robot-fdm/**"
+      - ".github/workflows/robot-fdm.yml"
+  workflow_dispatch:              # bouton « Run workflow » pour relancer à la main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Navigateur de test
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Test de l'appli (vraies données)
+        run: node tests/verif.js .
+      - name: Alerte si la mise en ligne est bloquée
+        if: failure()
+        env:
+          LIEN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          DEPOT: ${{ github.event.repository.name }}
+        run: |
+          MSG="$(cat verif-resume.txt 2>/dev/null || echo 'Le test n a pas pu se terminer.') L'ancienne version reste en ligne."
+          jq -n --arg t "Mise en ligne bloquée ($DEPOT)" --arg m "${MSG:0:1500}" --arg c "$LIEN" \
+            '{topic:"prhb-alerte-r7k2q", title:$t, message:$m, click:$c, priority:4}' \
+            | curl -s -H "Content-Type: application/json" -d @- https://ntfy.sh/ || true
+      - name: Préparer le site
+        run: |
+          mkdir _site
+          for f in *; do
+            case "$f" in robot-fdm|tests|node_modules|_site|verif-resume.txt|package.json|package-lock.json) ;; *) cp -r "$f" _site/ ;; esac
+          done
+          ls _site
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  mise-en-ligne:
+    needs: verification
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploiement.outputs.page_url }}
+    steps:
+      - id: deploiement
+        uses: actions/deploy-pages@v4
