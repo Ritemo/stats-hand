@@ -1,26 +1,35 @@
 name: Robot feuilles de match
 
+# Le robot lit les feuilles de match sur le site de la fédération et remplit les deux Google Sheets (garçons et filles).
+#
+# GitHub ne garantit pas les tâches programmées : le samedi soir, il en saute la plupart (30 prévues, 2 à 4 lancées).
+# Les soirs de match, on ne lui demande donc qu'UN lancement : une fois démarré, le robot reste en veille et relit
+# les feuilles toutes les 10 minutes jusqu'à la fin de soirée. Deux lancements de secours prennent le relais si le
+# premier n'a pas démarré (ou au bout de 6 h, durée maximale d'un passage sur GitHub) ; s'ils arrivent pendant une
+# veille, ils attendent qu'elle se termine.
 on:
   schedule:
-    # Les heures sont en UTC (heure de Paris moins 2 h en été, moins 1 h en hiver).
-    # Minutes décalées (7, 33, 43...) : GitHub retarde de plusieurs heures les tâches programmées à l'heure pile.
-    - cron: "7 5 * * *"                      # tous les jours à 5 h 07 UTC (7 h 07 en été, 6 h 07 en hiver) : horaires, salles, résultats
-    - cron: "33,43,53 16 * * 6"              # samedi soir : toutes les 10 min à partir de 16 h 33 UTC (18 h 33 en été, 17 h 33 en hiver)...
-    - cron: "3,13,23,33,43,53 17-22 * * 6"   # ... jusqu'à 22 h 53 UTC (0 h 53 en été, 23 h 53 en hiver)
-    - cron: "3,13,23,33,43,53 12-19 * * 0"   # dimanche : toutes les 10 min de 12 h 03 à 19 h 53 UTC (14 h-21 h 53 en été, 13 h-20 h 53 en hiver)
+    # Heures en UTC (heure de Paris moins 1 h en hiver, moins 2 h en été). Minutes décalées : l'heure pile est la plus encombrée.
+    - cron: "7 5 * * *"           # tous les jours, un passage : horaires, salles, résultats (6 h 07 en hiver)
+    - cron: "33 16 * * 6"         # samedi : veille jusqu'à 23 h UTC (17 h 33 à minuit en hiver)
+    - cron: "33 18 * * 6"         # samedi : secours
+    - cron: "33 20 * * 6"         # samedi : secours
+    - cron: "3 12 * * 0"          # dimanche : veille jusqu'à 20 h UTC (13 h 03 à 21 h en hiver)
+    - cron: "3 14 * * 0"          # dimanche : secours
+    - cron: "3 16 * * 0"          # dimanche : secours
   workflow_dispatch:
     inputs:
       mode:
-        description: "controle (onglet _Import_Controle seulement), reel (remplit les journées vides), rattrapage (reel + noms officiels et joueurs manquants dans les journées déjà saisies), agrandir-test puis agrandir (30 lignes joueurs et 8 gardiens par onglet club), test-notif (envoie une notification de test)"
+        description: "reel (un passage : remplit les journées vides), veille (passage toutes les 10 min pendant 3 h, pour un match un autre soir), controle (onglet _Import_Controle seulement), rattrapage (reel + noms officiels et joueurs manquants dans les journées déjà saisies), test-notif (notifications de test), agrandir-test puis agrandir (réservé)"
         required: true
-        default: controle
+        default: reel
         type: choice
-        options: [controle, reel, rattrapage, test-notif, agrandir-test, agrandir]
+        options: [reel, veille, controle, rattrapage, test-notif, agrandir-test, agrandir]
 
 permissions:
   contents: write
 
-# Un seul passage à la fois : si un passage dure plus de 10 min, le suivant attend au lieu de se chevaucher.
+# Un seul robot à la fois : un lancement qui arrive pendant une veille attend qu'elle se termine.
 concurrency:
   group: robot-fdm
   cancel-in-progress: false
@@ -28,6 +37,7 @@ concurrency:
 jobs:
   import:
     runs-on: ubuntu-latest
+    timeout-minutes: 355
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -37,34 +47,57 @@ jobs:
           cache-dependency-path: robot-fdm/robot/requirements.txt
       - id: deps
         run: pip install -r robot-fdm/robot/requirements.txt
-      - name: Import Honneur masculine
+      - name: Robot (garçons puis filles, en boucle les soirs de match)
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-          # lancement manuel : mode choisi ; lancement programmé : variable du dépôt ROBOT_MODE (controle par défaut)
-          ROBOT_MODE: ${{ github.event.inputs.mode || vars.ROBOT_MODE || 'controle' }}
           NOMS_OFFICIELS: ${{ vars.NOMS_OFFICIELS || '0' }}
-        run: python robot-fdm/robot/robot.py robot-fdm/robot/config_honneur.json
-      - name: Import Nationale 3 féminine
-        if: always()
-        env:
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-          ROBOT_MODE: ${{ github.event.inputs.mode || vars.ROBOT_MODE_N3F || 'controle' }}
-          NOMS_OFFICIELS: ${{ vars.NOMS_OFFICIELS || '0' }}
-        run: python robot-fdm/robot/robot.py robot-fdm/robot/config_n3f.json
-      - name: Garder une trace dans le dépôt
-        if: always()
+          # lancement manuel : mode choisi ; lancement programmé : variables du dépôt ROBOT_MODE et ROBOT_MODE_N3F
+          MODE_MANUEL: ${{ github.event.inputs.mode }}
+          MODE_H: ${{ vars.ROBOT_MODE || 'controle' }}
+          MODE_F: ${{ vars.ROBOT_MODE_N3F || 'controle' }}
+          EVENEMENT: ${{ github.event_name }}
+          PROGRAMME: ${{ github.event.schedule }}
         run: |
           git config user.name "robot-fdm"
           git config user.email "robot-fdm@users.noreply.github.com"
-          # passages du week-end sans nouveauté : pas de commit (sinon un commit et un redéploiement du site toutes les 10 min)
-          if [ "${{ github.event_name }}" = "schedule" ] && [ "${{ github.event.schedule }}" != "7 5 * * *" ] \
-             && ! grep -hv "RIEN À FAIRE" robot-fdm/robot/derniere_execution_*.txt | grep -q . \
-             && [ -z "$(git status --porcelain -- 'robot-fdm/robot/alertes_*.txt')" ]; then
-            echo "Rien de nouveau, pas de trace enregistrée."; exit 0
+          DEBUT=$(date +%s); ECHEC=0
+          # ---- veille ou passage unique ?
+          if [ "$EVENEMENT" = "schedule" ] && [ "$PROGRAMME" != "7 5 * * *" ]; then
+            if [ "$(date -u +%u)" = "6" ]; then FIN=$(date -u -d "today 23:00" +%s); else FIN=$(date -u -d "today 20:00" +%s); fi
+          elif [ "$MODE_MANUEL" = "veille" ]; then
+            FIN=$((DEBUT + 3*3600)); MODE_H=reel; MODE_F=reel
+          else
+            FIN=0
+            if [ -n "$MODE_MANUEL" ]; then MODE_H=$MODE_MANUEL; MODE_F=$MODE_MANUEL; fi
           fi
-          git add robot-fdm/robot/derniere_execution*.txt || true
-          git add -- 'robot-fdm/robot/alertes_*.txt' 2>/dev/null || true     # problèmes en cours (évite de répéter une alerte)
-          git diff --cached --quiet || (git commit -m "Robot : passage du $(date +%d/%m/%Y)" && git push)
+          LIMITE=$((DEBUT + 340*60))           # un passage GitHub dure 6 h au plus : on s'arrête avant
+          [ "$FIN" -gt "$LIMITE" ] && FIN=$LIMITE
+          [ "$FIN" -gt 0 ] && echo "Veille jusqu'à $(date -u -d @$FIN +%H:%M) UTC, un passage toutes les 10 minutes."
+          n=0
+          while true; do
+            n=$((n+1)); T0=$(date +%s); echo "::group::Passage $n ($(date -u +%H:%M) UTC)"
+            ROBOT_MODE=$MODE_H python robot-fdm/robot/robot.py robot-fdm/robot/config_honneur.json || ECHEC=1
+            ROBOT_MODE=$MODE_F python robot-fdm/robot/robot.py robot-fdm/robot/config_n3f.json || ECHEC=1
+            # ---- trace dans le dépôt, seulement s'il y a du nouveau (sinon un commit toutes les 10 min)
+            NOUVEAU=$(grep -hv "RIEN À FAIRE" robot-fdm/robot/derniere_execution_*.txt || true)
+            if [ "$FIN" -gt 0 ] && [ -z "$NOUVEAU" ] && [ -z "$(git status --porcelain -- 'robot-fdm/robot/alertes_*.txt')" ]; then
+              echo "Rien de nouveau."
+            else
+              git add robot-fdm/robot/derniere_execution*.txt || true
+              git add -- 'robot-fdm/robot/alertes_*.txt' 2>/dev/null || true
+              if ! git diff --cached --quiet; then
+                git commit -q -m "Robot : passage du $(date +%d/%m/%Y)"
+                git pull -q --rebase origin main && git push -q origin HEAD:main || echo "Trace non enregistrée (sera réessayé au prochain passage)."
+              fi
+            fi
+            echo "::endgroup::"
+            # ---- passage suivant dans 10 minutes, tant que la veille n'est pas finie
+            PROCHAIN=$((T0 + 600))
+            if [ "$FIN" -eq 0 ] || [ "$PROCHAIN" -ge "$FIN" ]; then break; fi
+            ATTENTE=$((PROCHAIN - $(date +%s))); [ "$ATTENTE" -gt 0 ] && sleep "$ATTENTE"
+          done
+          echo "$n passage(s)."
+          exit $ECHEC
       - name: Alerte si le robot n'a pas pu démarrer
         if: failure() && steps.deps.outcome == 'failure'
         run: |
