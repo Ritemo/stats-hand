@@ -990,12 +990,14 @@ const uneJs=()=>D&&D.cal?[...new Set(D.cal.filter(m=>m.res).map(m=>m.j))].sort((
 const uneNew=j=>!uneSeen().has(uneKey(j));
 function uneMark(j){ if(uneNew(j)){ UNE_SEEN.add(uneKey(j)); uneSave(); } }
 
+const lc0=s=>/^(Sur|À|En|Côté|Depuis|Trois|Quatre|Deux|Cinq)(?=[\s,'])/.test(s)?s.charAt(0).toLowerCase()+s.slice(1):s;   // minuscule après « À noter, » sauf nom propre
 function journeeArticle(j){
   const ms=D.cal.filter(m=>m.j===j), done=ms.filter(m=>m.res); if(!done.length) return null;
   const F=DEB_F, complete=done.length===ms.length;
   let seed=11; for(const ch of "J"+j+"|"+done.map(m=>m.home+m.res.h+"-"+m.res.a).join(",")) seed=(seed*31+ch.charCodeAt(0))>>>0;
   const rnd=()=>{seed=(seed+0x6D2B79F5)>>>0;let t=seed;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};
-  const usedT=new Set(), pick=a=>{const f=a.filter(x=>!usedT.has(x.slice(0,18))), r=(f.length?f:a)[Math.floor(rnd()*(f.length?f:a).length)]; usedT.add(r.slice(0,18)); return r;}, cap=s=>s.charAt(0).toUpperCase()+s.slice(1), lc=s=>s.charAt(0).toLowerCase()+s.slice(1);
+  const keyOf=x=>{const m=x.match(/ (a|s'est|n'a|est|ont|se sont|pointe|compte|reste|garde|conserve) /); return m&&m.index<45?x.slice(m.index).split(" ").slice(0,3).join(" "):x.slice(0,18);};   // la tournure (« a dominé »), sans les noms
+  const usedT=new Set(), pick=a=>{const f=a.filter(x=>!usedT.has(keyOf(x))), r=(f.length?f:a)[Math.floor(rnd()*(f.length?f:a).length)]; usedT.add(keyOf(r)); return r;}, cap=s=>s.charAt(0).toUpperCase()+s.slice(1), lc=s=>s.charAt(0).toLowerCase()+s.slice(1);
   const T=proseName;
   const de=x=>/^[aeiouyhéèêàâîôûAEIOUYHÉÈÊÀÂÎÔÛ]/.test(x)?"d'"+x:"de "+x;
   const plur=(n,w,ws)=>`${n} ${n>1?(ws||w+"s"):w}`;
@@ -1035,14 +1037,33 @@ function journeeArticle(j){
   else if(leader&&j>1&&leaderRes&&leaderRes.W===leader) title=pickJ([`${T(leader)} conforte sa place de leader`,`${T(leader)} tient son rang`,`Rien n'arrête ${T(leader)}`]);
   else if(big&&big.marge>=12) title=pickJ([`${T(big.W)} frappe fort`,`Le carton ${de(T(big.W))}`,`${T(big.W)} sort le grand jeu`]);
   else if(upset) title=pickJ([`${T(upset.W)} déjoue les pronostics`,`La surprise ${de(T(upset.W))}`]);
+  else if(R.length>=4&&R.filter(x=>x.marge<=2).length>=3) title=pickJ([`Une journée au finish`,`Suspense à tous les étages`,`Des matchs serrés partout`]);
+  else if(R.length>=4&&nDom===R.length) title=pickJ([`Les équipes qui recevaient font la loi`,`Carton plein pour les locaux`,`Journée à domicile`]);
+  else if(R.length>=4&&nExt>R.length/2) title=pickJ([`Les visiteurs en force`,`Une journée pour les équipes en déplacement`]);
   else title=pickJ([`${cap(ordJ)} journée : ce qu'il faut retenir`,`Les enseignements de la ${ordJ} journée`,`${cap(ordJ)} journée, le résumé`]);
-  // ---- chapeau
+  // ---- chapeau : ce qui a marqué la journée, puis le bilan (formulé de plusieurs façons)
   const bilan=[nDom?`${plur(nDom,"victoire")} à domicile`:"", nExt?`${nExt} à l'extérieur`:"", nNul?plur(nNul,"nul"):""].filter(Boolean);
   const bil=bilan.length>1?bilan.slice(0,-1).join(", ")+" et "+bilan[bilan.length-1]:bilan[0];
-  let chapo=pick([`La ${ordJ} journée a livré son verdict : `,`Au terme de la ${ordJ} journée, on compte `,`Bilan de la ${ordJ} journée : `])
-    +`${bil}, pour ${buts} buts inscrits (${String(Math.round(moy*10)/10).replace(".",",")} par match).`;
-  if(complete&&leader&&j>1) chapo+=" "+(newLeader?pick([`${T(leader)} en profite pour prendre les commandes.`,`${T(leader)} est le nouveau leader.`])
-    :pick([`${T(leader)} reste en tête.`,`${T(leader)} garde la première place.`]));
+  const moyS=String(Math.round(moy*10)/10).replace(".",","), serres=R.filter(x=>x.marge<=2);
+  const leaderM=leader?R.find(x=>x.m.home===leader||x.m.away===leader):null;
+  const angles=[];      // [force, phrase] : les plus fortes passent en premier, sinon on alterne d'une journée à l'autre
+  if(newLeader&&leaderM&&leaderM.W===leader) angles.push([3,pick([`C'est un changement de taille : ${T(leader)} prend les commandes du championnat après sa victoire contre ${T(leaderM.L)} (${sc(leaderM.m)}).`,`${T(leader)} a choisi cette ${ordJ} journée pour passer devant tout le monde, en battant ${T(leaderM.L)} (${sc(leaderM.m)}).`])]);
+  if(upset&&upset.cote>=3) angles.push([3,pick([`La journée restera celle ${de(T(upset.W))}, vainqueur inattendu ${de(T(upset.L))} (${sc(upset.m)}).`,`Personne ne l'avait vu venir : ${T(upset.W)} a battu ${T(upset.L)} (${sc(upset.m)}).`])]);
+  if(leaderLost) angles.push([3,`Le leader est tombé : ${T(prevLeader)} s'est incliné face à ${T(leaderRes.W)} (${sc(leaderRes.m)})${prevLeader===leader?", sans perdre sa place pour autant":leader===leaderRes.W?`, qui lui prend la première place`:`, et ${T(leader)} en profite pour passer en tête`}.`]);
+  if(big&&big.marge>=12) angles.push([2,pick([`${T(big.W)} a marqué les esprits en écrasant ${T(big.L)} (${sc(big.m)}).`,`Avec ${plur(big.marge,"but")} d'écart face à ${T(big.L)} (${sc(big.m)}), ${T(big.W)} a signé le coup de force de la journée.`])]);
+  if(R.length>=4&&serres.length>=3) angles.push([2,`Une journée sous haute tension : ${nbf(serres.length)} rencontres se sont jouées à deux buts ou moins.`]);
+  if(R.length>=4&&nDom===R.length) angles.push([2,`Les équipes qui recevaient ont fait la loi : ${plur(nDom,"victoire")} à domicile sur ${R.length} matchs.`]);
+  if(R.length>=4&&nExt>R.length/2) angles.push([2,`Les équipes en déplacement ont pris le pouvoir : ${nExt} victoires à l'extérieur sur ${R.length} matchs.`]);
+  if(R.length>=4&&moy>=62) angles.push([1,`Les attaques se sont lâchées : ${buts} buts, soit ${moyS} par match.`]);
+  if(R.length>=4&&moy<=48) angles.push([1,`Les défenses ont pris le dessus : ${moyS} buts par match seulement.`]);
+  angles.sort((a,b)=>b[0]-a[0]);
+  const fortes=angles.filter(a=>a[0]===angles[0]?.[0]), ouverture=fortes.length?fortes[j%fortes.length][1]:"";
+  const bilanP=ouverture&&!/domicile|déplacement|par match/.test(ouverture)
+    ?pick([`Au total : ${bil}, pour ${buts} buts (${moyS} par match).`,`Le bilan : ${bil}, et ${moyS} buts par match.`,`On compte ${bil}, pour ${buts} buts inscrits.`])
+    :ouverture?"":pick([`La ${ordJ} journée a livré son verdict : `,`Au terme de la ${ordJ} journée, on compte `,`Bilan de la ${ordJ} journée : `])+`${bil}, pour ${buts} buts inscrits (${moyS} par match).`;
+  let chapo=[ouverture,bilanP].filter(Boolean).join(" ");
+  if(complete&&leader&&j>1&&!/commandes|passer devant|leader est tombé/.test(chapo)) chapo+=" "+(newLeader?pick([`${T(leader)} en profite pour prendre les commandes.`,`${T(leader)} est le nouveau leader.`])
+    :pick([`${T(leader)} reste en tête.`,`${T(leader)} garde la première place.`,`En haut du classement, ${T(leader)} ne bouge pas.`]));
   // ---- récit des résultats
   const P1=[], my=R.find(x=>x.m.home===MY_TEAM||x.m.away===MY_TEAM);
   const order=[upset,big,...R].filter((x,i,a)=>x&&x!==my&&a.indexOf(x)===i);
@@ -1056,15 +1077,18 @@ function journeeArticle(j){
     else if(x.marge>=10){ s=pick([`${T(x.W)} a largement dominé ${T(x.L)} (${sc(m)})${por}.`,`${T(x.W)} n'a pas fait de détail face à ${T(x.L)} (${sc(m)})${por}.`,`Large succès ${de(T(x.W))} contre ${T(x.L)} (${sc(m)})${por}.`]); gen=s.startsWith("Large"); }
     else if(x.marge<=2){ s=pick([`${T(x.W)} s'est imposé de justesse face à ${T(x.L)} (${sc(m)})${por}.`,`${T(x.W)} a dû batailler jusqu'au bout pour venir à bout ${de(T(x.L))} (${sc(m)}).`,`C'est sur le fil que ${T(x.W)} a battu ${T(x.L)} (${sc(m)}).`]); gen=s.startsWith("C'est"); }
     else if(x.w==="a"){ s=pick([`${T(x.W)} est allé s'imposer ${chez(x.L)} (${sc(m)})${por}.`,`${T(x.W)} a ramené la victoire de son déplacement ${chez(x.L)} (${sc(m)})${por}.`]); }
-    else { s=pick([`${T(x.W)} a battu ${T(x.L)} (${sc(m)})${por}.`,`${T(x.W)} a pris le meilleur sur ${T(x.L)} (${sc(m)})${por}.`,`Devant son public, ${T(x.W)} a dominé ${T(x.L)} (${sc(m)})${por}.`]); gen=s.startsWith("Devant"); }
+    else { s=pick([`${T(x.W)} a battu ${T(x.L)} (${sc(m)})${por}.`,`${T(x.W)} a pris le meilleur sur ${T(x.L)} (${sc(m)})${por}.`,`Devant son public, ${T(x.W)} a dominé ${T(x.L)} (${sc(m)})${por}.`,
+      `${T(x.W)} s'est défait ${de(T(x.L))} (${sc(m)})${por}.`,`Victoire ${de(T(x.W))} face à ${T(x.L)} (${sc(m)})${por}.`]); gen=/^(Devant|Victoire)/.test(s); }
     if(i>0&&conn.length&&rnd()<0.6&&!/^(La surprise|Devant)/.test(s)){ const c=pick(conn); conn.splice(conn.indexOf(c),1); s=c+(gen?lc(s):s); }
     P1.push(s); });
   // ---- classement
   const P2=[];
   if(leader&&complete){
     const lp=pts(leader,j);
-    P2.push(`Au classement, ${T(leader)} ${newLeader?"occupe désormais":j===1?"occupe":pick(["conserve","garde"])} la première place avec ${lp} points, `
-      +(second?(gap?`${plur(gap,"longueur")} devant ${T(second)}.`:`à égalité de points avec ${T(second)}.`):"."));
+    const ec=second?(gap?`${plur(gap,"longueur")} devant ${T(second)}`:`à égalité de points avec ${T(second)}`):"";
+    P2.push(pick([`Au classement, ${T(leader)} ${newLeader?"occupe désormais":j===1?"occupe":pick(["conserve","garde"])} la première place avec ${lp} points${ec?", "+ec:""}.`,
+      `${T(leader)} ${newLeader?"pointe désormais":j===1?"pointe":"pointe toujours"} en tête avec ${lp} points${ec?", "+ec:""}.`,
+      `En tête, ${T(leader)} compte ${lp} points${ec?", "+ec:""}.`]));
     if(j>1){ const mv=Object.keys(RH).map(c=>({c,p:rk(c,j-1),n:rk(c,j)})).filter(x=>x.p&&x.n);
       const up=mv.sort((a,b)=>(b.p-b.n)-(a.p-a.n))[0];
       if(up&&up.p-up.n>=2&&up.c!==leader) P2.push(pick([`${T(up.c)} réalise la bonne opération de la journée : ${ordD(up.p)} au coup d'envoi, ${ordD(up.n)} désormais.`,`${T(up.c)} gagne ${up.p-up.n} places et pointe au ${ordD(up.n)} rang.`]));
@@ -1128,8 +1152,35 @@ function journeeArticle(j){
   else if(nDom>=R.length-1&&R.length>=3) fig=`${nDom} sur ${R.length}, les équipes qui recevaient ont presque toutes gagné.`;
   else if(nExt>=Math.ceil(R.length/2)&&R.length>=3) fig=`${nExt} sur ${R.length}, une journée faste pour les équipes en déplacement.`;
   else fig=`${String(Math.round(moy*10)/10).replace(".",",")}, c'est le nombre moyen de buts par match.`;
+  // ---- tendances de la saison, figées à la journée : séries, forme récente, bilans à domicile et à l'extérieur
+  const P4=[];
+  if(j>=3&&complete){ const fa=[], teams=Object.keys(RH);
+    const gs=c=>games.filter(g=>g.club===c&&g.j<=j).sort((a,b)=>a.j-b.j), res=g=>g.bp>g.bc?"V":g.bp===g.bc?"N":"D";
+    const run=(c,f)=>{const a=gs(c);let n=0;for(let i=a.length-1;i>=0&&f(res(a[i]));i--)n++;return n;};
+    const liste=a=>a.length>1?a.slice(0,-1).join(", ")+" et "+a[a.length-1]:a[0];
+    const serie=(f,min)=>teams.map(c=>({c,n:run(c,f)})).filter(x=>x.n>=min).sort((a,b)=>b.n-a.n);
+    const sv=serie(r=>r==="V",3), snd=serie(r=>r!=="D",4).filter(x=>!sv.some(y=>y.c===x.c)), snv=serie(r=>r!=="V",3);
+    if(sv.length===1) fa.push([sv[0].n,`${T(sv[0].c)} reste sur ${nbf(sv[0].n)} victoires de suite.`]);
+    else if(sv.length>1) fa.push([sv[0].n+0.5,`${cap(nbf(sv.length))} équipes restent sur au moins trois victoires de suite : ${liste(sv.map(x=>`${T(x.c)} (${x.n})`))}.`]);
+    if(snd.length) fa.push([snd[0].n-1,snd.length===1?`${T(snd[0].c)} n'a plus perdu depuis ${nbf(snd[0].n)} journées.`:`${liste(snd.map(x=>T(x.c)))} restent invaincus depuis au moins quatre journées.`]);
+    if(snv.length===1) fa.push([snv[0].n-1,`${T(snv[0].c)} n'a plus gagné depuis ${nbf(snv[0].n)} journées.`]);
+    else if(snv.length>1) fa.push([snv[0].n-0.5,`${liste(snv.map(x=>`${T(x.c)} (${x.n})`))} attendent toujours une victoire depuis au moins trois journées.`]);
+    const last3=c=>games.filter(g=>g.club===c&&g.j>j-3&&g.j<=j);
+    const att=teams.map(c=>{const a=last3(c);return {c,n:a.length,bp:a.reduce((s,g)=>s+g.bp,0)/Math.max(1,a.length),bc:a.reduce((s,g)=>s+g.bc,0)/Math.max(1,a.length)};}).filter(x=>x.n>=2);
+    const ba=[...att].sort((a,b)=>b.bp-a.bp)[0], bd=[...att].sort((a,b)=>a.bc-b.bc)[0];
+    if(ba) fa.push([2.5,`Sur les trois dernières journées, ${T(ba.c)} possède la meilleure attaque (${String(Math.round(ba.bp*10)/10).replace(".",",")} buts par match).`]);
+    if(bd) fa.push([2.4,`Depuis trois journées, ${T(bd.c)} est l'équipe qui encaisse le moins (${String(Math.round(bd.bc*10)/10).replace(".",",")} buts par match).`]);
+    teams.forEach(c=>{ const dom=D.cal.filter(m=>m.j<=j&&m.res&&m.home===c), ext=D.cal.filter(m=>m.j<=j&&m.res&&m.away===c);
+      if(dom.length>=3&&dom.every(m=>m.res.h>m.res.a)) fa.push([2.2,`À domicile, ${T(c)} a gagné ses ${nbf(dom.length)} matchs.`]);
+      if(ext.length>=3&&ext.every(m=>m.res.a<m.res.h)) fa.push([2.1,`À l'extérieur, ${T(c)} cherche toujours sa première victoire (${nbf(ext.length)} défaites).`]); });
+    // deux tendances, en alternant d'une journée à l'autre pour ne pas répéter les mêmes
+    fa.sort((a,b)=>b[0]-a[0]); const pool=fa.slice(0,6);
+    if(pool.length){ const a=pool[j%pool.length], b=pool.length>1?pool[(j+1+Math.floor(pool.length/2))%pool.length]:null;
+      { const pre=pick(["Côté tendances, ","À noter, ","Sur la durée, ",""]); P4.push(pre?pre+lc0(a[1]):a[1]); } if(b&&b!==a) P4.push(b[1]); } }
   const d=ms.find(m=>m.date)?.date;
-  return {j,title,chapo,paras:[P1.join(" "),P2.join(" "),P3.join(" ")].filter(Boolean),focus,fig,complete,n:done.length,of:ms.length,date:d};
+  // l'ordre des paragraphes change d'une journée à l'autre : classement puis joueurs, ou l'inverse
+  const corps=j%2?[P1,P2,P4,P3]:[P1,P3,P2,P4];
+  return {j,title,chapo,paras:corps.map(x=>x.join(" ")).filter(Boolean),focus,fig,complete,n:done.length,of:ms.length,date:d};
 }
 
 function pUne(arg){

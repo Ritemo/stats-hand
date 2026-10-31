@@ -6,7 +6,7 @@ Variables d'environnement :
                reel : remplit les onglets clubs (uniquement les journées encore vides)
   NOMS_OFFICIELS  1 pour réécrire les noms avec l'orthographe de la feuille de match
   GOOGLE_CREDENTIALS  contenu JSON de la clé du compte de service
-  ROBOT_MODE=test-notif  envoie seulement une notification de test (pour vérifier l'abonnement ntfy)
+  ROBOT_MODE=test-notif  envoie seulement une notification de test sur chaque abonnement (résultats et alertes)
 Notifications (service gratuit ntfy.sh), deux abonnements possibles dans la configuration :
   « ntfy_topic »       : le match de « notre_equipe » et chaque journée complète ;
   « ntfy_topic_tous »  : chaque nouveau résultat du championnat, plus les journées complètes.
@@ -154,6 +154,36 @@ def notifier(cfg, titre, message, lien="", cibles=("ntfy_topic", "ntfy_topic_tou
         except requests.RequestException as e:
             print(f"notification {c} non envoyée : {e}")
     return ok
+
+
+TRANSITOIRE = re.compile(r"429|503|502|Too Many Requests|timed out|Timeout|Connection (aborted|reset|refused)|Max retries", re.I)
+
+
+def alerter(cfg, cfg_path, problemes):
+    """Alerte ntfy (abonnement « ntfy_alerte ») quand un nouveau problème apparaît. La liste des problèmes en cours est
+    gardée dans alertes_<championnat>.txt (enregistré dans le dépôt) : une panne qui dure n'est signalée qu'une fois,
+    pas à chaque passage, et un message « tout est rentré dans l'ordre » part quand elle disparaît.
+    Renvoie True si une nouvelle alerte est partie."""
+    f = os.path.join(os.path.dirname(os.path.abspath(__file__)), "alertes_" + os.path.splitext(os.path.basename(cfg_path))[0].replace("config_", "") + ".txt")
+    try: avant = [l for l in open(f, encoding="utf-8").read().split("\n") if l.strip()]
+    except OSError: avant = []
+    maintenant = sorted({p.strip() for p in problemes if p.strip()})
+    if maintenant == sorted(avant): return False
+    try:
+        with open(f, "w", encoding="utf-8") as fh: fh.write("".join(l + "\n" for l in maintenant))
+    except OSError: pass
+    nom = cfg.get("nom", "")
+    run = os.environ.get("GITHUB_RUN_ID")
+    lien = f"{os.environ.get('GITHUB_SERVER_URL', 'https://github.com')}/{os.environ.get('GITHUB_REPOSITORY', '')}/actions/runs/{run}" if run else ""
+    if not maintenant:
+        notifier(cfg, f"Robot : tout est rentré dans l'ordre ({nom})", "Le problème signalé précédemment a disparu.", lien, cibles=("ntfy_alerte",))
+        return False
+    nouveaux = [p for p in maintenant if p not in avant]
+    if not nouveaux: return False                  # un problème a disparu, les autres étaient déjà signalés
+    msg = "\n".join("- " + p for p in nouveaux[:8]) + (f"\n(+ {len(nouveaux) - 8} autres)" if len(nouveaux) > 8 else "")
+    if len(maintenant) > len(nouveaux): msg += f"\nDéjà signalé{'s' if len(maintenant) - len(nouveaux) > 1 else ''} et toujours en cours : {len(maintenant) - len(nouveaux)}."
+    notifier(cfg, f"Robot : problème ({nom})", msg + "\nVoir le mode d'emploi (README du dépôt stats-hand), rubrique « Si ça ne marche plus ».", lien, cibles=("ntfy_alerte",))
+    return True
 
 
 def slug(s):
@@ -393,7 +423,10 @@ def main(cfg_path):
     if mode == "test-notif":
         ok = notifier(cfg, f"Test : {cfg.get('nom', 'stats')}", "Les notifications du robot fonctionnent. Tu seras prévenu des résultats.",
                       cfg.get("app_url", ""))
-        print("notification de test envoyée" if ok else "pas de notification : ntfy_topic absent de la configuration ou envoi impossible")
+        ok_a = notifier(cfg, f"Test des alertes : {cfg.get('nom', 'stats')}", "Les alertes du robot fonctionnent : tu seras prévenu si le robot rencontre un problème.",
+                        "", cibles=("ntfy_alerte",))
+        print("notification de test envoyée" if ok else "pas de notification : ntfy_topic absent de la configuration ou envoi impossible",
+              "| alerte de test envoyée" if ok_a else "| pas d'alerte : ntfy_alerte absent de la configuration")
         return 0 if ok else 1
 
     noms_off = os.environ.get("NOMS_OFFICIELS", "0") == "1" or os.environ.get("ROBOT_MODE", "").strip().lower() == "rattrapage"
@@ -627,8 +660,19 @@ def main(cfg_path):
         with open(os.path.join(os.path.dirname(__file__), "derniere_execution_" + os.path.splitext(os.path.basename(cfg_path))[0].replace("config_", "") + ".txt"), "w", encoding="utf-8") as fh:
             fh.write("\n".join(" | ".join(str(x) for x in l) for l in journal) + "\n")
     except OSError: pass
-    erreurs = [l for l in journal if l[3] in ("ERREUR", "À CONFIRMER")]
-    return 1 if erreurs else 0
+    if not ecrit: return 0
+    # ---- alertes : erreurs du passage et feuilles de match qui manquent plus de 24 h après le match
+    problemes = [f"{l[2] or 'Robot'} : {l[3]} : {l[4]}" for l in journal
+                 if l[3] in ("ERREUR", "À CONFIRMER", "FEUILLE SUSPECTE") and not TRANSITOIRE.search(str(l[4]))]
+    for m in matchs:
+        tabs = [cfg["equipes"].get(m["dom"]), cfg["equipes"].get(m["ext"])]
+        if None in tabs or not m.get("datetime"): continue
+        try: debut = datetime.datetime.strptime(m["datetime"], "%Y-%m-%dT%H:%M")
+        except ValueError: continue
+        if debut + datetime.timedelta(hours=24) <= ici <= debut + datetime.timedelta(days=10) and not all(clubs[t].filled(m["j"]) for t in tabs):
+            problemes.append(f"J{m['j']} {court(tabs[0])} - {court(tabs[1])} : pas de feuille de match importée plus de 24 h après le match "
+                             f"(prévu le {debut:%d/%m à %Hh%M} ; match reporté ou feuille pas encore publiée ?)")
+    return 1 if alerter(cfg, cfg_path, problemes) else 0     # rouge sur GitHub seulement quand un nouveau problème apparaît
 
 
 def maj_matchs(book, cfg, matchs, pdf_cache, now, journal):
@@ -704,4 +748,14 @@ def maj_matchs(book, cfg, matchs, pdf_cache, now, journal):
 
 BOOK_FACTORY = GBook
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1] if len(sys.argv) > 1 else "robot/config_honneur.json"))
+    chemin = sys.argv[1] if len(sys.argv) > 1 else "robot/config_honneur.json"
+    try:
+        code = main(chemin)
+    except Exception as e:          # plantage (site de la fédération modifié, clé Google refusée...) : alerte, puis échec visible sur GitHub
+        try:
+            if os.environ.get("ROBOT_MODE", "controle").strip().lower() in ("reel", "rattrapage"):
+                alerter(json.load(open(chemin, encoding="utf-8")), chemin, [f"Le robot s'est arrêté : {type(e).__name__} : {str(e)[:300]}"])
+        except Exception:
+            pass
+        raise
+    sys.exit(code)

@@ -35,7 +35,8 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: robot-fdm/robot/requirements.txt
-      - run: pip install -r robot-fdm/robot/requirements.txt
+      - id: deps
+        run: pip install -r robot-fdm/robot/requirements.txt
       - name: Import Honneur masculine
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
@@ -57,8 +58,14 @@ jobs:
           git config user.email "robot-fdm@users.noreply.github.com"
           # passages du week-end sans nouveauté : pas de commit (sinon un commit et un redéploiement du site toutes les 10 min)
           if [ "${{ github.event_name }}" = "schedule" ] && [ "${{ github.event.schedule }}" != "7 5 * * *" ] \
-             && ! grep -hv "RIEN À FAIRE" robot-fdm/robot/derniere_execution_*.txt | grep -q . ; then
+             && ! grep -hv "RIEN À FAIRE" robot-fdm/robot/derniere_execution_*.txt | grep -q . \
+             && [ -z "$(git status --porcelain -- 'robot-fdm/robot/alertes_*.txt')" ]; then
             echo "Rien de nouveau, pas de trace enregistrée."; exit 0
           fi
           git add robot-fdm/robot/derniere_execution*.txt || true
+          git add -- 'robot-fdm/robot/alertes_*.txt' 2>/dev/null || true     # problèmes en cours (évite de répéter une alerte)
           git diff --cached --quiet || (git commit -m "Robot : passage du $(date +%d/%m/%Y)" && git push)
+      - name: Alerte si le robot n'a pas pu démarrer
+        if: failure() && steps.deps.outcome == 'failure'
+        run: |
+          curl -s -H "Content-Type: application/json" -d "{\"topic\":\"prhb-alerte-r7k2q\",\"title\":\"Robot : installation impossible\",\"message\":\"Le robot n'a pas pu installer ses bibliothèques Python. Relance-le depuis l'onglet Actions ; si ça recommence, voir le README.\",\"click\":\"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" https://ntfy.sh/ || true
