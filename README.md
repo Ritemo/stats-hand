@@ -63,7 +63,7 @@ Appli (GitHub Pages)  ──►  téléphones des joueurs, parents, supporters
 
 En été, tout est une heure plus tard.
 
-GitHub ne garantit pas les tâches programmées : le samedi soir, il en saute beaucoup. C'est pourquoi le robot n'est lancé qu'une fois en début de soirée, puis reste en « veille » et se relance lui-même toutes les 10 minutes. Deux lancements de secours (19 h 33 et 21 h 33 le samedi, 15 h 03 et 17 h 03 le dimanche) prennent le relais si GitHub n'a pas démarré le premier. Pour un match un autre soir (vendredi, match reporté), lancer le robot à la main en mode `veille`.
+GitHub ne garantit pas les tâches programmées : il en saute beaucoup le samedi soir et peut retarder le passage du matin de plusieurs heures. C'est pourquoi, le samedi et le dimanche, le premier lancement de la journée (celui du matin, même en retard, ou un lancement de secours) met le robot en « veille » : il fait alors un passage toutes les 10 minutes jusqu'à la fin de soirée. Un passage GitHub dure 6 heures au plus : avant la limite, le robot relance lui-même la suite. Des lancements de secours (17 h 33, 19 h 33 et 21 h 33 le samedi ; 13 h 03, 15 h 03 et 17 h 03 le dimanche) démarrent la veille si GitHub a sauté les précédents. Pour un match un autre soir (vendredi, match reporté), lancer le robot à la main en mode `veille`.
 
 ### Notifications (appli gratuite ntfy)
 
@@ -95,6 +95,7 @@ Dépôt **stats-hand** > **Actions** > « Robot feuilles de match » > **Run wor
 |---|---|
 | `reel` | passage normal : importe les feuilles de match pas encore lues |
 | `veille` | un passage `reel` toutes les 10 minutes pendant 3 heures (pour un match en semaine) |
+| `veille-suite` | utilisé par le robot lui-même pour prolonger une veille au-delà de 6 heures |
 | `controle` | n'écrit rien dans les onglets clubs, remplit seulement `_Import_Controle` (pour vérifier) |
 | `rattrapage` | comme `reel`, et en plus corrige les noms et ajoute les joueurs manquants dans les journées déjà saisies, sans toucher aux chiffres |
 | `test-notif` | envoie un message de test sur chaque abonnement ntfy |

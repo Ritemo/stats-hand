@@ -2,11 +2,12 @@ name: Robot feuilles de match
 
 # Le robot lit les feuilles de match sur le site de la fédération et remplit les deux Google Sheets (garçons et filles).
 #
-# GitHub ne garantit pas les tâches programmées : le samedi soir, il en saute la plupart (30 prévues, 2 à 4 lancées).
-# Les soirs de match, on ne lui demande donc qu'UN lancement : une fois démarré, le robot reste en veille et relit
-# les feuilles toutes les 10 minutes jusqu'à la fin de soirée. Deux lancements de secours prennent le relais si le
-# premier n'a pas démarré (ou au bout de 6 h, durée maximale d'un passage sur GitHub) ; s'ils arrivent pendant une
-# veille, ils attendent qu'elle se termine.
+# GitHub ne garantit pas les tâches programmées : il en saute beaucoup et en retarde d'autres de plusieurs heures
+# (samedi soir : 2 à 4 lancées sur 30 ; passage de 6 h 07 lancé vers midi). D'où la « veille » :
+#  - le samedi et le dimanche, le premier lancement de la journée (passage du matin, même en retard, ou un lancement
+#    de secours) met le robot en veille : un passage toutes les 10 minutes jusqu'à la fin de soirée ;
+#  - un passage GitHub dure 6 h au plus : avant la limite, le robot relance lui-même la suite (mode veille-suite) ;
+#  - un lancement qui arrive pendant une veille attend qu'elle se termine, puis fait un seul passage.
 on:
   schedule:
     # Heures en UTC (heure de Paris moins 1 h en hiver, moins 2 h en été). Minutes décalées : l'heure pile est la plus encombrée.
@@ -24,10 +25,11 @@ on:
         required: true
         default: reel
         type: choice
-        options: [reel, veille, controle, rattrapage, test-notif, agrandir-test, agrandir]
+        options: [reel, veille, controle, rattrapage, test-notif, agrandir-test, agrandir, veille-suite]
 
 permissions:
   contents: write
+  actions: write        # pour relancer la veille au bout de 6 h
 
 # Un seul robot à la fois : un lancement qui arrive pendant une veille attend qu'elle se termine.
 concurrency:
@@ -56,22 +58,28 @@ jobs:
           MODE_H: ${{ vars.ROBOT_MODE || 'controle' }}
           MODE_F: ${{ vars.ROBOT_MODE_N3F || 'controle' }}
           EVENEMENT: ${{ github.event_name }}
+          GH_TOKEN: ${{ github.token }}
+          LIMITE_MIN: ${{ vars.ROBOT_LIMITE_MIN }}
           PROGRAMME: ${{ github.event.schedule }}
         run: |
           git config user.name "robot-fdm"
           git config user.email "robot-fdm@users.noreply.github.com"
           DEBUT=$(date +%s); ECHEC=0
-          # ---- veille ou passage unique ?
-          if [ "$EVENEMENT" = "schedule" ] && [ "$PROGRAMME" != "7 5 * * *" ]; then
-            if [ "$(date -u +%u)" = "6" ]; then FIN=$(date -u -d "today 23:00" +%s); else FIN=$(date -u -d "today 20:00" +%s); fi
+          # ---- veille ou passage unique ? (fin de soirée en UTC : samedi 23 h, dimanche 20 h)
+          case "$(date -u +%u)" in 6) FIN_SOIR=$(date -u -d "today 23:00" +%s);; 7) FIN_SOIR=$(date -u -d "today 20:00" +%s);; *) FIN_SOIR=0;; esac
+          SUITE=0
+          if [ "$EVENEMENT" = "schedule" ] || [ "$MODE_MANUEL" = "veille-suite" ]; then
+            FIN=$FIN_SOIR                      # en semaine : 0, donc un seul passage
+            [ "$MODE_MANUEL" = "veille-suite" ] && MODE_H=reel && MODE_F=reel
           elif [ "$MODE_MANUEL" = "veille" ]; then
             FIN=$((DEBUT + 3*3600)); MODE_H=reel; MODE_F=reel
           else
             FIN=0
             if [ -n "$MODE_MANUEL" ]; then MODE_H=$MODE_MANUEL; MODE_F=$MODE_MANUEL; fi
           fi
-          LIMITE=$((DEBUT + 340*60))           # un passage GitHub dure 6 h au plus : on s'arrête avant
-          [ "$FIN" -gt "$LIMITE" ] && FIN=$LIMITE
+          [ "$FIN" -le "$((DEBUT + 300))" ] && FIN=0     # soirée déjà terminée : un seul passage
+          LIMITE=$((DEBUT + ${LIMITE_MIN:-340}*60))       # un passage GitHub dure 6 h au plus : on s'arrête avant...
+          if [ "$FIN" -gt "$LIMITE" ]; then FIN=$LIMITE; SUITE=1; fi   # ... et on relance la suite
           [ "$FIN" -gt 0 ] && echo "Veille jusqu'à $(date -u -d @$FIN +%H:%M) UTC, un passage toutes les 10 minutes."
           n=0
           while true; do
@@ -97,6 +105,10 @@ jobs:
             ATTENTE=$((PROCHAIN - $(date +%s))); [ "$ATTENTE" -gt 0 ] && sleep "$ATTENTE"
           done
           echo "$n passage(s)."
+          if [ "$SUITE" = "1" ]; then
+            echo "Limite de 6 h atteinte : relance de la veille."
+            gh workflow run robot-fdm.yml --ref main -f mode=veille-suite || ECHEC=1
+          fi
           exit $ECHEC
       - name: Alerte si le robot n'a pas pu démarrer
         if: failure() && steps.deps.outcome == 'failure'
