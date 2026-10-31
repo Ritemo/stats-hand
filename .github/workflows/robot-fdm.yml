@@ -78,7 +78,7 @@ jobs:
             if [ -n "$MODE_MANUEL" ]; then MODE_H=$MODE_MANUEL; MODE_F=$MODE_MANUEL; fi
           fi
           [ "$FIN" -le "$((DEBUT + 300))" ] && FIN=0     # soirée déjà terminée : un seul passage
-          LIMITE=$((DEBUT + ${LIMITE_MIN:-3}*60))       # un passage GitHub dure 6 h au plus : on s'arrête avant...
+          LIMITE=$((DEBUT + ${LIMITE_MIN:-340}*60))       # un passage GitHub dure 6 h au plus : on s'arrête avant...
           if [ "$FIN" -gt "$LIMITE" ]; then FIN=$LIMITE; SUITE=1; fi   # ... et on relance la suite
           [ "$FIN" -gt 0 ] && echo "Veille jusqu'à $(date -u -d @$FIN +%H:%M) UTC, un passage toutes les 10 minutes."
           n=0
