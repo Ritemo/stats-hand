@@ -1062,6 +1062,7 @@ function journeeArticle(j){
     ?pick([`Au total : ${bil}, pour ${buts} buts (${moyS} par match).`,`Le bilan : ${bil}, et ${moyS} buts par match.`,`On compte ${bil}, pour ${buts} buts inscrits.`])
     :ouverture?"":pick([`La ${ordJ} journée a livré son verdict : `,`Au terme de la ${ordJ} journée, on compte `,`Bilan de la ${ordJ} journée : `])+`${bil}, pour ${buts} buts inscrits (${moyS} par match).`;
   let chapo=[ouverture,bilanP].filter(Boolean).join(" ");
+  if(!complete){ const r=ms.length-done.length; chapo+=` ${cap(nbf(r))} rencontre${r>1?"s restent":" reste"} à jouer.`; }
   if(complete&&leader&&j>1&&!/commandes|passer devant|leader est tombé/.test(chapo)) chapo+=" "+(newLeader?pick([`${T(leader)} en profite pour prendre les commandes.`,`${T(leader)} est le nouveau leader.`])
     :pick([`${T(leader)} reste en tête.`,`${T(leader)} garde la première place.`,`En haut du classement, ${T(leader)} ne bouge pas.`]));
   // ---- récit des résultats
@@ -1071,14 +1072,19 @@ function journeeArticle(j){
   const conn=["Ailleurs, ","Dans le même temps, ","De son côté, ","Plus loin, "];
   order.forEach((x,i)=>{ const m=x.m; let s, gen=false;
     const top=x.w?scorers(x.W,j)[0]:null, por=top&&top.b>=6&&nPor<3&&rnd()<0.7?porL[nPor++](`${nmFull(top.name)} (${plur(top.b,"but")})`):"";
-    if(x===upset){ s=pick([`La surprise du jour est signée ${T(x.W)}, vainqueur ${de(T(x.L))} (${sc(m)}) alors que les cotes ne le donnaient pas favori (${fmtC(x.cote)}).`,
-      `${T(x.W)} a déjoué les pronostics en battant ${T(x.L)} (${sc(m)})${por}. Une victoire cotée à ${fmtC(x.cote)} avant le coup d'envoi.`]); gen=s.startsWith("La"); }
+    const ext=x.w==="a", vs=ext?chez(x.L):`face à ${T(x.L)}`;     // vainqueur à l'extérieur : « à Quingey (30-43) »
+    if(x===upset){ s=pick([`La surprise du jour est signée ${T(x.W)}, vainqueur ${ext?chez(x.L):de(T(x.L))} (${sc(m)}) alors que les cotes ne le donnaient pas favori (${fmtC(x.cote)}).`,
+      `${T(x.W)} a déjoué les pronostics en ${ext?`s'imposant ${chez(x.L)}`:`battant ${T(x.L)}`} (${sc(m)})${por}. Une victoire cotée à ${fmtC(x.cote)} avant le coup d'envoi.`]); gen=s.startsWith("La"); }
     else if(!x.w){ s=pick([`${T(m.home)} et ${T(m.away)} se sont quittés dos à dos (${sc(m)}).`,`Pas de vainqueur entre ${T(m.home)} et ${T(m.away)} (${sc(m)}).`,`${T(m.home)} et ${T(m.away)} se sont neutralisés (${sc(m)}).`]); gen=s.startsWith("Pas"); }
-    else if(x.marge>=10){ s=pick([`${T(x.W)} a largement dominé ${T(x.L)} (${sc(m)})${por}.`,`${T(x.W)} n'a pas fait de détail face à ${T(x.L)} (${sc(m)})${por}.`,`Large succès ${de(T(x.W))} contre ${T(x.L)} (${sc(m)})${por}.`]); gen=s.startsWith("Large"); }
-    else if(x.marge<=2){ s=pick([`${T(x.W)} s'est imposé de justesse face à ${T(x.L)} (${sc(m)})${por}.`,`${T(x.W)} a dû batailler jusqu'au bout pour venir à bout ${de(T(x.L))} (${sc(m)}).`,`C'est sur le fil que ${T(x.W)} a battu ${T(x.L)} (${sc(m)}).`]); gen=s.startsWith("C'est"); }
+    else if(x.marge>=10){ s=pick([ext?`${T(x.W)} s'est largement imposé ${chez(x.L)} (${sc(m)})${por}.`:`${T(x.W)} a largement dominé ${T(x.L)} (${sc(m)})${por}.`,
+      `${T(x.W)} n'a pas fait de détail ${vs} (${sc(m)})${por}.`,`Large succès ${de(T(x.W))} ${ext?chez(x.L):`contre ${T(x.L)}`} (${sc(m)})${por}.`]); gen=s.startsWith("Large"); }
+    else if(x.marge<=2){ s=pick([`${T(x.W)} s'est imposé de justesse ${vs} (${sc(m)})${por}.`,
+      ext?`${T(x.W)} a dû batailler jusqu'au bout ${chez(x.L)} (${sc(m)}).`:`${T(x.W)} a dû batailler jusqu'au bout pour venir à bout ${de(T(x.L))} (${sc(m)}).`,
+      `C'est sur le fil que ${T(x.W)} ${ext?`s'est imposé ${chez(x.L)}`:`a battu ${T(x.L)}`} (${sc(m)}).`]); gen=s.startsWith("C'est"); }
     else if(x.w==="a"){ s=pick([`${T(x.W)} est allé s'imposer ${chez(x.L)} (${sc(m)})${por}.`,`${T(x.W)} a ramené la victoire de son déplacement ${chez(x.L)} (${sc(m)})${por}.`]); }
     else { s=pick([`${T(x.W)} a battu ${T(x.L)} (${sc(m)})${por}.`,`${T(x.W)} a pris le meilleur sur ${T(x.L)} (${sc(m)})${por}.`,`Devant son public, ${T(x.W)} a dominé ${T(x.L)} (${sc(m)})${por}.`,
       `${T(x.W)} s'est défait ${de(T(x.L))} (${sc(m)})${por}.`,`Victoire ${de(T(x.W))} face à ${T(x.L)} (${sc(m)})${por}.`]); gen=/^(Devant|Victoire)/.test(s); }
+    if(/^(Victoire|Large succès|La surprise)/.test(s)) s=s.replace(/, (porté|emmené) par /,", grâce notamment à ");
     if(i>0&&conn.length&&rnd()<0.6&&!/^(La surprise|Devant)/.test(s)){ const c=pick(conn); conn.splice(conn.indexOf(c),1); s=c+(gen?lc(s):s); }
     P1.push(s); });
   // ---- classement
@@ -1125,8 +1131,17 @@ function journeeArticle(j){
     const bs=scorers(MY_TEAM,j), ts=bs.slice(0,3);
     // phrase dans le récit des résultats, en tête
     const lieu=side==="h"?"à domicile":chez(adv), por=ts[0]&&ts[0].b>=5?` ${nmFull(ts[0].name)} (${plur(ts[0].b,"but")})${ts[1]&&ts[1].b>=5?` et ${nmFull(ts[1].name)} (${ts[1].b})`:""} ${ts[1]&&ts[1].b>=5?"ont":"a"} mené l'attaque.`:"";
-    const lead=res==="V"?(side==="a"?pick([`${T(MY_TEAM)} s'est imposé ${lieu} (${sc(ms_)}).`,`${T(MY_TEAM)} a ramené la victoire de son déplacement ${lieu} (${sc(ms_)}).`]):pick([`${T(MY_TEAM)} s'est imposé à domicile face à ${T(adv)} (${sc(ms_)}).`,`Devant son public, ${T(MY_TEAM)} a pris le meilleur sur ${T(adv)} (${sc(ms_)}).`]))
-      :res==="D"?(side==="a"?pick([`${T(MY_TEAM)} s'est incliné ${lieu} (${sc(ms_)}).`,`Journée plus difficile pour ${T(MY_TEAM)}, battu ${lieu} (${sc(ms_)}).`]):pick([`${T(MY_TEAM)} s'est incliné à domicile face à ${T(adv)} (${sc(ms_)}).`,`Journée plus difficile pour ${T(MY_TEAM)}, battu à domicile par ${T(adv)} (${sc(ms_)}).`]))
+    const mg=my.marge, large=mg>=10, serre=mg<=2;     // la tournure dépend de l'écart
+    const lead=res==="V"?(side==="a"
+        ?pick(large?[`${T(MY_TEAM)} s'est largement imposé ${lieu} (${sc(ms_)}).`,`${T(MY_TEAM)} n'a laissé aucune chance à son hôte ${lieu} (${sc(ms_)}).`]
+             :serre?[`${T(MY_TEAM)} l'a emporté sur le fil ${lieu} (${sc(ms_)}).`,`${T(MY_TEAM)} est allé chercher une victoire arrachée ${lieu} (${sc(ms_)}).`]
+             :[`${T(MY_TEAM)} s'est imposé ${lieu} (${sc(ms_)}).`,`${T(MY_TEAM)} a ramené la victoire de son déplacement ${lieu} (${sc(ms_)}).`])
+        :pick(large?[`Démonstration ${de(T(MY_TEAM))} face à ${T(adv)} (${sc(ms_)}).`,`Devant son public, ${T(MY_TEAM)} a largement dominé ${T(adv)} (${sc(ms_)}).`]
+             :serre?[`${T(MY_TEAM)} s'est imposé de justesse face à ${T(adv)} (${sc(ms_)}).`,`Devant son public, ${T(MY_TEAM)} a dû s'employer jusqu'au bout pour battre ${T(adv)} (${sc(ms_)}).`]
+             :[`${T(MY_TEAM)} s'est imposé à domicile face à ${T(adv)} (${sc(ms_)}).`,`Devant son public, ${T(MY_TEAM)} a pris le meilleur sur ${T(adv)} (${sc(ms_)}).`]))
+      :res==="D"?(serre?`${T(MY_TEAM)} s'est incliné de peu ${side==="a"?lieu:`à domicile face à ${T(adv)}`} (${sc(ms_)}).`
+        :large?`Soirée difficile pour ${T(MY_TEAM)}, nettement battu ${side==="a"?lieu:`à domicile par ${T(adv)}`} (${sc(ms_)}).`
+        :(side==="a"?pick([`${T(MY_TEAM)} s'est incliné ${lieu} (${sc(ms_)}).`,`Journée plus difficile pour ${T(MY_TEAM)}, battu ${lieu} (${sc(ms_)}).`]):pick([`${T(MY_TEAM)} s'est incliné à domicile face à ${T(adv)} (${sc(ms_)}).`,`Journée plus difficile pour ${T(MY_TEAM)}, battu à domicile par ${T(adv)} (${sc(ms_)}).`])))
       :`${T(MY_TEAM)} a partagé les points avec ${T(adv)} ${side==="a"?lieu:"à domicile"} (${sc(ms_)}).`;
     P1.unshift(lead+por);
     // stats de l'encadré
