@@ -264,6 +264,7 @@ h2{font-size:23px;font-weight:700;margin:4px 2px 10px}
 .pm-f{font-size:14px;margin:0 0 8px}
 .nt{display:inline-block;min-width:30px;text-align:center;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:15px;line-height:20px;padding:0 5px;border-radius:6px;background:var(--line);color:var(--ink)}
 .mini-row .nt{flex:none;overflow:visible}.nt.hi{background:var(--orange);color:#1a1a1a}.nt.lo{background:transparent;border:1px solid var(--line);color:var(--muted)}.nt.nn{background:transparent;color:var(--muted);font-weight:400}
+.nt-sub{padding:6px 10px 4px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--orange-t);background:var(--orange-soft)}
 .gk-t{font-size:11.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
 /* ---------- Flèche discrète sur tout ce qui s'ouvre ---------- */
 button.row,button.mrow,.pm-row{position:relative}
@@ -2047,50 +2048,56 @@ function notesSaison(){
 function noteDe(club,name,j){ const m=D.cal.find(x=>x.j===j&&x.res&&(x.home===club||x.away===club)); if(!m) return null;
   const n=notesMatch(m); if(!n||!n.ok) return null; const p=n[m.home===club?"h":"a"].find(x=>nnP(x.name)===nnP(name)); return p?p:null; }
 function noteMoy(club,name){ const o=notesSaison().all.find(x=>x.club===club&&nnP(x.name)===nnP(name)); return o||null; }
-function noteRow(o,{rank=null,showClub=true}={}){
+function noteRow(o,{rank=null,showClub=true,tag=true}={}){
   const w=noteWho(o);
   return `<button class="row${showClub&&o.club===MY_TEAM?" mine":""}" ${w.attr}>${rank!=null?`<span class="rank ${rank===1?"p1":""}">${rank}</span>`:""}
-    <span class="who"><span class="n">${nameHTML(w.name)}${o.gk?` <small class="gk-t">${G_("gardien","gardienne")}</small>`:""}</span>
+    <span class="who"><span class="n">${nameHTML(w.name)}${tag&&o.gk?` <small class="gk-t">${G_("gardien","gardienne")}</small>`:""}</span>
     <span class="c">${showClub?esc(shortClub(o.club))+", ":""}${o.n} match${o.n>1?"s":""} ${o.n>1?"notés":"noté"}, meilleure note ${fmtN(Math.max(...o.L.map(x=>x.note)))}</span>
     <span class="meter"><i style="width:${Math.round(10*o.avg)}%"></i></span></span>
     <span class="val"><span class="num">${fmt1(o.avg)}</span><span class="s">moyenne</span></span></button>`;
 }
 function septRow(p){
   const w=noteWho(p), m=p.m, adv=m.home===p.club?m.away:m.home;
-  return `<button class="row${p.club===MY_TEAM?" mine":""}" ${w.attr}><span class="who"><span class="n">${nameHTML(w.name)}${p.gk?` <small class="gk-t">${G_("gardien","gardienne")}</small>`:""}</span>
+  return `<button class="row${p.club===MY_TEAM?" mine":""}" ${w.attr}><span class="who"><span class="n">${nameHTML(w.name)}</span>
     <span class="c">${esc(shortClub(p.club))} ${m.home===p.club?"contre":"à"} ${esc(shortClub(adv))}, ${noteDet(p)}</span></span>
     <span class="val"><span class="num">${fmtN(p.note)}</span><span class="s">sur 10</span></span></button>`;
 }
 function septHTML(j){ const S=septJournee(j); if(!S.ch.length) return "";
-  return `<div class="list">${[S.gk,...S.ch].filter(Boolean).map(septRow).join("")}</div>`; }
-function septTxt(j){ const S=septJournee(j); if(!S.ch.length) return "";
-  return "Les 7 de la journée : "+[S.gk,...S.ch].filter(Boolean).map(p=>`${nmFull(noteWho(p).name)} (${shortClub(p.club)}) ${fmtN(p.note)}`).join(", ")+"."; }
+  return `<div class="list">${S.gk?`<div class="nt-sub">${G_("Gardien","Gardienne")}</div>${septRow(S.gk)}`:""}<div class="nt-sub">${G_("Joueurs de champ","Joueuses de champ")}</div>${S.ch.map(septRow).join("")}</div>`; }
+function septTxt(j){ const S=septJournee(j); if(!S.ch.length) return ""; const f=p=>`${nmFull(noteWho(p).name)} (${shortClub(p.club)}) ${fmtN(p.note)}`;
+  return "Les 7 de la journée : "+(S.gk?G_("gardien ","gardienne ")+f(S.gk)+" ; ":"")+G_("joueurs de champ ","joueuses de champ ")+S.ch.map(f).join(", ")+"."; }
 function pNotes(){
   const S=notesSaison();
   let h=viewSeg(SEG_JOUEURS,"notes");
   if(!S.nJ) return pageHead(G_("Joueurs","Joueuses"),false)+`<main>${h}<div class="empty">Les notes apparaîtront avec les premières feuilles de match détaillées.</div>${stamp()}</main>`;
-  h+=chips("notes",[["top","Top 20"],["club","Top 3 par club"],["sept","Les 7 de la journée"]]);
-  const pool=S.all.filter(o=>o.n>=S.min), srt=(a,b)=>b.avg-a.avg||b.n-a.n;
-  if(ui.notes==="top"){
-    const top=ranked(pool.sort(srt).slice(0,20),o=>o.avg.toFixed(3));
-    h+=`<div class="list">${top.map(o=>noteRow(o,{rank:o.rank})).join("")}</div><p class="note">Moyenne des notes de la saison, ${G_("joueurs","joueuses")} ${S.min>1?`notés sur au moins ${S.min} matchs`:"notés"}.</p>`;
+  const GB=G_("Gardiens","Gardiennes"), CH=G_("Joueurs de champ","Joueuses de champ");
+  h+=chips("notes",[["top",CH],["gb",GB],["club","Par club"],["sept","Les 7 de la journée"]]);
+  const pool=S.all.filter(o=>o.n>=S.min), srt=(a,b)=>b.avg-a.avg||b.n-a.n, fC=pool.filter(o=>!o.gk), fG=pool.filter(o=>o.gk);
+  const crit=`Moyenne des notes de la saison, ${S.min>1?`${G_("notés","notées")} sur au moins ${S.min} matchs`:G_("notés","notées")}.`;
+  if(ui.notes==="top"||ui.notes==="gb"){
+    const gb=ui.notes==="gb", top=ranked((gb?fG:fC).sort(srt).slice(0,gb?12:20),o=>o.avg.toFixed(3));
+    h+=`<h2>${gb?`Top ${top.length} ${GB.toLowerCase()}`:`Top 20 ${CH.toLowerCase()}`}</h2>${top.length?`<div class="list">${top.map(o=>noteRow(o,{rank:o.rank,tag:false})).join("")}</div>`:`<div class="empty">Pas encore assez de matchs notés.</div>`}<p class="note">${crit}${gb?` Les ${GB.toLowerCase()} sont ${G_("notés","notées")} sur leurs arrêts comparés à la moyenne du championnat, pas comparables directement aux ${CH.toLowerCase()}.`:""}</p>`;
   }else if(ui.notes==="club"){
     const rk=c=>{const s=D.standings.find(x=>x.club===c); return s?s.rank:99;};
-    h+=[...D.clubs].sort((a,b)=>rk(a.name)-rk(b.name)).map(c=>{ const L=pool.filter(o=>o.club===c.name).sort(srt).slice(0,3);
-      return `<div class="list" style="margin-bottom:10px"><div class="lh">${logoHTML(c.name,32)}<b>${esc(c.name)}</b></div>${L.length?L.map(o=>noteRow(o,{showClub:false})).join(""):`<div class="empty">Pas encore assez de matchs notés.</div>`}</div>`; }).join("")
-      +`<p class="note">Moyenne des notes de la saison, ${G_("joueurs","joueuses")} ${S.min>1?`notés sur au moins ${S.min} matchs`:"notés"}.</p>`;
+    h+=[...D.clubs].sort((a,b)=>rk(a.name)-rk(b.name)).map(c=>{ const L=fC.filter(o=>o.club===c.name).sort(srt).slice(0,3), K=fG.filter(o=>o.club===c.name).sort(srt).slice(0,1);
+      return `<div class="list" style="margin-bottom:10px"><div class="lh">${logoHTML(c.name,32)}<b>${esc(c.name)}</b></div>
+        <div class="nt-sub">Top 3 ${CH.toLowerCase()}</div>${L.length?L.map(o=>noteRow(o,{showClub:false,tag:false})).join(""):`<div class="empty">Pas encore assez de matchs notés.</div>`}
+        <div class="nt-sub">${G_("Meilleur gardien","Meilleure gardienne")}</div>${K.length?K.map(o=>noteRow(o,{showClub:false,tag:false})).join(""):`<div class="empty">Pas encore assez de matchs notés.</div>`}</div>`; }).join("")
+      +`<p class="note">${crit}</p>`;
   }else{
     const j=S.js.includes(+ui.septj)?+ui.septj:S.js[S.js.length-1];
     h+=chips("septj",S.js.map(x=>[String(x),"J"+x])).replace(new RegExp(`data-v="${j}" aria-pressed="false"`),`data-v="${j}" aria-pressed="true"`);
-    h+=septHTML(j)+`<p class="note">${cap1(G_("le meilleur gardien","la meilleure gardienne"))} et les six meilleures notes de la journée, tous clubs confondus.</p>`;
+    h+=septHTML(j)+`<p class="note">${cap1(G_("le meilleur gardien","la meilleure gardienne"))} et les six meilleures notes ${G_("de joueurs de champ","de joueuses de champ")} de la journée, tous clubs confondus.</p>`;
   }
   h+=`<p class="note">${NOTE_AVERT} « nn » : trop peu d'actions sur la feuille pour noter.</p>`;
   return pageHead(G_("Joueurs","Joueuses"),false)+`<main>${h}${stamp()}</main>`;
 }
 function notesMatchHTML(m){
   const n=notesMatch(m); if(!n||!n.ok) return "";
-  const col=s=>`<div class="list mini">${n[s].map(p=>{ const w=noteWho(p); return `<div class="mini-row"><span>${esc(pName(w.name))}${p.gk?" (G)":""}</span>${ntB(p.note)}</div>`; }).join("")}</div>`;
-  return `<h2>Notes du match</h2><div class="two">${col("h")}${col("a")}</div><p class="note">${NOTE_AVERT} (G) : ${G_("gardien","gardienne")} ; « nn » : trop peu d'actions pour noter.</p>`;
+  const r=p=>{ const w=noteWho(p); return `<div class="mini-row"><span>${esc(pName(w.name))}</span>${ntB(p.note)}</div>`; };
+  const col=s=>{ const G=n[s].filter(p=>p.gk), C=n[s].filter(p=>!p.gk);
+    return `<div class="list mini">${G.length?`<div class="nt-sub">${G_("Gardiens","Gardiennes")}</div>${G.map(r).join("")}`:""}<div class="nt-sub">Champ</div>${C.map(r).join("")}</div>`; };
+  return `<h2>Notes du match</h2><div class="two">${col("h")}${col("a")}</div><p class="note">${NOTE_AVERT} « nn » : trop peu d'actions pour noter.</p>`;
 }
 
 /* ============ ÉVÉNEMENTS ============ */
