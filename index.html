@@ -274,6 +274,9 @@ button.row::after{right:12px}.pm-row::after{right:4px}
 button.mrow::after{right:2px;font-size:18px}   /* rencontres : la flèche tient dans la marge, sans réduire la place des noms */
 .mini-row{display:flex;justify-content:space-between;gap:6px;padding:7px 10px;border-top:1px solid var(--line);font-size:14px}
 .mini-row:first-child{border-top:0}
+button.mini-row{width:100%;background:none;border:0;border-top:1px solid var(--line);color:inherit;font:inherit;font-size:14px;text-align:left;cursor:pointer}
+button.mini-row:first-child{border-top:0}
+.mini-row.nx span{white-space:normal}.mini-row.nx b{flex:none}.mini-row.nx.sub{padding-left:22px;color:var(--muted);font-size:13px}.mini-row.nx.tot{font-weight:700}
 .mini-row span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lh{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line);font-family:"Barlow Condensed",sans-serif;font-size:18px}
 .lh+.row{border-top:0}
@@ -1949,6 +1952,11 @@ function moyArretsChamp(){
     ["h","a"].forEach(s=>{ const sv=ev.filter(e=>e.c==="A"&&e.s===s&&e.n).length; if(sv){ a+=sv; b+=sv+(s==="h"?m.res.a:m.res.h); } }); });
   const p=b?a/b:0.3; ncache().set("pct",p); return p;
 }
+function noteWhyEnd(why,res,force,raw){   // détail d'une note : [libellé, valeur, compte dans le total ?]
+  why.push([res>0.1?"Victoire":res<0?"Défaite":"Match nul",res,1]);
+  if(force) why.push([force>0?"Adversaire du haut de tableau":"Adversaire du bas de tableau",force,1]);
+  return {rows:why,raw};
+}
 function notesMatch(m){
   if(!m||!m.res) return null;
   const k="m|"+m.j+"|"+m.home; if(ncache().has(k)) return ncache().get(k);
@@ -1957,7 +1965,7 @@ function notesMatch(m){
   // ---- déroulé : poids de chaque but selon le moment et le score
   // passer devant, égaliser, casser une série adverse, prolonger sa propre série, marquer dans le money time
   const imp=new Map(), tag=new Map(), add=(map,key,v)=>map.set(key,(map.get(key)||0)+v);
-  const gkImp=new Map();
+  const gkImp=new Map(), exImp=new Map();
   let sc={h:0,a:0}, run={s:null,n:0};
   ev.forEach(e=>{
     const o=e.s==="h"?"a":"h", w=Math.max(0.25,e.t/3600), late=e.t>=3000&&Math.abs(sc.h-sc.a)<=3;
@@ -1976,7 +1984,7 @@ function notesMatch(m){
       add(gkImp,key,v);
     } else if(e.c==="X"&&e.n){ const key=e.s+"|"+nnP(e.n);
       const pend=ev.filter(g=>isG(g)&&g.t>e.t&&g.t<=e.t+120), diff=pend.filter(g=>g.s===o).length-pend.filter(g=>g.s===e.s).length;
-      add(imp,key,-(diff>0?0.15*diff:0)-(late?0.2:0)); }             // une exclusion qui coûte des buts pèse plus
+      const cx=-(diff>0?0.15*diff:0)-(late?0.2:0); add(imp,key,cx); add(exImp,key,cx); }             // une exclusion qui coûte des buts pèse plus
   });
   const pct=moyArretsChamp();
   ["h","a"].forEach(s=>{
@@ -1998,8 +2006,13 @@ function notesMatch(m){
         if(best) gk.get(nnP(best.n)).conc++; });
       gk.forEach((g,n)=>{ if(!g.relais&&g.sv<3&&gk.size>1&&g.sv<g.conc/4) return;      // joueur de champ passé dans le but un instant
         const tirs=g.sv+g.conc, pts=(NOTE_P.gk||0.35)*(g.sv-pct*tirs)+0.05*g.sv+(gkImp.get(s+"|"+n)||0);
-        const note=noteArrondi(NOTE_P.gb+NOTE_P.ga*Math.tanh(pts/NOTE_P.gs)+res+force);
-        out[s].push({name:g.name,club,gk:true,note,sv:g.sv,conc:g.conc,pct:tirs?g.sv/tirs:null}); });
+        const act=NOTE_P.ga*Math.tanh(pts/NOTE_P.gs), raw=NOTE_P.gb+act+res+force, note=noteArrondi(raw), gi=gkImp.get(s+"|"+n)||0;
+        const why=[["Base",NOTE_P.gb,1],
+          [`${g.sv} arrêt${g.sv>1?"s":""} sur ${tirs} tirs, ${G_("un gardien moyen","une gardienne moyenne")} du championnat (${fmtPct(pct)}) en aurait fait ${String(Math.round(pct*tirs*10)/10).replace(".",",")}`,(NOTE_P.gk||0.35)*(g.sv-pct*tirs),0],
+          ["Volume d'arrêts",0.05*g.sv,0]];
+        if(gi) why.push(["Arrêts dans les moments chauds ou qui coupent une série adverse",gi,0]);
+        why.push(["Bilan des arrêts, ramené sur la note",act,1]);
+        out[s].push({name:g.name,club,gk:true,note,sv:g.sv,conc:g.conc,pct:tirs?g.sv/tirs:null,why:noteWhyEnd(why,res,force,raw)}); });
     }
     // ---- joueurs de champ
     Object.entries(pj).forEach(([key,d])=>{
@@ -2015,9 +2028,22 @@ function notesMatch(m){
       if(actions<2) { out[s].push({name,club,note:null,b:bb,t:tt,ex}); return; }
       const eff=tt!=null&&tt>=4?(bb/tt-0.6)*Math.min(tt,10)*0.12:0;   // réussite, d'autant plus parlante que le volume est gros
       const pts=0.45*(bb-p7)+0.25*p7-0.2*miss+eff+(imp.get(kk)||0);
-      const note=noteArrondi(NOTE_P.fb+NOTE_P.fa*Math.tanh(pts/NOTE_P.fs)-0.4*ex-(red?1.5:0)+res+(pts>0?force:0));
+      const act=NOTE_P.fa*Math.tanh(pts/NOTE_P.fs), fo=pts>0?force:0, raw=NOTE_P.fb+act-0.4*ex-(red?1.5:0)+res+fo, note=noteArrondi(raw);
       const tg=x=>tag.get(kk+"|"+x)||0;
-      out[s].push({name,club,note,b:bb,t:tt,p7,ex,red,hot:tg("chaud"),dev:tg("dev"),ega:tg("ega"),stop:tg("stop")});
+      const why=[["Base",NOTE_P.fb,1]], pl=(n,w)=>n+" "+w+(n>1?"s":"");
+      if(bb-p7) why.push([pl(bb-p7,"but")+(p7?" dans le jeu":""),0.45*(bb-p7),0]);
+      if(p7) why.push([pl(p7,"but")+" sur 7 m",0.25*p7,0]);
+      if(miss) why.push([pl(miss,"tir")+" "+(miss>1?"manqués":"manqué"),-0.2*miss,0]);
+      if(eff) why.push([`Réussite au tir de ${fmtPct(bb/tt)} sur ${tt} tirs (référence 60 %)`,eff,0]);
+      const ig=(imp.get(kk)||0)-(exImp.get(kk)||0), ix=exImp.get(kk)||0;
+      if(ig){ const d=[tg("dev")&&pl(tg("dev"),"but")+" qui fait passer devant",tg("ega")&&pl(tg("ega"),"but")+" "+(tg("ega")>1?"égalisateurs":"égalisateur"),tg("stop")&&pl(tg("stop"),"but")+" qui casse une série adverse",tg("chaud")&&pl(tg("chaud"),"but")+" dans les 10 dernières minutes serrées"].filter(Boolean);
+        why.push(["Déroulé : "+(d.length?d.join(", "):"buts qui entretiennent une série"),ig,0]); }
+      else if(bb) why.push(["Déroulé : aucun but décisif (pas d'égalisation, pas de passage devant, pas de fin de match serrée)",0,0]);
+      if(ix) why.push(["Exclusion pendant laquelle l'équipe encaisse ou en fin de match serrée",ix,0]);
+      why.push(["Bilan des actions, ramené sur la note",act,1]);
+      if(ex) why.push([pl(ex,"exclusion")+" de 2 min",-0.4*ex,1]);
+      if(red) why.push(["Carton rouge",-1.5,1]);
+      out[s].push({name,club,note,b:bb,t:tt,p7,ex,red,hot:tg("chaud"),dev:tg("dev"),ega:tg("ega"),stop:tg("stop"),why:noteWhyEnd(why,res,fo,raw)});
     });
     out[s].sort((x,y)=>(y.note??-1)-(x.note??-1)||(y.b||0)-(x.b||0));
   });
@@ -2098,10 +2124,23 @@ function pNotes(){
 }
 function notesMatchHTML(m){
   const n=notesMatch(m); if(!n||!n.ok) return "";
-  const r=p=>{ const w=noteWho(p); return `<div class="mini-row"><span>${esc(pName(w.name))}</span>${ntB(p.note)}</div>`; };
-  const col=s=>{ const G=n[s].filter(p=>p.gk), C=n[s].filter(p=>!p.gk);
-    return `<div class="list mini">${G.length?`<div class="nt-sub">${G_("Gardiens","Gardiennes")}</div>${G.map(r).join("")}`:""}<div class="nt-sub">Champ</div>${C.map(r).join("")}</div>`; };
-  return `<h2>Notes du match</h2><div class="two">${col("h")}${col("a")}</div><p class="note">${NOTE_AVERT} « nn » : trop peu d'actions pour noter.</p>`;
+  const r=(p,s,i)=>{ const w=noteWho(p); return `<button class="mini-row" data-ntx="${m.j}|${esc(m.home)}|${s}|${i}"><span>${esc(pName(w.name))}</span>${ntB(p.note)}</button>`; };
+  const col=s=>{ const R=p=>r(p,s,n[s].indexOf(p)); const G=n[s].filter(p=>p.gk), C=n[s].filter(p=>!p.gk);
+    return `<div class="list mini">${G.length?`<div class="nt-sub">${G_("Gardiens","Gardiennes")}</div>${G.map(R).join("")}`:""}<div class="nt-sub">Champ</div>${C.map(R).join("")}</div>`; };
+  return `<h2>Notes du match</h2><div class="two">${col("h")}${col("a")}</div><p class="note">Touchez un nom pour voir le détail de sa note. ${NOTE_AVERT} « nn » : trop peu d'actions pour noter.</p>`;
+}
+const fmtSg=x=>(x>0.004?"+":x<-0.004?"−":"")+String(Math.abs(Math.round(x*100)/100)).replace(".",",");
+function noteSheet(m,p){
+  const w=noteWho(p), adv=m.home===p.club?m.away:m.home, my=m.home===p.club?m.res.h:m.res.a, op=m.home===p.club?m.res.a:m.res.h;
+  let h=`<h3>${nameHTML(w.name)}</h3><p class="c">${esc(shortClub(p.club))} ${m.home===p.club?"contre":"à"} ${esc(shortClub(adv))}, J${m.j}, ${my}-${op}</p>
+    <div class="stats"><div class="stat"><div class="num">${fmtN(p.note)}</div><div class="l">Note sur 10</div></div><div class="stat"><div class="num">${p.gk?p.sv:p.b}</div><div class="l">${noteDet(p).replace(/^\d+ /,"")}</div></div></div>`;
+  if(p.note==null) h+=`<p class="note">Pas de note : moins de 2 actions sur la feuille de match (tirs, exclusions). Ce qui s'est passé en défense ou à la passe n'y figure pas, une note ne voudrait rien dire.</p>`;
+  else if(p.why){ const R=p.why.rows;
+    h+=`<h2>Pourquoi cette note</h2><div class="list">${R.map(([l,v,c])=>`<div class="mini-row nx${c?"":" sub"}"><span>${esc(l)}</span><b>${c&&l==="Base"?fmtN(Math.round(v*100)/100):fmtSg(v)}</b></div>`).join("")}
+      <div class="mini-row nx tot"><span>Total ${String(Math.round(p.why.raw*100)/100).replace(".",",")}, arrondi au demi-point${p.why.raw<2||p.why.raw>9.5?" et borné entre 2 et 9,5":""}</span><b>${fmtN(p.note)}</b></div></div>
+      <p class="note">Les lignes en retrait sont des points d'action : leur somme est ramenée sur la note par une échelle qui s'adoucit aux extrêmes (beaucoup d'actions ne font pas monter la note sans fin).</p>`; }
+  h+=`<p class="note">${NOTE_AVERT}</p>${w.attr?`<button class="more" ${w.attr}>Fiche complète</button>`:""}`;
+  openSheet(h);
 }
 
 /* ============ ÉVÉNEMENTS ============ */
@@ -2117,6 +2156,7 @@ document.addEventListener("click",e=>{
   if(t.closest("[data-refresh]")){load(true);return;}
   if(t.closest("[data-back]")){ if(depth>0){depth--;history.back();} else location.hash="#/"; return; }
   const s=t.closest("[data-seg]"); if(s){ui[s.dataset.seg]=s.dataset.v;render();return;}
+  const nx=t.closest("[data-ntx]"); if(nx){ const [j,home,s,i]=nx.dataset.ntx.split("|"), m=D.cal.find(x=>x.j===+j&&x.home===home), n=m&&notesMatch(m), q=n&&n[s][+i]; if(q) noteSheet(m,q); return; }
   const p=t.closest("[data-player]"); if(p){const q=D.players.find(x=>x.club+"|"+x.name===p.dataset.player); if(q) playerSheet(q); return;}
   const kp=t.closest("[data-keeper]"); if(kp){const k=D.keepers.find(x=>x.club+"|"+x.name===kp.dataset.keeper); if(k) keeperSheet(k); return;}
   if(t.closest("[data-notif]")){notifSheet();return;}
