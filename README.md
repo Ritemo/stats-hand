@@ -82,7 +82,7 @@ Pour recevoir les notifications : installer l'appli **ntfy**, toucher **+** et s
 ## 3. Gestes courants
 
 ### Mettre à jour l'appli
-1. Dans chacun des deux dépôts : **Add file > Upload files**, déposer le nouveau `index.html` (et `sw.js` s'il a changé). Ne pas toucher à `config.js`.
+1. Dans **stats-hand** uniquement : **Add file > Upload files**, déposer le nouveau `index.html` (et `sw.js` s'il a changé). Ne pas toucher à `config.js`. L'appli des filles se met à jour toute seule dans l'heure qui suit (robot « Synchronisation depuis stats-hand » du dépôt stats-n3f, qui recopie `index.html`, `sw.js` et `tests/`). Pour ne pas attendre : dépôt stats-n3f, onglet **Actions**, « Synchronisation depuis stats-hand », **Run workflow**.
 2. Valider. Le contrôle automatique se lance tout seul (onglet **Actions**, ligne « Vérification et mise en ligne »). Après 2 à 3 minutes : coche verte, l'appli est en ligne.
 3. Sur le téléphone, fermer puis rouvrir l'appli pour voir la nouvelle version.
 

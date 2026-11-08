@@ -21,7 +21,7 @@ Appli PWA (GitHub Pages) des stats du championnat Honneur masculine, poule A, sa
 ## Règles propres à ce projet
 
 - Tests : `node tests/verif.js .` (appli). Robot : `robot-fdm/` (Python), lancé par `.github/workflows/robot-fdm.yml`.
-- `index.html`, `sw.js` et `tests/` sont **identiques** dans `stats-n3f` : toute modification se reporte dans les deux dépôts, dans la même session. Seul `config.js` diffère.
+- `index.html`, `sw.js` et `tests/` sont communs avec `stats-n3f` : modifie-les **ici seulement**. Le robot `sync-hand.yml` de `stats-n3f` les recopie chaque heure et remet en ligne l'appli des filles. Le code doit donc marcher pour les deux équipes (les différences passent par `config.js`).
 - Deux applis distinctes (garçons, filles) même si le code est commun : ne pas les fusionner.
 - Données : feuilles de match FFHandball (FDME). Disponibles par joueur : buts, tirs tentés, exclusions 2 min. Gardiens : seulement les arrêts, pas les tirs subis individuels, donc le % d'arrêt se calcule au niveau équipe.
 - Personne ne saisit de stats en direct pendant les matchs : tout vient du robot ou d'une saisie après coup dans Google Sheets.
