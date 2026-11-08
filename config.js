@@ -14,5 +14,9 @@ self.APP = {
   ntfy: "prhb-honneur-r7k2q",        // notifications : Pays Riolais seulement
   ntfyTous: "prhb-honneur-tous-r7k2q",   // notifications : tous les résultats
   cache: "hand-cache",               // copie hors connexion des données
-  nomsCourts: {}                     // noms courts particuliers, ex. {"Ent. Saône Mamirolle HB (B)": "Mamirolle"}
+  nomsCourts: {},                    // noms courts particuliers, ex. {"Ent. Saône Mamirolle HB (B)": "Mamirolle"}
+  // Notes : gardien entré en cours de match sans arrêt sur la feuille (les buts encaissés à partir de cette minute sont pour lui)
+  relaisGardiens: [
+    { j: 5, nom: "HILAIRE GINDRO Jules", minute: 40 }   // à Doubs Central : Jules entre juste après le dernier arrêt de Mathieu (39'34)
+  ]
 };

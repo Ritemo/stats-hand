@@ -1988,11 +1988,15 @@ function notesMatch(m){
     const gk=new Map(); const svs=ev.filter(e=>e.c==="A"&&e.s===s&&e.n);
     svs.forEach(e=>{ const n=nnP(e.n); if(!gk.has(n)) gk.set(n,{name:e.n,sv:0,conc:0}); gk.get(n).sv++; });
     const conc=ev.filter(e=>isG(e)&&e.s!==s);
+    // correction manuelle (config.js, relaisGardiens) : gardien entré en cours de match, sans arrêt sur la feuille
+    const rl=(APP.relaisGardiens||[]).find(r=>r.j===m.j&&(r.club||MY_TEAM)===club), rlN=rl?nnP(rl.nom):null, rlT=rl?rl.minute*60:0;
+    if(rl&&!gk.has(rlN)) gk.set(rlN,{name:rl.nom,sv:0,conc:0,relais:true});
     if(gk.size){
       conc.forEach(g=>{
-        let best=null,dt=1e9; svs.forEach(e=>{ const d=Math.abs(e.t-g.t)+(e.t>g.t?30:0); if(d<dt){dt=d;best=e;} });
+        if(rl&&g.t>=rlT){ gk.get(rlN).conc++; return; }
+        let best=null,dt=1e9; svs.forEach(e=>{ if(rl&&nnP(e.n)===rlN) return; const d=Math.abs(e.t-g.t)+(e.t>g.t?30:0); if(d<dt){dt=d;best=e;} });
         if(best) gk.get(nnP(best.n)).conc++; });
-      gk.forEach((g,n)=>{ if(g.sv<3&&gk.size>1&&g.sv<g.conc/4) return;      // joueur de champ passé dans le but un instant
+      gk.forEach((g,n)=>{ if(!g.relais&&g.sv<3&&gk.size>1&&g.sv<g.conc/4) return;      // joueur de champ passé dans le but un instant
         const tirs=g.sv+g.conc, pts=(NOTE_P.gk||0.35)*(g.sv-pct*tirs)+0.05*g.sv+(gkImp.get(s+"|"+n)||0);
         const note=noteArrondi(NOTE_P.gb+NOTE_P.ga*Math.tanh(pts/NOTE_P.gs)+res+force);
         out[s].push({name:g.name,club,gk:true,note,sv:g.sv,conc:g.conc,pct:tirs?g.sv/tirs:null}); });
