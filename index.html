@@ -1339,14 +1339,17 @@ function keeperMatches(k){
     const I=m.info||{}, ev=I.ev||[]; if(!ev.some(e=>e.n)) return;
     const s=m.home===k.club?"h":"a", sv=ev.filter(e=>e.c==="A"&&e.s===s&&e.n);
     const mine=sv.filter(e=>nnP(e.n)===me).length; if(!mine) return;
-    const others=sv.length-mine, conc=s==="h"?m.res.a:m.res.h;
+    const others=sv.length-mine, rl=(APP.relaisGardiens||[]).some(r=>r.j===m.j&&(r.club||MY_TEAM)===k.club);
+    if(rl){ const q=noteDe(k.club,k.name,m.j);   // relais sans arrêt (config.js) : buts encaissés partagés comme pour la note
+      if(q&&q.gk){ out.push({j:m.j,m,s,sv:mine,solo:false,rel:true,conc:q.conc,pct:q.pct}); return; } }
+    const conc=s==="h"?m.res.a:m.res.h;
     out.push({j:m.j,m,s,sv:mine,solo:!others,conc,pct:!others?mine/(mine+conc):null});
   });
   return out;
 }
 function keeperSheet(k){
   const rk=[...D.keepers].filter(x=>x.matchs>0).sort((a,b)=>b.arrets-a.arrets||a.matchs-b.matchs).findIndex(x=>x.club===k.club&&x.name===k.name)+1;
-  const L=keeperMatches(k), best=L.reduce((a,x)=>!a||x.sv>a.sv?x:a,null), solo=L.filter(x=>x.solo);
+  const L=keeperMatches(k), best=L.reduce((a,x)=>!a||x.sv>a.sv?x:a,null), solo=L.filter(x=>x.solo||x.rel);
   const pctAll=solo.length?solo.reduce((s,x)=>s+x.sv,0)/solo.reduce((s,x)=>s+x.sv+x.conc,0):null;
   const rows=L.map(x=>{ const r=x.m.res, my=x.s==="h"?r.h:r.a, op=x.s==="h"?r.a:r.h, res=my>op?"V":my<op?"D":"N", adv=x.s==="h"?x.m.away:x.m.home;
     return `<button class="pm-row" data-go="duel/${x.j}/${slug(x.m.home)}"><span class="res ${res}">${res}</span><span class="pm-a">J${x.j} ${x.s==="h"?"contre":"à"} ${esc(shortClub(adv))}<small>${my}-${op}</small></span>
@@ -1359,7 +1362,7 @@ function keeperSheet(k){
     <div class="stat"><div class="num">${k.matchs}</div><div class="l">Matchs</div></div>
     ${best?`<div class="stat"><div class="num">${best.sv}</div><div class="l">Meilleur match (J${best.j})</div></div>`:""}
     ${(()=>{ const o=noteMoy(k.club,k.name); return o?`<div class="stat"><div class="num">${fmt1(o.avg)}</div><div class="l">Note moyenne (${o.n} match${o.n>1?"s":""})</div></div>`:""; })()}
-    ${pctAll!=null?`<div class="stat"><div class="num">${fmtPct(pctAll)}</div><div class="l">Arrêts sur tirs cadrés${solo.length<L.length?` (matchs ${DEB_F?"seule":"seul"} dans le but)`:""}</div></div>`:""}
+    ${pctAll!=null?`<div class="stat"><div class="num">${fmtPct(pctAll)}</div><div class="l">Arrêts sur tirs cadrés${solo.length<L.length?` (${solo.length} match${solo.length>1?"s":""} où les buts encaissés ${DEB_F?"par elle":"par lui"} sont connus)`:""}</div></div>`:""}
   </div>${L.length?`<div class="chart" style="margin-top:14px"><h3>Match par match</h3><div class="pm">${rows}</div>
     <div class="legend"><span>Arrêts d'après le déroulé des feuilles de match. % d'arrêts : arrêts / (arrêts + buts encaissés), seulement quand ${DEB_F?"elle était seule":"il était seul"} dans le but.</span></div></div>`
     :`<p class="note">Le détail match par match apparaît dès que le déroulé nominatif des feuilles de match est disponible.</p>`}`);
