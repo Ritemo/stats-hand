@@ -1948,7 +1948,7 @@ function ficheHTML(name,kind){
 }
 function fichesHTML(m){
   const mine=m.home===MY_TEAM||m.away===MY_TEAM;
-  if(mine){ const adv=m.home===MY_TEAM?m.away:m.home; return `<h2>Fiche adversaire</h2>${ficheHTML(adv,adv===m.home?"dom":"ext")}`; }
+  if(mine){ const adv=m.home===MY_TEAM?m.away:m.home; return `<h2>Fiche adversaire</h2>${ficheHTML(adv,adv===m.home?"dom":"ext")}<h2>Notre fiche</h2>${ficheHTML(MY_TEAM,MY_TEAM===m.home?"dom":"ext")}`; }
   return `<h2>Fiches des équipes</h2>${ficheHTML(m.home,"dom")}${ficheHTML(m.away,"ext")}`;
 }
 
