@@ -680,6 +680,7 @@ const METRICS={
   arrets:{l:"Total arrêts",get:c=>c.arrets,desc:true,show:c=>c.arrets,sub:c=>`${fmtPct(c.pctArret)} d'arrêts`},
   sup:{l:"Supériorité",get:c=>perP(c.num&&c.num.sup)??-99,desc:true,show:c=>c.num&&c.num.sup.n?sign1(perP(c.num.sup)):"-",sub:c=>c.num&&c.num.sup.n?`${c.num.sup.gf} marqués, ${c.num.sup.ga} encaissés en ${c.num.sup.n} supériorités`:"Pas encore de donnée"},
   inf:{l:"Infériorité",get:c=>perP(c.num&&c.num.inf)??-99,desc:true,show:c=>c.num&&c.num.inf.n?sign1(perP(c.num.inf)):"-",sub:c=>c.num&&c.num.inf.n?`${c.num.inf.gf} marqués, ${c.num.inf.ga} encaissés en ${c.num.inf.n} infériorités`:"Pas encore de donnée"},
+  bilan:{l:"Bilan sup./inf.",get:c=>{const b=numBilan(c);return b?b.reel:-99;},desc:true,show:c=>{const b=numBilan(c);return b?sign1(b.reel):"-";},sub:c=>{const b=numBilan(c);return b?`Théorique ${sign1(b.theo)} par match`:"Pas encore de donnée";}},
   excl:{l:"Discipline",get:c=>c.excl+3*(c.red||0),desc:false,show:c=>c.excl,sub:c=>`${c.excl} exclusions 2 min${c.red?`, ${c.red} carton${c.red>1?"s":""} rouge${c.red>1?"s":""}`:""}`}
 };
 function clubRank(c,key){const m=METRICS[key];return ranked([...D.clubs].sort((a,b)=>m.desc?m.get(b)-m.get(a):m.get(a)-m.get(b)),x=>m.get(x)).find(x=>x.name===c.name).rank;}
@@ -952,11 +953,13 @@ function pDuel(js,hs){
     +row("% tir",A.c.pctTir,B.c.pctTir,fmtPct,"high")+row("% arrêt",A.c.pctArret,B.c.pctArret,fmtPct,"high")+row("Exclusions par match",per(A,A.c.excl),per(B,B.c.excl),fmt1,"low");
   if((A.c.num&&A.c.num.sup.n)||(B.c.num&&B.c.num.sup.n)) rows+=row("En supériorité, écart par 2 min",perP(A.c.num&&A.c.num.sup),perP(B.c.num&&B.c.num.sup),sign1,"high");
   if((A.c.num&&A.c.num.inf.n)||(B.c.num&&B.c.num.inf.n)) rows+=row("En infériorité, écart par 2 min",perP(A.c.num&&A.c.num.inf),perP(B.c.num&&B.c.num.inf),sign1,"high");
+  { const ba=numBilan(A.c), bb=numBilan(B.c); if(ba||bb) rows+=row("Bilan sup. + inf. par match",ba&&ba.reel,bb&&bb.reel,sign1,"high"); }
+  if(!r){ const e=numAttendu(A.c,B.c); if(e&&Math.abs(e.exp)>=0.05) rows+=`<div class="drow"><span class="dv${e.exp>0?" win":""}">${sign1(e.exp)}</span><span class="dl">Discipline : avantage attendu (buts)</span><span class="dv r${e.exp<0?" win":""}">${sign1(-e.exp)}</span></div>`; }
   if(!r) h+=fichesHTML(m);
   h+=`<h2>Face-à-face</h2><div class="duel">${rows}</div>`;
   h+=`<h2>À surveiller</h2>`+[m.home,m.away].map(n=>{const ps=D.players.filter(p=>p.club===n).sort(scorerSort).slice(0,3);
     return `<div class="list" style="margin-bottom:10px"><div class="lh">${logoHTML(n,32)}<b>${esc(n)}</b></div>${ps.length?ps.map(p=>playerRow(p,{showClub:false,max:ps[0].buts||1})).join(""):`<div class="empty">${G_("Aucun joueur saisi","Aucune joueuse saisie")}.</div>`}</div>`;}).join("");
-  h+=`<p class="note">En orange, l'équipe la mieux placée sur chaque ligne. Chiffres de toute la saison à ce jour, stats individuelles hors journées non détaillées.</p>${stamp()}</main>`;
+  h+=`<p class="note">En orange, l'équipe la mieux placée sur chaque ligne.${!r&&numAttendu(A.c,B.c)?" Avantage attendu en discipline : buts gagnés ou perdus quand les effectifs sont inégaux, d'après les exclusions provoquées et subies par chaque équipe et leur efficacité à un de plus et à un de moins.":""} Chiffres de toute la saison à ce jour, stats individuelles hors journées non détaillées.</p>${stamp()}</main>`;
   return h;
 }
 
@@ -1777,12 +1780,41 @@ function numStats(cal,club){
   return S.m?S:null;
 }
 const perP=x=>x&&x.n?(x.gf-x.ga)/x.n:null;
+/* Bilan de discipline : combien de buts une équipe gagne ou perd sur les périodes à effectif inégal.
+   Valeur d'une exclusion = écart moyen du championnat pendant 2 min de supériorité.
+   Théorique : (exclusions provoquées - exclusions subies) x cette valeur, comme si l'équipe était dans la moyenne.
+   L'écart entre réel et théorique mesure l'efficacité propre de l'équipe dans ces moments. */
+let NUM_V=null;
+function numValeur(){
+  if(NUM_V&&NUM_V.at===D.at) return NUM_V.v;
+  let d=0,n=0; D.clubs.forEach(c=>{ if(c.num){ d+=c.num.sup.gf-c.num.sup.ga; n+=c.num.sup.n; } });
+  NUM_V={at:D.at,v:n?d/n:0.5}; return NUM_V.v;
+}
+function numBilan(c){
+  const N=c&&c.num; if(!N||!N.m||(!N.sup.n&&!N.inf.n)) return null; const v=numValeur();
+  const reel=(N.sup.gf-N.sup.ga+N.inf.gf-N.inf.ga)/N.m, theo=(N.sup.n-N.inf.n)*v/N.m;
+  return {reel,theo,eff:reel-theo,prov:N.sup.n/N.m,subi:N.inf.n/N.m,v};
+}
+// avant un match : avantage attendu de A sur les périodes à effectif inégal (B a l'opposé)
+function numAttendu(A,B){
+  const a=A&&A.num, b=B&&B.num; if(!a||!b||!a.m||!b.m) return null; const v=numValeur();
+  const sh=(x,avg)=>x&&x.n?((x.gf-x.ga)+avg*6)/(x.n+6):avg;      // peu de périodes : on se rapproche de la moyenne
+  const nSup=(a.sup.n/a.m+b.inf.n/b.m)/2, nInf=(a.inf.n/a.m+b.sup.n/b.m)/2;
+  const vSup=(sh(a.sup,v)-sh(b.inf,-v))/2, vInf=(sh(a.inf,-v)-sh(b.sup,v))/2;
+  return {exp:nSup*vSup+nInf*vInf,nSup,nInf};
+}
 const sign1=v=>(v>0?"+":"")+fmt1(v);
 function numHTML(c){
   const N=c.num; if(!N||(!N.sup.n&&!N.inf.n)) return "";
   const card=(t,x,txt)=>`<div class="stat"><div class="num ${x.gf-x.ga>0?"good":x.gf-x.ga<0?"bad":""}">${sign(x.gf-x.ga)}</div><div class="l">${t}</div>
     <div class="d">${x.n?`${x.gf} marqué${x.gf>1?"s":""}, ${x.ga} encaissé${x.ga>1?"s":""} en ${x.n} période${x.n>1?"s":""} de 2 min ${txt}`:"Aucune période pour l'instant"}</div></div>`;
-  return `<h2>Supériorité et infériorité</h2><div class="stats recs">${card("En supériorité numérique",N.sup,"à un de plus")}${card("En infériorité numérique",N.inf,"à un de moins")}</div>`;
+  const B=numBilan(c), f2=x=>sign1(Math.round(x*10)/10===0?0:x);
+  const bil=B?`<div class="stats recs"><div class="stat"><div class="num ${B.reel>0.05?"good":B.reel<-0.05?"bad":""}">${f2(B.reel)}</div><div class="l">Bilan discipline par match</div>
+    <div class="d">Buts gagnés ou perdus quand les effectifs sont inégaux, supériorités et infériorités cumulées.</div></div>
+    <div class="stat"><div class="num ${B.theo>0.05?"good":B.theo<-0.05?"bad":""}">${f2(B.theo)}</div><div class="l">Bilan théorique par match</div>
+    <div class="d">${fmt1(B.prov)} exclusions provoquées et ${fmt1(B.subi)} subies par match, avec une efficacité moyenne.</div></div></div>
+    <p class="note">Dans le championnat, 2 minutes de supériorité rapportent en moyenne ${fmt1(B.v)} but à l'équipe à un de plus. Le bilan théorique ne compte que le nombre d'exclusions : ${B.theo>=0.05?"cette équipe en provoque plus qu'elle n'en subit":B.theo<=-0.05?"cette équipe en subit plus qu'elle n'en provoque":"cette équipe en provoque autant qu'elle en subit"}. L'écart avec le bilan réel (${f2(B.eff)} par match) vient de son efficacité dans ces moments-là : ${B.eff>=0.3?"meilleure que la moyenne":B.eff<=-0.3?"moins bonne que la moyenne":"proche de la moyenne"}.</p>`:"";
+  return `<h2>Supériorité et infériorité</h2><div class="stats recs">${card("En supériorité numérique",N.sup,"à un de plus")}${card("En infériorité numérique",N.inf,"à un de moins")}</div>${bil}`;
 }
 function shotsHTML(p){
   if(!p.sh||!p.tirs) return "";
