@@ -318,13 +318,13 @@ body{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
 .mr-odds{grid-column:1/-1;display:grid;grid-template-columns:1fr 62px 1fr;gap:8px;font-size:12px;color:var(--muted);margin-top:-2px}
 .mr-odds span:first-child{text-align:right}.mr-odds span:nth-child(2){text-align:center}
 .mr-odds b{color:var(--ink);font-weight:600}.mr-odds b.fav{color:var(--ink);font-weight:800}
-.mr-odds .one{grid-column:1/-1;text-align:center}
+.mr-odds span.one{grid-column:1/-1;text-align:center}
 .odds{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
 .odd{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 6px;text-align:center}
 .odd small{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.odd .num{font-size:26px;font-weight:700;line-height:1.1}
+.odd .num{font-size:28px;font-weight:700;line-height:1.1}
 .odd.fav{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}.odd.fav .num{color:var(--ink)}
-.pbar{display:flex;height:8px;border-radius:4px;overflow:hidden;margin:2px 0 6px}
+.pbar{display:flex;height:12px;border-radius:6px;overflow:hidden;margin:2px 0 6px}
 .pbar i{display:block;height:100%}
 .verdict{font-weight:600}
 .card{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--team,var(--orange));border-radius:12px;padding:12px 14px;margin:6px 0 16px}
@@ -929,7 +929,7 @@ function pJournees(arg){
     <div class="chips">${info.Js.map(x=>`<button class="chip" data-seg="jour" data-v="${x}" aria-pressed="${x===j}">J${x}</button>`).join("")}</div>
     <h2>Journée ${j}${d?` <span class="h2s">${wkLabel(d)}</span>`:""}</h2>
     <div class="list">${ms.map(m=>matchRow(m,{scorersLine:true,odds:true,deb:true})).join("")}</div>
-    ${noteTip(`${played?`Sous chaque score, ${G_("le meilleur buteur","la meilleure buteuse")} de chaque équipe. `:""}Touchez une rencontre pour ouvrir le face-à-face. Les cotes sont indicatives.`)}${oddsReport(j)}${stamp()}</main>`;
+    ${noteTip(`${played?`Sous chaque score, ${G_("le meilleur buteur","la meilleure buteuse")} de chaque équipe. `:""}Touchez une rencontre pour ouvrir le face-à-face. Les pronostics sont indicatifs.`)}${oddsReport(j)}${stamp()}</main>`;
 }
 function clubData(name){
   const c=D.clubs.find(x=>x.name===name)||{name,marques:0,encaisses:0,pctTir:null,pctArret:null,excl:0,arrets:0};
@@ -1102,8 +1102,8 @@ function journeeArticle(j){
   order.forEach((x,i)=>{ const m=x.m; let s, gen=false;
     const top=x.w?scorers(x.W,j)[0]:null, por=top&&top.b>=6&&nPor<3&&rnd()<0.7?porL[nPor++](`${nmFull(top.name)} (${plur(top.b,"but")})`):"";
     const ext=x.w==="a", vs=ext?chez(x.L):`face à ${T(x.L)}`;     // vainqueur à l'extérieur : « à Quingey (30-43) »
-    if(x===upset){ s=pick([`La surprise du jour est signée ${T(x.W)}, vainqueur ${ext?chez(x.L):de(T(x.L))} (${sc(m)}) alors que les cotes ne le donnaient pas favori (${fmtC(x.cote)}).`,
-      `${T(x.W)} a déjoué les pronostics en ${ext?`s'imposant ${chez(x.L)}`:`battant ${T(x.L)}`} (${sc(m)})${por}. Une victoire cotée à ${fmtC(x.cote)} avant le coup d'envoi.`]); gen=s.startsWith("La"); }
+    if(x===upset){ s=pick([`La surprise du jour est signée ${T(x.W)}, vainqueur ${ext?chez(x.L):de(T(x.L))} (${sc(m)}) alors qu'il n'avait que ${fmtP(1/x.cote)} de chances de gagner.`,
+      `${T(x.W)} a déjoué les pronostics en ${ext?`s'imposant ${chez(x.L)}`:`battant ${T(x.L)}`} (${sc(m)})${por}. Une victoire qui n'avait que ${fmtP(1/x.cote)} de chances avant le coup d'envoi.`]); gen=s.startsWith("La"); }
     else if(!x.w){ s=pick([`${T(m.home)} et ${T(m.away)} se sont quittés dos à dos (${sc(m)}).`,`Pas de vainqueur entre ${T(m.home)} et ${T(m.away)} (${sc(m)}).`,`${T(m.home)} et ${T(m.away)} se sont neutralisés (${sc(m)}).`]); gen=s.startsWith("Pas"); }
     else if(x.marge>=10){ s=pick([ext?`${T(x.W)} s'est largement imposé ${chez(x.L)} (${sc(m)})${por}.`:`${T(x.W)} a largement dominé ${T(x.L)} (${sc(m)})${por}.`,
       `${T(x.W)} n'a pas fait de détail ${vs} (${sc(m)})${por}.`,`Large succès ${de(T(x.W))} ${ext?chez(x.L):`contre ${T(x.L)}`} (${sc(m)})${por}.`]); gen=s.startsWith("Large"); }
@@ -1316,12 +1316,12 @@ function pProjection(){
       <span class="c">${[r.p1>=0.005?"1er "+pctP(r.p1):"",r.top3>=0.005?"podium "+pctP(r.top3):"",r.last>=0.005?"dernier "+pctP(r.last):""].filter(Boolean).join(", ")||"milieu de tableau"}</span>${strip(r)}</span>
       <span class="val"><span class="num">${Math.round(r.mean)}</span><span class="s">pts prévus</span></span></button>`).join("")}</div>
     ${(()=>{ const a=auditCotes(); if(!a) return "";
-      return `<h2>Fiabilité des prévisions${tipI(`Chaque match joué est comparé à ce que prévoyaient les cotes avant la journée. Vainqueur trouvé : le favori a gagné. Écart prévu et écart réel : en moyenne, en buts. Une prévision ne peut pas annoncer les gros cartons : un écart réel un peu plus grand que l'écart prévu est normal.`)}</h2>
+      return `<h2>Fiabilité des prévisions${tipI(`Chaque match joué est comparé au pronostic d'avant la journée. Vainqueur trouvé : le favori a gagné. Écart prévu et écart réel : en moyenne, en buts. Une prévision ne peut pas annoncer les gros cartons : un écart réel un peu plus grand que l'écart prévu est normal.`)}</h2>
       <div class="stats recs"><div class="stat"><div class="num">${a.ok}/${a.n}</div><div class="l">Vainqueur trouvé</div></div>
       <div class="stat"><div class="num">${fmt1(a.dPrev)} / ${fmt1(a.dReel)}</div><div class="l">Écart prévu / réel</div></div></div>
       <p class="c" style="margin:8px 2px">${cap1(a.verdict)}.${a.changer?" Un autre réglage du modèle ferait mieux : à revoir.":""}</p>
       <div class="list mini">${a.js.map(x=>`<div class="mini-row"><span>J${x.j} : ${x.ok}/${x.n} vainqueurs</span><span>écart ${fmt1(x.dPrev)} prévu, ${fmt1(x.dReel)} réel</span></div>`).join("")}</div>`; })()}
-    ${noteTip(`Chaque saison restante est simulée 5 000 fois à partir des cotes (force de chaque équipe d'après ses résultats, adversaires et avantage du terrain). La bande sous chaque nom montre les places possibles, de la 1re à la ${P.n}e : plus la case est foncée, plus la place est probable. Une estimation, pas une prédiction : blessures, effectifs et forme du moment n'y sont pas. ${P.played<40?"Peu de matchs joués : à prendre avec beaucoup de recul.":""}`)}${stamp()}</main>`;
+    ${noteTip(`Chaque saison restante est simulée 5 000 fois à partir des pronostics (force de chaque équipe d'après ses résultats, adversaires et avantage du terrain). La bande sous chaque nom montre les places possibles, de la 1re à la ${P.n}e : plus la case est foncée, plus la place est probable. Une estimation, pas une prédiction : blessures, effectifs et forme du moment n'y sont pas. ${P.played<40?"Peu de matchs joués : à prendre avec beaucoup de recul.":""}`)}${stamp()}</main>`;
 }
 
 /* ============ FICHE JOUEUR : MATCH PAR MATCH ============ */
@@ -1924,11 +1924,12 @@ function auditCotes(){
   return {...A,js,verdict,best,cur,changer};
 }
 const fmtC=c=>c>=10?String(Math.round(c)):c.toFixed(2).replace(".",",");
+const fmtP=p=>Math.round(p*100)+" %";      // chances de gagner, affichées à la place des cotes
 function oddsLine(m){
   const o=oddsOf(m); if(!o) return "";
-  if(!m.res) return `<span class="mr-odds"><span><b class="${o.fav==="h"?"fav":""}">${fmtC(o.c1)}</b></span><span>N ${fmtC(o.cn)}</span><span><b class="${o.fav==="a"?"fav":""}">${fmtC(o.c2)}</b></span></span>`;
+  if(!m.res) return `<span class="mr-odds"><span class="one">Favori : <b class="fav">${esc(shortClub(o.fav==="h"?m.home:m.away))} ${fmtP(o.fav==="h"?o.p1:o.p2)}</b></span></span>`;
   const favName=o.fav==="h"?m.home:m.away, ok=o.fav==="h"?m.res.h>m.res.a:m.res.a>m.res.h;
-  return `<span class="mr-odds"><span class="one">Favori ${esc(shortClub(favName))} (${fmtC(o.fav==="h"?o.c1:o.c2)}) ${ok?`<b class="good">✓ vu juste</b>`:`<b class="bad">✗ surprise</b>`}</span></span>`;
+  return `<span class="mr-odds"><span class="one">Favori ${esc(shortClub(favName))} (${fmtP(o.fav==="h"?o.p1:o.p2)}) ${ok?`<b class="good">✓ vu juste</b>`:`<b class="bad">✗ surprise</b>`}</span></span>`;
 }
 function oddsBlock(m){
   const o=oddsOf(m); if(!o) return "";
@@ -1936,11 +1937,11 @@ function oddsBlock(m){
   const fav=o.fav==="h"?m.home:m.away, ecart=Math.round(Math.abs(o.d));
   let v="";
   if(m.res){ const ok=o.fav==="h"?m.res.h>m.res.a:m.res.a>m.res.h; v=` <span class="verdict ${ok?"good":"bad"}">${ok?"✓ Le favori a gagné":"✗ Surprise"}</span>`; }
-  const tip=`Estimation à partir des résultats de la saison : force de chaque équipe, adversaires et avantage du terrain. ${modelBefore(m.j).n<24?"Peu de matchs joués : cotes encore peu fiables. ":""}${m.res?"":"L'avantage lié à la discipline tient compte des exclusions habituelles de chaque équipe et de leur efficacité à un de plus et à un de moins."}`;
-  return `<h2>Cotes${m.res?` <span class="h2s">avant le match</span>`:""}${tipI(tip)}</h2>
-    <div class="odds"><div class="odd${o.fav==="h"?" fav":""}"><small>${esc(shortClub(m.home))}</small><div class="num">${fmtC(o.c1)}</div></div>
-      <div class="odd"><small>Match nul</small><div class="num">${fmtC(o.cn)}</div></div>
-      <div class="odd${o.fav==="a"?" fav":""}"><small>${esc(shortClub(m.away))}</small><div class="num">${fmtC(o.c2)}</div></div></div>
+  const tip=`Estimation à partir des résultats de la saison : force de chaque équipe, adversaires et avantage du terrain. ${modelBefore(m.j).n<24?"Peu de matchs joués : pronostic encore peu fiable. ":""}${m.res?"":"L'avantage lié à la discipline tient compte des exclusions habituelles de chaque équipe et de leur efficacité à un de plus et à un de moins."}`;
+  return `<h2>Chances de gagner${m.res?` <span class="h2s">avant le match</span>`:""}${tipI(tip)}</h2>
+    <div class="odds"><div class="odd${o.fav==="h"?" fav":""}"><small>${esc(shortClub(m.home))}</small><div class="num">${fmtP(o.p1)}</div></div>
+      <div class="odd"><small>Match nul</small><div class="num">${fmtP(o.pn)}</div></div>
+      <div class="odd${o.fav==="a"?" fav":""}"><small>${esc(shortClub(m.away))}</small><div class="num">${fmtP(o.p2)}</div></div></div>
     <div class="pbar"><i style="width:${o.p1*100}%;background:${o.fav==="h"?O:K}"></i><i style="width:${o.pn*100}%;background:${G}"></i><i style="width:${o.p2*100}%;background:${o.fav==="a"?O:K}"></i></div>
     <p class="note" style="margin-top:0">${ecart>=1?`${esc(shortClub(fav))} favori, écart prévu d'environ ${ecart} but${ecart>1?"s":""}.`:"Match très serré, aucun favori net."}${v}${m.res?"":(()=>{ const e=numAttendu(clubData(m.home).c,clubData(m.away).c); if(!e) return "";
       const x=Math.round(e.exp*10)/10; return `<br>Avantage théorique lié à la discipline : ${x?`${esc(shortClub(x>0?m.home:m.away))} ${sign1(Math.abs(x))} but`:"aucun, les deux équipes s'équilibrent"}.`; })()}</p>`;
@@ -1953,10 +1954,10 @@ function oddsReport(jSel){
   const Js=[...new Set(all.map(m=>m.j))].sort((a,b)=>a-b), range=Js.length>1?`J${Js[0]} à J${Js[Js.length-1]}`:`J${Js[0]}`;
   const line=(t,x)=>`<div class="rep"><span>${t}</span><b>${x.ok} / ${x.n}</b><small>${Math.round(100*x.ok/x.n)} %</small></div>`;
   const sur=(J&&J.sur)||S.sur;
-  return `<div class="card"><h3 style="font-family:'Barlow Condensed',sans-serif;font-size:19px">Fiabilité des cotes</h3><p style="margin:0 0 4px">Nombre de favoris qui ont gagné</p>
+  return `<div class="card"><h3 style="font-family:'Barlow Condensed',sans-serif;font-size:19px">Fiabilité des pronostics</h3><p style="margin:0 0 4px">Nombre de favoris qui ont gagné</p>
     ${J?line(`Journée ${jSel}`,J):""}${line(`Saison (${range})`,S)}
-    ${sur?`<p>Plus grosse surprise ${J&&J.sur?"de la journée":"de la saison"} : ${esc(shortClub(sur.m.res.h>sur.m.res.a?sur.m.home:sur.m.away))} gagne à ${fmtC(sur.c)} (J${sur.m.j}, ${sur.m.res.h}-${sur.m.res.a}).</p>`:""}
-    <p>Cotes calculées avant chaque match, avec uniquement les résultats connus à ce moment-là. La J1 n'est pas comptée (aucun résultat avant).</p></div>`;
+    ${sur?`<p>Plus grosse surprise ${J&&J.sur?"de la journée":"de la saison"} : ${esc(shortClub(sur.m.res.h>sur.m.res.a?sur.m.home:sur.m.away))} gagne avec ${fmtP(1/sur.c)} de chances (J${sur.m.j}, ${sur.m.res.h}-${sur.m.res.a}).</p>`:""}
+    <p>Pronostics calculés avant chaque match, avec uniquement les résultats connus à ce moment-là. La J1 n'est pas comptée (aucun résultat avant).</p></div>`;
 }
 
 /* ============ FICHE ADVERSAIRE (points forts et faibles rédigés à partir des rangs) ============ */
