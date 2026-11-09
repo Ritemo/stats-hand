@@ -1,7 +1,7 @@
 // Service worker commun aux deux applis : le préfixe vient de config.js (« hon » garçons, « n3f » filles).
 // Change ce numéro à chaque mise à jour de l'appli pour forcer le rafraîchissement.
 importScripts("config.js");
-const VERSION = self.APP.id + "-v44";
+const VERSION = self.APP.id + "-v45";
 const SHELL = ["./", "index.html", "config.js", "manifest.json", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", e => {
