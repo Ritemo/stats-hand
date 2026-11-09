@@ -937,7 +937,7 @@ function pDuel(js,hs){
   h+=swipeHint();
   if(!r&&m.info&&m.info.salle) h+=`<h2>Lieu</h2>${routeHTML(m)}`;
   if(r){ try{ h+=debriefHTML(m); }catch(e){} if(m.info&&/^[A-Z]{4}/.test(m.info.fdm||"")) h+=`<a class="fdm-l" href="${fdmUrl(m.info.fdm)}" target="_blank" rel="noopener">Voir la feuille de match officielle (PDF)</a>`; markSeen(m); }
-  if(!r){ h+=oddsBlock(m); try{ h+=discDuelHTML(m); }catch(e){} }
+  if(!r) h+=oddsBlock(m);
   if(r){
     const col2=n=>{const s=scorers(n,j);return `<div class="list mini">${s.length?s.map(x=>`<div class="mini-row"><span>${esc(pName(x.name))}</span><b>${x.b}</b></div>`).join(""):`<div class="mini-row"><span>Pas de détail</span></div>`}</div>`;};
     h+=`<h2>${G_("Buteurs","Buteuses")} du match</h2><div class="two">${col2(m.home)}${col2(m.away)}</div>`;
@@ -962,7 +962,7 @@ function pDuel(js,hs){
   if((A.c.num&&A.c.num.inf.n)||(B.c.num&&B.c.num.inf.n)) rows+=row("En infériorité, écart par 2 min",perP(A.c.num&&A.c.num.inf),perP(B.c.num&&B.c.num.inf),sign1,"high");
   { const ba=numBilan(A.c), bb=numBilan(B.c); if(ba||bb) rows+=row("Bilan sup. + inf. sur la saison, par match",ba&&ba.reel,bb&&bb.reel,sign1,"high"); }
   if(!r){ const e=numAttendu(A.c,B.c); if(e&&Math.abs(e.exp)>=0.05) rows+=`<div class="drow"><span class="dv${e.exp>0?" win":""}">${sign1(e.exp)}</span><span class="dl">Discipline : avantage attendu (buts)</span><span class="dv r${e.exp<0?" win":""}">${sign1(-e.exp)}</span></div>`; }
-  if(!r) h+=fichesHTML(m);
+  if(!r){ h+=fichesHTML(m); try{ h+=discDuelHTML(m); }catch(e){} }
   h+=`<h2>Face-à-face</h2><div class="duel">${rows}</div>`;
   h+=`<h2>À surveiller</h2>`+[m.home,m.away].map(n=>{const ps=D.players.filter(p=>p.club===n).sort(scorerSort).slice(0,3);
     return `<div class="list" style="margin-bottom:10px"><div class="lh">${logoHTML(n,32)}<b>${esc(n)}</b></div>${ps.length?ps.map(p=>playerRow(p,{showClub:false,max:ps[0].buts||1})).join(""):`<div class="empty">${G_("Aucun joueur saisi","Aucune joueuse saisie")}.</div>`}</div>`;}).join("");
