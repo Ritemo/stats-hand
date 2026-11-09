@@ -25,11 +25,12 @@
   --ink:#1C1C1C;
   --muted:#595959;
   --good-t:#146C2E;
+  --good-soft:#E2F3E7;
   --line:#E0DDD8;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --orange-soft:#3A2412; --orange-t:#FF8A3D; --good-t:#3FBF7A; --bg:#121212; --surface:#1E1E1E; --ink:#F2F2F2; --muted:#A3A3A3; --line:#333;
+    --orange-soft:#3A2412; --orange-t:#FF8A3D; --good-t:#3FBF7A; --good-soft:#163524; --bg:#121212; --surface:#1E1E1E; --ink:#F2F2F2; --muted:#A3A3A3; --line:#333;
   }
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -88,7 +89,6 @@ main{padding:16px 14px 40px;max-width:640px;margin:0 auto}
 h2{font-size:20px;font-weight:700;margin:22px 2px 8px;letter-spacing:.01em}
 main>h2:first-child,main>.seg+h2,.fold h2{margin-top:6px}
 .note{font-size:13px;color:var(--muted);margin:10px 2px 12px}
-.tiles{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:26px}
 .tile{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--team,var(--orange));border-radius:10px;padding:14px 16px;width:100%}
 .tile svg{width:28px;height:28px;color:var(--team,var(--orange));flex-shrink:0}
 .tile b{font-size:22px;font-weight:700;display:block;line-height:1.1}
@@ -208,9 +208,9 @@ main>h2:first-child,main>.seg+h2,.fold h2{margin-top:6px}
 .drow{display:grid;grid-template-columns:1fr 1.15fr 1fr;align-items:center;gap:6px;padding:9px 12px;border-top:1px solid var(--line)}
 .drow:first-child{border-top:0}
 .dl{text-align:center;font-size:13px;color:var(--muted);line-height:1.2}
-.dv{font-family:"Barlow Condensed",sans-serif;font-size:22px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums;line-height:1.1}
+.dv{font-family:"Barlow Condensed",sans-serif;font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
 .dv.r{text-align:right}
-.dv.win{color:var(--ink);font-weight:800}
+.dv.win{color:var(--good-t);font-weight:800}.pv{font-style:normal;display:inline-block}.dv.win .pv{background:var(--good-soft);border-radius:8px;padding:0 7px}
 .dv small{display:block;font-family:"Barlow",sans-serif;font-size:13px;font-weight:600;line-height:1.25}
 .form.sm{display:flex;gap:3px;margin:0}
 .dv.r .form.sm{justify-content:flex-end}
@@ -269,7 +269,7 @@ main>h2:first-child,main>.seg+h2,.fold h2{margin-top:6px}
 .dsc-b i.pos{background:var(--good-t)}.dsc-b i.neg{background:#C8402F}.dsc-0{position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;margin-left:-1px;background:var(--ink);z-index:1}
 .dsc-v{font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:20px;text-align:right}
 .dsc-sep{border-top:1px solid var(--line);margin:4px 0}.dsc-ax{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) 44px;gap:10px;font-size:11.5px;color:var(--muted)}
-.dsc-axb{display:flex;justify-content:space-between;gap:4px;white-space:nowrap;overflow:hidden}
+
 .fold{margin:14px 0 4px;border-top:1px solid var(--line)}.fold>summary{list-style:none;display:flex;align-items:center;gap:8px;cursor:pointer;padding:12px 2px 6px}
 .fold>summary::-webkit-details-marker{display:none}.fold>summary h2{margin:0;flex:1}.fold>summary .fs{font-size:14px;color:var(--muted);white-space:nowrap}
 .fold>summary::after{content:"";width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin:0 6px 4px}
@@ -319,6 +319,7 @@ body{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
 .mr-odds span:first-child{text-align:right}.mr-odds span:nth-child(2){text-align:center}
 .mr-odds b{color:var(--ink);font-weight:600}.mr-odds b.fav{color:var(--ink);font-weight:800}
 .mr-odds span.one{grid-column:1/-1;text-align:center}
+.sprev{display:grid;grid-template-columns:auto auto auto 1fr;gap:2px 12px;align-items:baseline;margin:4px 2px 6px}.sprev>span{font-size:13px;color:var(--muted)}.sprev>b{font-family:"Barlow Condensed",sans-serif;font-size:21px}
 .odds{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
 .odd{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 6px;text-align:center}
 .odd small{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -456,7 +457,6 @@ function splitName(full){
   parts.forEach(p=>{(p===p.toUpperCase()&&/[A-Z]/.test(p)&&first.length===0?last:first).push(p)});
   return {first:first.map(w=>w.charAt(0).toUpperCase()+w.slice(1).toLowerCase()).join(" "),last:last.join(" ")||full};
 }
-const initials=n=>{const s=splitName(n);return((s.first[0]||"")+(s.last[0]||"")).toUpperCase();};
 const nameHTML=n=>{const s=splitName(n);return `${esc(s.first)} <span class="ln">${esc(s.last)}</span>`;};
 const SHORT=APP.nomsCourts||{};   // noms courts particuliers (config.js)
 const proseName=n=>/v[ée]sulien/i.test(n)?"Vesoul":/^BEEX/i.test(n)?"Montbéliard":shortClub(n).replace(/^Ent\.\s*/,"").replace(/^ASCAP\s+/,"").replace(/^Maiche$/,"Maîche").trim();   // nom employé dans les débriefs et articles
@@ -959,7 +959,7 @@ function pDuel(js,hs){
   const o=D.cal.find(x=>x.home===m.away&&x.away===m.home);
   if(o&&o.res) h+=`<h2>${o.j<j?"Match aller":"Match retour"} <span class="h2s">J${o.j}${o.date?", "+wkLabel(o.date):""}</span></h2><div class="list" style="margin-bottom:22px">${matchRow(o,{scorersLine:true})}</div>`;
   const cmp=(a,b,bt)=>a==null||b==null||a===b||!bt?0:(bt==="high"?(a>b?1:-1):(a<b?1:-1));
-  const row=(l,a,b,f,bt)=>{const w=cmp(a,b,bt);return `<div class="drow"><span class="dv${w>0?" win":""}">${a==null?"-":f(a)}</span><span class="dl">${l}</span><span class="dv r${w<0?" win":""}">${b==null?"-":f(b)}</span></div>`;};
+  const row=(l,a,b,f,bt)=>{const w=cmp(a,b,bt);return `<div class="drow"><span class="dv${w>0?" win":""}"><em class="pv">${a==null?"-":f(a)}</em></span><span class="dl">${l}</span><span class="dv r${w<0?" win":""}"><em class="pv">${b==null?"-":f(b)}</em></span></div>`;};
   const rowH=(l,a,b)=>`<div class="drow"><span class="dv">${a}</span><span class="dl">${l}</span><span class="dv r">${b}</span></div>`;
   const per=(X,v)=>X.n?v/X.n:null, dots=X=>`<span class="form sm">${X.gs.slice(-5).map(g=>`<span class="${resOf(g)}">${resOf(g)}</span>`).join("")}</span>`;
   let rows="";
@@ -972,9 +972,8 @@ function pDuel(js,hs){
   if((A.c.num&&A.c.num.sup.n)||(B.c.num&&B.c.num.sup.n)) rows+=row("En supériorité, écart par 2 min",perP(A.c.num&&A.c.num.sup),perP(B.c.num&&B.c.num.sup),sign1,"high");
   if((A.c.num&&A.c.num.inf.n)||(B.c.num&&B.c.num.inf.n)) rows+=row("En infériorité, écart par 2 min",perP(A.c.num&&A.c.num.inf),perP(B.c.num&&B.c.num.inf),sign1,"high");
   { const ba=numBilan(A.c), bb=numBilan(B.c); if(ba||bb) rows+=row("Bilan sup. + inf. sur la saison, par match",ba&&ba.reel,bb&&bb.reel,sign1,"high"); }
-  if(!r){ const e=numAttendu(A.c,B.c); if(e&&Math.abs(e.exp)>=0.05) rows+=`<div class="drow"><span class="dv${e.exp>0?" win":""}">${sign1(e.exp)}</span><span class="dl">Discipline : avantage attendu (buts)</span><span class="dv r${e.exp<0?" win":""}">${sign1(-e.exp)}</span></div>`; }
   if(!r){ h+=fichesHTML(m); try{ h+=discDuelHTML(m); }catch(e){} }
-  h+=`<h2>Face-à-face${tipI(`En gras, l'équipe la mieux placée sur chaque ligne.${!r&&numAttendu(A.c,B.c)?" Avantage attendu en discipline : buts gagnés ou perdus quand les effectifs sont inégaux, d'après les exclusions provoquées et subies par chaque équipe et leur efficacité à un de plus et à un de moins.":""} Chiffres de toute la saison à ce jour, stats individuelles hors journées non détaillées.`)}</h2><div class="duel">${rows}</div>`;
+  h+=`<h2>Face-à-face${tipI(`Sur fond vert, l'équipe la mieux placée sur chaque ligne. Chiffres de toute la saison à ce jour, stats individuelles hors journées non détaillées.`)}</h2><div class="duel">${rows}</div>`;
   h+=`<h2>À surveiller</h2>`+[m.home,m.away].map(n=>{const ps=D.players.filter(p=>p.club===n).sort(scorerSort).slice(0,3);
     return `<div class="list" style="margin-bottom:10px"><div class="lh">${logoHTML(n,32)}<b>${esc(n)}</b></div>${ps.length?ps.map(p=>playerRow(p,{showClub:false,max:ps[0].buts||1})).join(""):`<div class="empty">${G_("Aucun joueur saisi","Aucune joueuse saisie")}.</div>`}</div>`;}).join("");
   h+=`${stamp()}</main>`;
@@ -1315,12 +1314,6 @@ function pProjection(){
       <span class="rank">${i+1}</span>${logoHTML(r.club,32)}<span class="who"><span class="n">${esc(shortClub(r.club))}</span>
       <span class="c">${[r.p1>=0.005?"1er "+pctP(r.p1):"",r.top3>=0.005?"podium "+pctP(r.top3):"",r.last>=0.005?"dernier "+pctP(r.last):""].filter(Boolean).join(", ")||"milieu de tableau"}</span>${strip(r)}</span>
       <span class="val"><span class="num">${Math.round(r.mean)}</span><span class="s">pts prévus</span></span></button>`).join("")}</div>
-    ${(()=>{ const a=auditCotes(); if(!a) return "";
-      return `<h2>Fiabilité des prévisions${tipI(`Chaque match joué est comparé au pronostic d'avant la journée. Vainqueur trouvé : le favori a gagné. Écart prévu et écart réel : en moyenne, en buts. Une prévision ne peut pas annoncer les gros cartons : un écart réel un peu plus grand que l'écart prévu est normal.`)}</h2>
-      <div class="stats recs"><div class="stat"><div class="num">${a.ok}/${a.n}</div><div class="l">Vainqueur trouvé</div></div>
-      <div class="stat"><div class="num">${fmt1(a.dPrev)} / ${fmt1(a.dReel)}</div><div class="l">Écart prévu / réel</div></div></div>
-      <p class="c" style="margin:8px 2px">${cap1(a.verdict)}.${a.changer?" Un autre réglage du modèle ferait mieux : à revoir.":""}</p>
-      <div class="list mini">${a.js.map(x=>`<div class="mini-row"><span>J${x.j} : ${x.ok}/${x.n} vainqueurs</span><span>écart ${fmt1(x.dPrev)} prévu, ${fmt1(x.dReel)} réel</span></div>`).join("")}</div>`; })()}
     ${noteTip(`Chaque saison restante est simulée 5 000 fois à partir des pronostics (force de chaque équipe d'après ses résultats, adversaires et avantage du terrain). La bande sous chaque nom montre les places possibles, de la 1re à la ${P.n}e : plus la case est foncée, plus la place est probable. Une estimation, pas une prédiction : blessures, effectifs et forme du moment n'y sont pas. ${P.played<40?"Peu de matchs joués : à prendre avec beaucoup de recul.":""}`)}${stamp()}</main>`;
 }
 
@@ -1923,13 +1916,23 @@ function auditCotes(){
   const changer=A.n>=12&&best.sh!==cur&&moi.ll-best.ll>0.02&&(A.pente>1.2||A.pente<0.85);   // seulement si mal calibré, pas pour un gain minime
   return {...A,js,verdict,best,cur,changer};
 }
-const fmtC=c=>c>=10?String(Math.round(c)):c.toFixed(2).replace(".",",");
 const fmtP=p=>Math.round(p*100)+" %";      // chances de gagner, affichées à la place des cotes
 function oddsLine(m){
   const o=oddsOf(m); if(!o) return "";
   if(!m.res) return `<span class="mr-odds"><span class="one">Favori : <b class="fav">${esc(shortClub(o.fav==="h"?m.home:m.away))} ${fmtP(o.fav==="h"?o.p1:o.p2)}</b></span></span>`;
   const favName=o.fav==="h"?m.home:m.away, ok=o.fav==="h"?m.res.h>m.res.a:m.res.a>m.res.h;
   return `<span class="mr-odds"><span class="one">Favori ${esc(shortClub(favName))} (${fmtP(o.fav==="h"?o.p1:o.p2)}) ${ok?`<b class="good">✓ vu juste</b>`:`<b class="bad">✗ surprise</b>`}</span></span>`;
+}
+// score prévu : total de buts attendu (attaque de chacun et défense d'en face, matchs joués avant), réparti selon l'écart prévu
+function scorePrevu(m){
+  const o=oddsOf(m); if(!o) return null;
+  const ms=D.cal.filter(x=>x.res&&x.j<m.j); if(!ms.length) return null;
+  const st=t=>{ const q=ms.filter(x=>x.home===t||x.away===t); if(!q.length) return null;
+    return {gf:q.reduce((a,x)=>a+(x.home===t?x.res.h:x.res.a),0)/q.length, ga:q.reduce((a,x)=>a+(x.home===t?x.res.a:x.res.h),0)/q.length}; };
+  const moy=ms.reduce((a,x)=>a+x.res.h+x.res.a,0)/ms.length/2, H=st(m.home)||{gf:moy,ga:moy}, A=st(m.away)||{gf:moy,ga:moy};
+  const T=(H.gf+A.ga)/2+(A.gf+H.ga)/2;
+  let h=Math.round((T+o.d)/2), a=Math.round((T-o.d)/2); if(h===a&&Math.abs(o.d)>=0.5){ if(o.d>0) h++; else a++; }
+  return {h,a};
 }
 function oddsBlock(m){
   const o=oddsOf(m); if(!o) return "";
@@ -1943,6 +1946,9 @@ function oddsBlock(m){
       <div class="odd"><small>Match nul</small><div class="num">${fmtP(o.pn)}</div></div>
       <div class="odd${o.fav==="a"?" fav":""}"><small>${esc(shortClub(m.away))}</small><div class="num">${fmtP(o.p2)}</div></div></div>
     <div class="pbar"><i style="width:${o.p1*100}%;background:${o.fav==="h"?O:K}"></i><i style="width:${o.pn*100}%;background:${G}"></i><i style="width:${o.p2*100}%;background:${o.fav==="a"?O:K}"></i></div>
+    ${(()=>{ const sp=scorePrevu(m); if(!sp) return "";
+      const ok=m.res?(Math.sign(sp.h-sp.a)===Math.sign(m.res.h-m.res.a)):null;
+      return `<div class="sprev"><span>Score prévu</span><b>${sp.h} - ${sp.a}</b>${m.res?`<span>Résultat</span><b>${m.res.h} - ${m.res.a} <span class="${ok?"good":"bad"}">${ok?"✓":"✗"}</span></b>`:""}</div>`; })()}
     <p class="note" style="margin-top:0">${ecart>=1?`${esc(shortClub(fav))} favori, écart prévu d'environ ${ecart} but${ecart>1?"s":""}.`:"Match très serré, aucun favori net."}${v}${m.res?"":(()=>{ const e=numAttendu(clubData(m.home).c,clubData(m.away).c); if(!e) return "";
       const x=Math.round(e.exp*10)/10; return `<br>Avantage théorique lié à la discipline : ${x?`${esc(shortClub(x>0?m.home:m.away))} ${sign1(Math.abs(x))} but`:"aucun, les deux équipes s'équilibrent"}.`; })()}</p>`;
 }
@@ -1954,10 +1960,11 @@ function oddsReport(jSel){
   const Js=[...new Set(all.map(m=>m.j))].sort((a,b)=>a-b), range=Js.length>1?`J${Js[0]} à J${Js[Js.length-1]}`:`J${Js[0]}`;
   const line=(t,x)=>`<div class="rep"><span>${t}</span><b>${x.ok} / ${x.n}</b><small>${Math.round(100*x.ok/x.n)} %</small></div>`;
   const sur=(J&&J.sur)||S.sur;
-  return `<div class="card"><h3 style="font-family:'Barlow Condensed',sans-serif;font-size:19px">Fiabilité des pronostics</h3><p style="margin:0 0 4px">Nombre de favoris qui ont gagné</p>
+  return `<div class="card"><h3 style="font-family:'Barlow Condensed',sans-serif;font-size:19px">Fiabilité des pronostics${tipI("Pronostics calculés avant chaque match, avec uniquement les résultats connus à ce moment-là. La J1 n'est pas comptée (aucun résultat avant). Un écart réel un peu plus grand que l'écart prévu est normal : un pronostic ne peut pas annoncer les gros cartons.")}</h3><p style="margin:0 0 4px">Nombre de favoris qui ont gagné</p>
     ${J?line(`Journée ${jSel}`,J):""}${line(`Saison (${range})`,S)}
+    ${(()=>{ const a=auditCotes(); return a?`<p style="margin:6px 0 0">Écart moyen : ${fmt1(a.dPrev)} buts prévus, ${fmt1(a.dReel)} réels. ${cap1(a.verdict)}.</p>`:""; })()}
     ${sur?`<p>Plus grosse surprise ${J&&J.sur?"de la journée":"de la saison"} : ${esc(shortClub(sur.m.res.h>sur.m.res.a?sur.m.home:sur.m.away))} gagne avec ${fmtP(1/sur.c)} de chances (J${sur.m.j}, ${sur.m.res.h}-${sur.m.res.a}).</p>`:""}
-    <p>Pronostics calculés avant chaque match, avec uniquement les résultats connus à ce moment-là. La J1 n'est pas comptée (aucun résultat avant).</p></div>`;
+</div>`;
 }
 
 /* ============ FICHE ADVERSAIRE (points forts et faibles rédigés à partir des rangs) ============ */
