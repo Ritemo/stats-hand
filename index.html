@@ -953,7 +953,7 @@ function pDuel(js,hs){
     +row("% tir",A.c.pctTir,B.c.pctTir,fmtPct,"high")+row("% arrêt",A.c.pctArret,B.c.pctArret,fmtPct,"high")+row("Exclusions par match",per(A,A.c.excl),per(B,B.c.excl),fmt1,"low");
   if((A.c.num&&A.c.num.sup.n)||(B.c.num&&B.c.num.sup.n)) rows+=row("En supériorité, écart par 2 min",perP(A.c.num&&A.c.num.sup),perP(B.c.num&&B.c.num.sup),sign1,"high");
   if((A.c.num&&A.c.num.inf.n)||(B.c.num&&B.c.num.inf.n)) rows+=row("En infériorité, écart par 2 min",perP(A.c.num&&A.c.num.inf),perP(B.c.num&&B.c.num.inf),sign1,"high");
-  { const ba=numBilan(A.c), bb=numBilan(B.c); if(ba||bb) rows+=row("Bilan sup. + inf. par match",ba&&ba.reel,bb&&bb.reel,sign1,"high"); }
+  { const ba=numBilan(A.c), bb=numBilan(B.c); if(ba||bb) rows+=row("Bilan sup. + inf. sur la saison, par match",ba&&ba.reel,bb&&bb.reel,sign1,"high"); }
   if(!r){ const e=numAttendu(A.c,B.c); if(e&&Math.abs(e.exp)>=0.05) rows+=`<div class="drow"><span class="dv${e.exp>0?" win":""}">${sign1(e.exp)}</span><span class="dl">Discipline : avantage attendu (buts)</span><span class="dv r${e.exp<0?" win":""}">${sign1(-e.exp)}</span></div>`; }
   if(!r) h+=fichesHTML(m);
   h+=`<h2>Face-à-face</h2><div class="duel">${rows}</div>`;
@@ -1873,7 +1873,8 @@ function oddsBlock(m){
       <div class="odd"><small>Match nul</small><div class="num">${fmtC(o.cn)}</div></div>
       <div class="odd${o.fav==="a"?" fav":""}"><small>${esc(shortClub(m.away))}</small><div class="num">${fmtC(o.c2)}</div></div></div>
     <div class="pbar"><i style="width:${o.p1*100}%;background:${o.fav==="h"?O:K}"></i><i style="width:${o.pn*100}%;background:${G}"></i><i style="width:${o.p2*100}%;background:${o.fav==="a"?O:K}"></i></div>
-    <p class="note" style="margin-top:0">${ecart>=1?`${esc(shortClub(fav))} favori, écart prévu d'environ ${ecart} but${ecart>1?"s":""}.`:"Match très serré, aucun favori net."}${v}<br>Estimation à partir des résultats de la saison (force de chaque équipe, adversaires et avantage du terrain). ${modelBefore(m.j).n<24?"Peu de matchs joués : cotes encore peu fiables.":""}</p>`;
+    <p class="note" style="margin-top:0">${ecart>=1?`${esc(shortClub(fav))} favori, écart prévu d'environ ${ecart} but${ecart>1?"s":""}.`:"Match très serré, aucun favori net."}${v}${m.res?"":(()=>{ const e=numAttendu(clubData(m.home).c,clubData(m.away).c); if(!e) return "";
+      const x=Math.round(e.exp*10)/10; return `<br>Avantage théorique lié à la discipline : ${x?`${esc(shortClub(x>0?m.home:m.away))} ${sign1(Math.abs(x))} but`:"aucun, les deux équipes s'équilibrent"} (exclusions habituelles de chaque équipe et efficacité à un de plus et à un de moins).`; })()}<br>Estimation à partir des résultats de la saison (force de chaque équipe, adversaires et avantage du terrain). ${modelBefore(m.j).n<24?"Peu de matchs joués : cotes encore peu fiables.":""}</p>`;
 }
 function oddsReport(jSel){
   const all=D.cal.filter(m=>m.res&&oddsOf(m)); if(!all.length) return "";
