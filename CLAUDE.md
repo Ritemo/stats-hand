@@ -22,10 +22,7 @@ Appli PWA (GitHub Pages) des stats du championnat Honneur masculine, poule A, sa
 
 - Tests : `node tests/verif.js .` (appli). Robot : `robot-fdm/` (Python), lancé par `.github/workflows/robot-fdm.yml`.
 - `index.html`, `sw.js` et `tests/` sont communs avec `stats-n3f` : modifie-les **ici seulement**. Le code doit marcher pour les deux équipes (les différences passent par `config.js`).
-- **Les deux applis doivent être mises à jour en même temps.** Juste après avoir poussé une modification du code commun dans `stats-hand`, déclenche aussitôt la synchro des filles :
-  `gh api -X POST repos/Ritemo/stats-n3f/actions/workflows/sync-hand.yml/dispatches -f ref=main`
-  Si cette commande échoue (pas d'accès à `stats-n3f` dans la session), recopie toi-même `index.html`, `sw.js` et `tests/` dans `stats-n3f` et pousse-les. Vérifie ensuite que les deux mises en ligne ont réussi avant de me répondre.
-- Le robot `sync-hand.yml` de `stats-n3f` repasse aussi tout seul toutes les 15 minutes : c'est un filet de sécurité, pas la méthode normale.
+- **Les deux applis doivent être mises à jour en même temps, par toi-même** (pas de robot de synchronisation) : après avoir poussé une modification du code commun dans `stats-hand`, recopie aussitôt `index.html`, `sw.js` et `tests/` dans `stats-n3f` et pousse-les. Ne reste pas à attendre la fin des mises en ligne : si l'une échoue, une alerte part sur ntfy.
 - Deux applis distinctes (garçons, filles) même si le code est commun : ne pas les fusionner.
 - Données : feuilles de match FFHandball (FDME). Disponibles par joueur : buts, tirs tentés, exclusions 2 min. Gardiens : seulement les arrêts, pas les tirs subis individuels, donc le % d'arrêt se calcule au niveau équipe.
 - Personne ne saisit de stats en direct pendant les matchs : tout vient du robot ou d'une saisie après coup dans Google Sheets.
