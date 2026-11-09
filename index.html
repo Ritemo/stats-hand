@@ -1875,7 +1875,7 @@ function shotsHTML(p){
    Note de force par équipe = moindres carrés sur les écarts de buts, adversaire pris en compte,
    tirée vers la moyenne en début de saison. Écart prévu = note dom. - note ext. + avantage domicile.
    L'écart réel varie autour de la prévision (loi normale) : on en tire les probabilités 1 / N / 2. */
-const ODDS={home:1.5,shrink:1.5,sigmaMin:5.5,margin:1.07};   // shrink 4 jusqu'au 09/11/2026 : écarts prévus trop prudents (audit J6)
+const ODDS={home:1.5,shrink:1.5,sigmaMin:5.5,margin:1};   // margin 1 : cote = 1 / probabilité, sans marge de bookmaker (1,07 jusqu'au 09/11/2026)   // shrink 4 jusqu'au 09/11/2026 : écarts prévus trop prudents (audit J6)
 const oddsCache={};
 function modelBefore(j){
   if(oddsCache[j]) return oddsCache[j];
@@ -1897,7 +1897,9 @@ const Phi=z=>{const t=1/(1+0.2316419*Math.abs(z)),d=0.3989423*Math.exp(-z*z/2),p
 function oddsOf(m){
   const M=modelBefore(m.j); if(!M) return null;
   const d=(M.r[m.home]||0)-(M.r[m.away]||0)+ODDS.home, s=M.sigma;
-  const p1=1-Phi((0.5-d)/s), pn=Phi((0.5-d)/s)-Phi((-0.5-d)/s), p2=Phi((-0.5-d)/s);
+  // planchers : même un gros favori perd parfois (1 surprise sur 28 matchs avec un favori à plus de 80 % sur le début de saison)
+  let p1=Math.max(0.03,1-Phi((0.5-d)/s)), pn=Math.max(0.02,Phi((0.5-d)/s)-Phi((-0.5-d)/s)), p2=Math.max(0.03,Phi((-0.5-d)/s));
+  const T=p1+pn+p2; p1/=T; pn/=T; p2/=T;
   const c=p=>Math.max(1.01,1/(p*ODDS.margin));
   return {d,p1,pn,p2,c1:c(p1),cn:c(pn),c2:c(p2),fav:p1>=p2?"h":"a"};
 }
