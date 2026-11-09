@@ -76,7 +76,7 @@ Pour recevoir les notifications : installer l'appli **ntfy**, toucher **+** et s
 | `prhb-honneur-tous-r7k2q` | garçons : tous les résultats du championnat |
 | `prhb-n3f-r7k2q` | filles : match du Pays Riolais et journées complètes |
 | `prhb-n3f-tous-r7k2q` | filles : tous les résultats du championnat |
-| `prhb-alerte-r7k2q` | **pour la personne qui gère l'appli** : problèmes du robot ou mise en ligne bloquée |
+| `prhb-alerte-r7k2q` | **pour la personne qui gère l'appli** : problèmes du robot, mise en ligne bloquée, et chaque lundi l'audit des cotes |
 
 ---
 
@@ -104,6 +104,9 @@ Dépôt **stats-hand** > **Actions** > « Robot feuilles de match » > **Run wor
 
 ### Corriger une donnée
 Corriger directement dans le Google Sheets, dans l'onglet du club. Le robot n'écrit jamais dans une journée déjà remplie pour un club : une correction manuelle n'est pas écrasée. L'appli la prend en compte à la prochaine ouverture (Google met environ 5 minutes à republier).
+
+### Audit des cotes (chaque lundi)
+Le lundi matin, le workflow « Audit des cotes » compare les prévisions des deux applis aux résultats (vainqueur trouvé, écart prévu et écart réel) et envoie un résumé sur `prhb-alerte-r7k2q`. Il ne modifie rien. Si le résumé dit « À revoir », demander à Claude d'ajuster le réglage du modèle (`ODDS` dans `index.html`). Le même bilan est visible dans l'appli, onglet Projection, section « Fiabilité des prévisions ».
 
 ### Où regarder ce qu'a fait le robot
 Onglets techniques créés par le robot dans chaque Sheets :

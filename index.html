@@ -1307,6 +1307,12 @@ function pProjection(){
       <span class="rank">${i+1}</span>${logoHTML(r.club,32)}<span class="who"><span class="n">${esc(shortClub(r.club))}</span>
       <span class="c">${[r.p1>=0.005?"1er "+pctP(r.p1):"",r.top3>=0.005?"podium "+pctP(r.top3):"",r.last>=0.005?"dernier "+pctP(r.last):""].filter(Boolean).join(", ")||"milieu de tableau"}</span>${strip(r)}</span>
       <span class="val"><span class="num">${Math.round(r.mean)}</span><span class="s">pts prévus</span></span></button>`).join("")}</div>
+    ${(()=>{ const a=auditCotes(); if(!a) return "";
+      return `<h2>Fiabilité des prévisions${tipI(`Chaque match joué est comparé à ce que prévoyaient les cotes avant la journée. Vainqueur trouvé : le favori a gagné. Écart prévu et écart réel : en moyenne, en buts. Une prévision ne peut pas annoncer les gros cartons : un écart réel un peu plus grand que l'écart prévu est normal.`)}</h2>
+      <div class="stats recs"><div class="stat"><div class="num">${a.ok}/${a.n}</div><div class="l">Vainqueur trouvé</div></div>
+      <div class="stat"><div class="num">${fmt1(a.dPrev)} / ${fmt1(a.dReel)}</div><div class="l">Écart prévu / réel</div></div></div>
+      <p class="c" style="margin:8px 2px">${cap1(a.verdict)}.${a.changer?" Un autre réglage du modèle ferait mieux : à revoir.":""}</p>
+      <div class="list mini">${a.js.map(x=>`<div class="mini-row"><span>J${x.j} : ${x.ok}/${x.n} vainqueurs</span><span>écart ${fmt1(x.dPrev)} prévu, ${fmt1(x.dReel)} réel</span></div>`).join("")}</div>`; })()}
     ${noteTip(`Chaque saison restante est simulée 5 000 fois à partir des cotes (force de chaque équipe d'après ses résultats, adversaires et avantage du terrain). La bande sous chaque nom montre les places possibles, de la 1re à la ${P.n}e : plus la case est foncée, plus la place est probable. Une estimation, pas une prédiction : blessures, effectifs et forme du moment n'y sont pas. ${P.played<40?"Peu de matchs joués : à prendre avec beaucoup de recul.":""}`)}${stamp()}</main>`;
 }
 
@@ -1861,7 +1867,7 @@ function shotsHTML(p){
    Note de force par équipe = moindres carrés sur les écarts de buts, adversaire pris en compte,
    tirée vers la moyenne en début de saison. Écart prévu = note dom. - note ext. + avantage domicile.
    L'écart réel varie autour de la prévision (loi normale) : on en tire les probabilités 1 / N / 2. */
-const ODDS={home:1.5,shrink:4,sigmaMin:5.5,margin:1.07};
+const ODDS={home:1.5,shrink:1.5,sigmaMin:5.5,margin:1.07};   // shrink 4 jusqu'au 09/11/2026 : écarts prévus trop prudents (audit J6)
 const oddsCache={};
 function modelBefore(j){
   if(oddsCache[j]) return oddsCache[j];
@@ -1886,6 +1892,26 @@ function oddsOf(m){
   const p1=1-Phi((0.5-d)/s), pn=Phi((0.5-d)/s)-Phi((-0.5-d)/s), p2=Phi((-0.5-d)/s);
   const c=p=>Math.max(1.01,1/(p*ODDS.margin));
   return {d,p1,pn,p2,c1:c(p1),cn:c(pn),c2:c(p2),fav:p1>=p2?"h":"a"};
+}
+/* Audit des cotes : chaque match joué comparé à ce que prévoyait le modèle avant la journée.
+   Pente = écart réel / écart prévu (1 = bien calibré, au-dessus = prévisions trop prudentes).
+   On teste aussi d'autres réglages du frein de début de saison (shrink) pour voir s'il faudrait le changer. */
+function auditCotes(){
+  const mesure=()=>{ const P=[]; D.cal.filter(m=>m.res&&m.j>=2).forEach(m=>{ const o=oddsOf(m); if(!o) return; const y=m.res.h-m.res.a;
+      P.push({j:m.j,d:o.d,y,ok:y!==0&&(o.d>0)===(y>0),pr:y>0?o.p1:y<0?o.p2:o.pn}); });
+    if(!P.length) return null; const mo=f=>P.reduce((a,x)=>a+f(x),0)/P.length;
+    return {P,n:P.length,ok:P.filter(x=>x.ok).length,dPrev:mo(x=>Math.abs(x.d)),dReel:mo(x=>Math.abs(x.y)),mae:mo(x=>Math.abs(x.y-x.d)),
+      pente:P.reduce((a,x)=>a+x.d*x.y,0)/Math.max(1e-9,P.reduce((a,x)=>a+x.d*x.d,0)),ll:-mo(x=>Math.log(Math.max(1e-3,x.pr)))}; };
+  const vider=()=>Object.keys(oddsCache).forEach(k=>delete oddsCache[k]);
+  const cur=ODDS.shrink, A=mesure(); if(!A) return null;
+  const essais=[0.5,1,1.5,2,3,4].map(sh=>{ ODDS.shrink=sh; vider(); const x=mesure(); return {sh,ll:x.ll,pente:x.pente,ok:x.ok}; });
+  ODDS.shrink=cur; vider();
+  const best=essais.reduce((a,b)=>b.ll<a.ll?b:a), moi=essais.find(e=>e.sh===cur)||{ll:A.ll};
+  const js=[...new Set(A.P.map(x=>x.j))].sort((a,b)=>a-b).map(j=>{ const q=A.P.filter(x=>x.j===j), mo=f=>q.reduce((a,x)=>a+f(x),0)/q.length;
+    return {j,n:q.length,ok:q.filter(x=>x.ok).length,dPrev:mo(x=>Math.abs(x.d)),dReel:mo(x=>Math.abs(x.y))}; });
+  const verdict=A.n<12?"pas encore assez de matchs pour juger":A.pente>1.25?"prévisions trop prudentes (écarts sous-estimés)":A.pente<0.8?"prévisions trop tranchées (écarts surestimés)":"prévisions bien calibrées";
+  const changer=A.n>=12&&best.sh!==cur&&moi.ll-best.ll>0.02&&(A.pente>1.2||A.pente<0.85);   // seulement si mal calibré, pas pour un gain minime
+  return {...A,js,verdict,best,cur,changer};
 }
 const fmtC=c=>c>=10?String(Math.round(c)):c.toFixed(2).replace(".",",");
 function oddsLine(m){

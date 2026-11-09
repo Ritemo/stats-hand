@@ -10,6 +10,7 @@ on:
     paths-ignore:                 # les passages du robot ne changent pas l'appli : pas de nouvelle mise en ligne
       - "robot-fdm/**"
       - ".github/workflows/robot-fdm.yml"
+      - ".github/workflows/audit-cotes.yml"
   workflow_dispatch:              # bouton « Run workflow » pour relancer à la main
 
 permissions:

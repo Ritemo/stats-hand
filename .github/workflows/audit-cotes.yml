@@ -1,0 +1,39 @@
+name: Audit des cotes
+
+# Chaque lundi matin (après la journée du week-end) : les prévisions des deux applis sont comparées aux résultats,
+# et un résumé part sur ntfy (abonnement prhb-alerte-r7k2q). Rien n'est modifié : si le résumé dit « À revoir »,
+# demander à Claude d'ajuster le modèle.
+on:
+  schedule:
+    - cron: "17 7 * * 1"          # lundi 8 h 17 (heure de Paris en hiver)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with: { path: hand }
+      - uses: actions/checkout@v5
+        with: { repository: Ritemo/stats-n3f, path: n3f }
+      - uses: actions/setup-node@v5
+        with: { node-version: 22 }
+      - name: Navigateur
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Audit (garçons puis filles)
+        run: |
+          node hand/tests/audit-cotes.js hand
+          node hand/tests/audit-cotes.js n3f
+      - name: Résumé sur ntfy
+        if: always()
+        run: |
+          MSG="$(cat audit-cotes.txt 2>/dev/null || echo "L'audit n'a pas pu se faire.")"
+          jq -n --arg m "${MSG:0:1500}" --arg c "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            '{topic:"prhb-alerte-r7k2q", title:"Audit des cotes", message:$m, click:$c, tags:["bar_chart"]}' \
+            | curl -s -H "Content-Type: application/json" -d @- https://ntfy.sh/ || true
