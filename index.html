@@ -952,6 +952,7 @@ function pDuel(js,hs){
   if(r){
     const col2=n=>{const s=scorers(n,j);return `<div class="list mini">${s.length?s.map(x=>`<div class="mini-row"><span>${esc(pName(x.name))}</span><b>${x.b}</b></div>`).join(""):`<div class="mini-row"><span>Pas de détail</span></div>`}</div>`;};
     h+=`<h2>${G_("Buteurs","Buteuses")} du match</h2><div class="two">${col2(m.home)}${col2(m.away)}</div>`;
+    try{ h+=gardiensMatchHTML(m); }catch(e){}
     h+=momentumHTML(m);
     try{ h+=notesMatchHTML(m); }catch(e){}
     h+=oddsBlock(m);          // match joué : les cotes d'avant-match passent après le jeu
@@ -1366,6 +1367,18 @@ function keeperMatches(k){
     out.push({j:m.j,m,s,sv:mine,solo:!others,conc,pct:!others?mine/(mine+conc):null});
   });
   return out;
+}
+// page d'un match joué : arrêts de chaque gardien, % d'arrêts de l'équipe (le % individuel n'est connu que pour un gardien seul dans le match)
+function gardiensMatchHTML(m){
+  const ev=(m.info&&m.info.ev)||[]; if(!m.res||!ev.some(e=>e.n)) return "";
+  const col=s=>{ const club=s==="h"?m.home:m.away, conc=s==="h"?m.res.a:m.res.h, by=new Map();
+    ev.filter(e=>e.c==="A"&&e.s===s&&e.n).forEach(e=>{ const k=nnP(e.n); if(!by.has(k)) by.set(k,{name:e.n,sv:0}); by.get(k).sv++; });
+    (APP.relaisGardiens||[]).filter(r=>r.j===m.j&&(r.club||MY_TEAM)===club).forEach(r=>{ if(!by.has(nnP(r.nom))) by.set(nnP(r.nom),{name:r.nom,sv:0}); });
+    const L=[...by.values()].sort((a,b)=>b.sv-a.sv), tot=L.reduce((a,x)=>a+x.sv,0);
+    const nom=n=>{ const k=D.keepers.find(x=>x.club===club&&nnP(x.name)===nnP(n)); return k?k.name:n; };
+    return `<div class="list mini">${L.length?L.map(x=>`<div class="mini-row"><span>${esc(pName(nom(x.name)))}</span><b>${x.sv}</b></div>`).join(""):`<div class="mini-row"><span>Aucun arrêt noté</span></div>`}
+      <div class="mini-row"><span>${tot}/${tot+conc} tirs</span><b>${fmtPct(tot/(tot+conc||1))}</b></div></div>`; };
+  return `<h2>${G_("Gardiens","Gardiennes")} du match${tipI(`Arrêts de chaque ${G_("gardien","gardienne")} d'après la feuille de match. Le pourcentage est celui de l'équipe : arrêts divisés par les tirs cadrés (arrêts + buts encaissés). Quand deux ${G_("gardiens","gardiennes")} se relaient, la feuille ne dit pas qui était dans le but sur chaque but encaissé.`)}</h2><div class="two">${col("h")}${col("a")}</div>`;
 }
 function keeperSheet(k){
   const rk=[...D.keepers].filter(x=>x.matchs>0).sort((a,b)=>b.arrets-a.arrets||a.matchs-b.matchs).findIndex(x=>x.club===k.club&&x.name===k.name)+1;
