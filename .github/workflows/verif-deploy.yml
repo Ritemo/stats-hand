@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   verification:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04      # ubuntu-latest (26.04) pas encore géré par Playwright
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
@@ -60,7 +60,7 @@ jobs:
 
   mise-en-ligne:
     needs: verification
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04      # ubuntu-latest (26.04) pas encore géré par Playwright
     environment:
       name: github-pages
       url: ${{ steps.deploiement.outputs.page_url }}
