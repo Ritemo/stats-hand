@@ -768,8 +768,8 @@ function pClub(s){
   const rk=(k,l)=>{const v=r(k);return `<div class="rk${v===1?" best":""}"><div class="num">${ordM(v)}</div><div class="l">${l}</div></div>`;};
   return `<header class="top">${IC.court}<div class="bar-top">${backBtn}<div class="t"></div>${refreshBtn}</div>
     <div class="club-head">${logoHTML(c.name,72)}<div><h1>${esc(c.name)}</h1><div class="sub">${esc(APP.championnat)}</div></div></div>
-    <div class="board"><div><div class="ttl">Buts marqués</div><div class="num">${c.marques}</div><div class="lbl">${ordF(rangAjuste(c.name,"att")||r("marques"))} attaque de la poule${tipI("Rang calculé en tenant compte des adversaires déjà rencontrés : marquer beaucoup contre les meilleures défenses compte plus.")}</div></div>
-      <div><div class="ttl">Buts encaissés</div><div class="num">${c.encaisses}</div><div class="lbl">${ordF(rangAjuste(c.name,"def")||r("encaisses"))} défense de la poule</div></div></div>
+    <div class="board"><div><div class="ttl">Buts marqués</div><div class="num">${c.marques}</div><div class="lbl">${ordF(r("marques"))} attaque de la poule</div></div>
+      <div><div class="ttl">Buts encaissés</div><div class="num">${c.encaisses}</div><div class="lbl">${ordF(r("encaisses"))} défense de la poule</div></div></div>
     <div class="minis"><div><b>${fmtPct(c.pctTir)}</b>Réussite au tir</div><div><b>${fmtPct(c.pctArret)}</b>Arrêts équipe</div><div><b>${c.excl}</b>Exclusions 2 min</div></div></header>
   <main>${seg("clubTab",[["resume","Résumé"],["stats","Statistiques"],["effectif","Effectif"]])}
     ${T==="resume"?`${nextCard(c.name)}
@@ -2001,10 +2001,12 @@ function ficheHTML(name,kind){
   const n=D.clubs.length, X=clubData(name), nb=X.n; if(!nb) return "";
   const rk=k=>clubRank(c,k), top=r=>r<=3, low=r=>r>=n-2;
   const F=[],W=[],I=[];
-  let r=rangAjuste(name,"att")||rk("marques"); const am=fmt1(c.marques/nb);
-  if(top(r)) F.push(`${ordT(r)} attaque de la poule, ${am} buts par match`); else if(low(r)) W.push(`Attaque en difficulté : ${am} buts par match (${ordT(r)} de la poule)`);
-  r=rangAjuste(name,"def")||rk("encaisses"); const de=fmt1(c.encaisses/nb);
-  if(top(r)) F.push(`${ordT(r)} défense de la poule, ${de} buts encaissés par match`); else if(low(r)) W.push(`Défense perméable : ${de} buts encaissés par match`);
+  // rang absolu ; le calendrier (adversaires déjà rencontrés) n'est qu'une nuance, ajoutée si l'écart de rang est net
+  const nuance=(k,brut)=>{ const a=rangAjuste(name,k); return a&&Math.abs(a-brut)>=3?(a>brut?" (calendrier plutôt facile jusqu'ici)":" (calendrier plutôt difficile jusqu'ici)"):""; };
+  let r=rk("marques"); const am=fmt1(c.marques/nb);
+  if(top(r)) F.push(`${ordT(r)} attaque de la poule, ${am} buts par match${nuance("att",r)}`); else if(low(r)) W.push(`Attaque en difficulté : ${am} buts par match (${ordT(r)} de la poule)${nuance("att",r)}`);
+  r=rk("encaisses"); const de=fmt1(c.encaisses/nb);
+  if(top(r)) F.push(`${ordT(r)} défense de la poule, ${de} buts encaissés par match${nuance("def",r)}`); else if(low(r)) W.push(`Défense perméable : ${de} buts encaissés par match${nuance("def",r)}`);
   if(c.pctTir!=null){ r=rk("pctTir"); if(top(r)) F.push(`Adroite au tir : ${fmtPct(c.pctTir)} de réussite`); else if(low(r)) W.push(`Maladroite au tir : ${fmtPct(c.pctTir)} de réussite`); }
   if(c.pctArret!=null){ r=rk("pctArret"); if(top(r)) F.push(`Gardiens performants : ${fmtPct(c.pctArret)} d'arrêts`); else if(low(r)) W.push(`Peu d'arrêts : ${fmtPct(c.pctArret)}`); }
   r=rk("excl"); const ex=fmt1(c.excl/nb);
@@ -2086,7 +2088,7 @@ function playerSheet(p){
    adverse ou entretient la sienne ; une exclusion pendant laquelle l'équipe encaisse coûte davantage. */
 const NOTE_CACHE=new Map(); let NOTE_AT=null;
 function ncache(){ if(NOTE_AT!==D.at){ NOTE_CACHE.clear(); NOTE_AT=D.at; } return NOTE_CACHE; }   // vidé à chaque rechargement des données
-const NOTE_P={fb:4.8,fa:4.4,fs:6,gb:5.25,ga:4.4,gs:5,gv:3.4,cap:25};   // cap : au-delà de 25 tirs (un match normal), plus de tirs ne rapporte plus rien ;   // gv : gardiens notés sur le % d'arrêts (15/11/2026, avant : arrêts au-dessus de la moyenne, qui avantageait les gardiens très sollicités)   // base, amplitude et douceur de l'échelle (champ, gardiens)
+const NOTE_P={fb:4.8,fa:4.8,fs:6,gb:5.25,ga:4.4,gs:5,gv:3.4,cap:25};   // cap : au-delà de 25 tirs (un match normal), plus de tirs ne rapporte plus rien ;   // gv : gardiens notés sur le % d'arrêts (15/11/2026, avant : arrêts au-dessus de la moyenne, qui avantageait les gardiens très sollicités)   // base, amplitude et douceur de l'échelle (champ, gardiens)
 function noteArrondi(x){ return Math.round(Math.max(2,Math.min(9.5,x))*2)/2; }
 function moyArretsChamp(){
   if(ncache().has("pct")) return ncache().get("pct");
@@ -2105,9 +2107,9 @@ function forceEquipes(){
   const r={T,gaL,conv}; C.set("force",r); return r;
 }
 // coefficient de difficulté pour un buteur : défense de l'adversaire comparée à la moyenne (bornée)
-function coefDefAdv(adv){ const F=forceEquipes(), x=F.T[adv]; if(!x||x.m<2) return 1; return Math.max(0.75,Math.min(1.35,F.gaL/(x.ga/x.m))); }
+function coefDefAdv(adv){ const F=forceEquipes(), x=F.T[adv]; if(!x||x.m<2) return 1; return Math.max(0.9,Math.min(1.1,1+0.4*(F.gaL/(x.ga/x.m)-1))); }   // effet volontairement modéré (± 10 % au plus)
 // % d'arrêts attendu face à cet adversaire : moitié moyenne du championnat, moitié réussite de cet adversaire au tir
-function pctAttendu(adv,pct){ const F=forceEquipes(), x=F.T[adv]; if(!x||x.cadF<40) return pct; return 0.5*pct+0.5*(1-x.butsF/x.cadF); }
+function pctAttendu(adv,pct){ const F=forceEquipes(), x=F.T[adv]; if(!x||x.cadF<40) return pct; return 0.75*pct+0.25*(1-x.butsF/x.cadF); }   // effet volontairement modéré
 function noteWhyEnd(why,res,force,raw){   // détail d'une note : [libellé, valeur, compte dans le total ?]
   if(res) why.push([res>0.1?"Victoire":res<0?"Défaite":"Match nul",res,1]);
   if(force) why.push([force>0?"Adversaire du haut de tableau":"Adversaire du bas de tableau",force,1]);
@@ -2163,7 +2165,7 @@ function notesMatch(m){
         const tirs=g.sv+g.conc, ecartPct=tirs?NOTE_P.gv*(g.sv/tirs-pA)*Math.sqrt(NOTE_P.cap?Math.min(tirs,NOTE_P.cap):tirs):0, pts=ecartPct+(gkImp.get(s+"|"+n)||0);   // % d'arrêts comparé à la moyenne ; le nombre de tirs ne fait que rendre ce % plus ou moins fiable
         const act=NOTE_P.ga*Math.tanh(pts/NOTE_P.gs), raw=NOTE_P.gb+act+res+force, note=noteArrondi(raw), gi=gkImp.get(s+"|"+n)||0;
         const why=[["Base",NOTE_P.gb,1],
-          [`${fmtPct(tirs?g.sv/tirs:0)} d'arrêts (${g.sv} sur ${tirs} tirs), contre ${fmtPct(pA)} attendus face à ${shortClub(adv)} (moyenne du championnat ${fmtPct(pct)}, ajustée à la réussite au tir de cet adversaire)`,ecartPct,0]];
+          [`${fmtPct(tirs?g.sv/tirs:0)} d'arrêts (${g.sv} sur ${tirs} tirs), contre ${fmtPct(pA)} attendus face à ${shortClub(adv)} (moyenne du championnat ${fmtPct(pct)}, légèrement ajustée à la réussite au tir de cet adversaire)`,ecartPct,0]];
         if(gi) why.push(["Arrêts dans les moments chauds ou qui coupent une série adverse",gi,0]);
         why.push(["Bilan des arrêts, ramené sur la note",act,1]);
         out[s].push({name:g.name,club,gk:true,note,sv:g.sv,conc:g.conc,pct:tirs?g.sv/tirs:null,why:noteWhyEnd(why,res,force,raw)}); });
