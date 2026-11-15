@@ -2068,13 +2068,13 @@ function playerSheet(p){
    n'est pas noté (« nn »), plutôt que de recevoir une note qui ne voudrait rien dire.
    Joueurs de champ : base 5, + buts (un 7 m compte moins), - tirs manqués, + buts dans les moments chauds
    (10 dernières minutes avec 3 buts d'écart ou moins), - exclusions et carton rouge, petit bonus selon le résultat.
-   Gardiens : % d'arrêts comparé à la moyenne du championnat (plus il y a de tirs, plus ce % compte), sans bonus au volume.
+   Gardiens : % d'arrêts comparé à la moyenne du championnat (plus il y a de tirs, plus ce % compte, jusqu'à 25 tirs, un match normal ; au-delà, aucun bonus au volume).
    Avec le déroulé, chaque but encaissé est attribué au gardien qui était dans le but à ce moment-là ;
    Déroulé : bonus pour un but qui fait passer devant ou égaliser (plus fort en fin de match), qui casse une série
    adverse ou entretient la sienne ; une exclusion pendant laquelle l'équipe encaisse coûte davantage. */
 const NOTE_CACHE=new Map(); let NOTE_AT=null;
 function ncache(){ if(NOTE_AT!==D.at){ NOTE_CACHE.clear(); NOTE_AT=D.at; } return NOTE_CACHE; }   // vidé à chaque rechargement des données
-const NOTE_P={fb:4.8,fa:4.4,fs:6,gb:5.25,ga:4.4,gs:5,gv:3};   // gv : gardiens notés sur le % d'arrêts (15/11/2026, avant : arrêts au-dessus de la moyenne, qui avantageait les gardiens très sollicités)   // base, amplitude et douceur de l'échelle (champ, gardiens)
+const NOTE_P={fb:4.8,fa:4.4,fs:6,gb:5.25,ga:4.4,gs:5,gv:3.4,cap:25};   // cap : au-delà de 25 tirs (un match normal), plus de tirs ne rapporte plus rien ;   // gv : gardiens notés sur le % d'arrêts (15/11/2026, avant : arrêts au-dessus de la moyenne, qui avantageait les gardiens très sollicités)   // base, amplitude et douceur de l'échelle (champ, gardiens)
 function noteArrondi(x){ return Math.round(Math.max(2,Math.min(9.5,x))*2)/2; }
 function moyArretsChamp(){
   if(ncache().has("pct")) return ncache().get("pct");
@@ -2135,7 +2135,7 @@ function notesMatch(m){
         let best=null,dt=1e9; svs.forEach(e=>{ if(rl&&nnP(e.n)===rlN) return; const d=Math.abs(e.t-g.t)+(e.t>g.t?30:0); if(d<dt){dt=d;best=e;} });
         if(best) gk.get(nnP(best.n)).conc++; });
       gk.forEach((g,n)=>{ if(!g.relais&&g.sv<3&&gk.size>1&&g.sv<g.conc/4) return;      // joueur de champ passé dans le but un instant
-        const tirs=g.sv+g.conc, ecartPct=tirs?NOTE_P.gv*(g.sv/tirs-pct)*Math.sqrt(tirs):0, pts=ecartPct+(gkImp.get(s+"|"+n)||0);   // % d'arrêts comparé à la moyenne ; le nombre de tirs ne fait que rendre ce % plus ou moins fiable
+        const tirs=g.sv+g.conc, ecartPct=tirs?NOTE_P.gv*(g.sv/tirs-pct)*Math.sqrt(NOTE_P.cap?Math.min(tirs,NOTE_P.cap):tirs):0, pts=ecartPct+(gkImp.get(s+"|"+n)||0);   // % d'arrêts comparé à la moyenne ; le nombre de tirs ne fait que rendre ce % plus ou moins fiable
         const act=NOTE_P.ga*Math.tanh(pts/NOTE_P.gs), raw=NOTE_P.gb+act+res+force, note=noteArrondi(raw), gi=gkImp.get(s+"|"+n)||0;
         const why=[["Base",NOTE_P.gb,1],
           [`${fmtPct(tirs?g.sv/tirs:0)} d'arrêts (${g.sv} sur ${tirs} tirs), contre ${fmtPct(pct)} pour ${G_("un gardien moyen","une gardienne moyenne")} du championnat`,ecartPct,0]];
