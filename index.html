@@ -2342,9 +2342,9 @@ function saviezVous(){
       if(e.s===s&&e.n&&(!fast||e.t<fast.t)) fast={t:e.t,n:e.n,m};
       if(e.s===s&&e.t>=3300) late++; });
     const tot=m.res.h+m.res.a; if(!maxBut||tot>maxBut.tot) maxBut={tot,m}; });
-  if(pire>-4) F.push(pire===0?`${sT} n'a jamais été mené au score cette saison. Pas une seule fois.`:`${sT} n'a jamais été mené de plus de ${-pire} but${pire<-1?"s":""} cette saison. Les adversaires ont à peine eu le temps d'y croire.`);
+  if(pire>-4) F.push(pire===0?`Pas une seule minute derrière au score pour ${sT} cette saison.`:`Jamais plus de ${-pire} but${pire<-1?"s":""} de retard pour ${sT} cette saison. Les adversaires ont à peine eu le temps d'y croire.`);
   if(serie&&serie.n>=5) F.push(`Plus belle série de la saison : ${serie.n}-0 contre ${esc(adv(serie.m))} (J${serie.m.j}), en ${Math.max(1,Math.round((serie.t1-serie.t0)/60))} minutes. ${esc(adv(serie.m))} cherche encore le ballon.`);
-  if(fast&&fast.t<=90) F.push(`But le plus rapide de la saison : ${esc(nmFull(fast.n))}, après ${fast.t} secondes contre ${esc(adv(fast.m))}. Certains n'avaient pas fini de lacer leurs chaussures.`);
+  if(fast&&fast.t<=90) F.push(`But le plus rapide de la saison : ${esc(nmFull(fast.n))}, après ${fast.t} secondes contre ${esc(adv(fast.m))}. ${G_("Certains","Certaines")} n'avaient pas fini de lacer leurs chaussures.`);
   if(late>=5) F.push(`${late} buts de ${sT} dans les 5 dernières minutes des matchs cette saison. L'équipe aime finir fort.`);
   if(maxBut) F.push(`Match le plus prolifique de ${sT} : ${maxBut.tot} buts contre ${esc(adv(maxBut.m))} (J${maxBut.m.j}). Le tableau d'affichage a demandé une pause.`);
   if(drought&&drought.d>=420) F.push(`Plus longue disette de ${sT} : ${Math.round(drought.d/60)} minutes sans marquer contre ${esc(adv(drought.m))} (J${drought.m.j}). Le ballon devait être en vacances.`);
@@ -2355,7 +2355,7 @@ function saviezVous(){
     const top=L.filter(x=>x.b>=seuil), reste=L.filter(x=>x.b<seuil); if(seuil>=5&&top.length>=3&&top.every(x=>x.w>0)&&reste.some(x=>x.w<=0)&&F.filter(f=>f.startsWith("Quand ")).length<1) F.push(`Quand ${esc(nmFull(p.name))} marque ${seuil} buts ou plus, ${sT} gagne : ${top.length} sur ${top.length} cette saison.`);
   });
   const k=D.keepers.filter(x=>x.club===T).sort((a,b)=>b.arrets-a.arrets)[0];
-  if(k&&k.arrets>=30&&k.matchs) F.push(`${esc(nmFull(k.name))} a déjà fait ${k.arrets} arrêts cette saison : un arrêt toutes les ${Math.round(60*k.matchs/k.arrets)} minutes de jeu en moyenne. Les attaquants adverses commencent à le connaître.`);
+  if(k&&k.arrets>=30&&k.matchs) F.push(`${esc(nmFull(k.name))} a déjà fait ${k.arrets} arrêts cette saison : un arrêt toutes les ${Math.round(60*k.matchs/k.arrets)} minutes de jeu en moyenne. ${G_("Les attaquants adverses commencent à le connaître","Les attaquantes adverses commencent à la connaître")}.`);
   return F;
 }
 function saviezCard(){
@@ -2373,10 +2373,10 @@ const myScorers=()=>D.players.filter(p=>p.club===MY_TEAM&&p.m>0).sort((a,b)=>b.b
 const evOf=m=>(m.info&&m.info.ev)||[];
 function bonusQ(m){
   const s=m.home===MY_TEAM?"h":"a", sT=shortClub(MY_TEAM), Q=[
-    { q:`Qui sera le meilleur buteur de ${sT} ?`, opts:myScorers().map(p=>nmFull(p.name)),
+    { q:`Qui sera ${G_("le meilleur buteur","la meilleure buteuse")} de ${sT} ?`, opts:myScorers().map(p=>nmFull(p.name)),
       check:()=>{ const c={}; evOf(m).filter(e=>isG_(e)&&e.s===s&&e.n).forEach(e=>c[e.n]=(c[e.n]||0)+1); const mx=Math.max(0,...Object.values(c)); if(!mx) return null; return myScorers().map(p=>nmFull(p.name)).filter(n=>Object.keys(c).some(k=>c[k]===mx&&nnP(k)===nnP(n))); },
       app:()=>myScorers()[0]&&nmFull(myScorers()[0].name) },
-    { q:`${sT} mène-t-il à la mi-temps ?`, opts:["Oui","Non"],
+    { q:`${sT} en tête à la mi-temps ?`, opts:["Oui","Non"],
       check:()=>m.info&&m.info.mt?[(s==="h"?m.info.mt[0]-m.info.mt[1]:m.info.mt[1]-m.info.mt[0])>0?"Oui":"Non"]:null,
       app:()=>{ const o=oddsOf(m); return o&&(s==="h"?o.d:-o.d)>0?"Oui":"Non"; } },
     { q:`Les ${G_("gardiens","gardiennes")} de ${sT} passent-${G_("ils","elles")} la barre des 10 arrêts ?`, opts:["Oui","Non"],
