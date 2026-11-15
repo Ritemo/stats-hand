@@ -793,7 +793,9 @@ function render(){
   if(!D){ document.getElementById("tabbar").innerHTML=""; app.innerHTML=`<header class="top">${IC.court}<div class="bar-top"><div class="t"><div class="page-title">Stats Hand</div></div>${refreshBtn}</div></header>
     <main>${loading?`<div class="empty">Chargement des stats…</div>`:`<div class="error"><b>Impossible de charger les stats</b>Vérifie ta connexion internet, puis appuie sur le bouton d'actualisation.</div>`}</main>`; return; }
   const {page,arg,arg2}=route();
-  app.innerHTML=({home:pHome,classement:pClassement,buteurs:pButeurs,gardiens:pGardiens,club:()=>pClub(arg),general:pGeneral,journees:()=>pJournees(arg),duel:()=>pDuel(arg,arg2),equipes:pEquipes,une:()=>pUne(arg),projection:pProjection,notes:pNotes}[page]||pHome)();
+  try{ app.innerHTML=({home:pHome,classement:pClassement,buteurs:pButeurs,gardiens:pGardiens,club:()=>pClub(arg),general:pGeneral,journees:()=>pJournees(arg),duel:()=>pDuel(arg,arg2),equipes:pEquipes,une:()=>pUne(arg),projection:pProjection,notes:pNotes}[page]||pHome)(); }
+  catch(err){ console.error(err);      // une page qui plante ne doit pas bloquer l'appli : message clair, les autres onglets restent utilisables
+    app.innerHTML=`<header class="top">${IC.court}<div class="bar-top"><div class="t"><div class="page-title">Oups</div></div>${refreshBtn}</div></header><main><div class="error"><b>Cette page n'a pas pu s'afficher</b>Les autres onglets fonctionnent. Envoie une capture de cet écran à la personne qui gère l'appli.<br><small>${esc(String(err&&err.message||err))}</small></div></main>`; }
   const tab={journees:"journees",duel:"journees",general:"general",classement:"general",buteurs:"buteurs",gardiens:"buteurs",notes:"buteurs",equipes:"equipes",club:"equipes",une:"une",projection:"general"}[page]||"home";
   const tabs=[["home","Accueil",IC.home],...(D.cal.some(m=>m.res)?[["une","À la une",IC.news]]:[]),...(D.cal.length?[["journees","Calendrier",IC.cal]]:[]),[D.standings.length?"general":"classement","Classement",IC.trophy],["buteurs",G_("Joueurs","Joueuses"),IC.ball],["equipes","Équipes",IC.teams]];
   const dot=p=>p==="une"&&uneJs().some(uneNew)?'<i class="tb-dot"></i>':"";
@@ -1101,7 +1103,7 @@ function journeeArticle(j){
   const conn=["Ailleurs, ","Dans le même temps, ","De son côté, ","Plus loin, "];
   order.forEach((x,i)=>{ const m=x.m; let s, gen=false;
     const top=x.w?scorers(x.W,j)[0]:null, por=top&&top.b>=6&&nPor<3&&rnd()<0.7?porL[nPor++](`${nmFull(top.name)} (${plur(top.b,"but")})`):"";
-    const ext=x.w==="a", vs=ext?chez(x.L):`face à ${T(x.L)}`;     // vainqueur à l'extérieur : « à Quingey (30-43) »
+    const ext=x.w==="a", vs=!x.w?"":ext?chez(x.L):`face à ${T(x.L)}`;   // match nul : ni vainqueur ni perdant     // vainqueur à l'extérieur : « à Quingey (30-43) »
     if(x===upset){ s=pick([`La surprise du jour est signée ${T(x.W)}, vainqueur ${ext?chez(x.L):de(T(x.L))} (${sc(m)}) alors qu'il n'avait que ${fmtP(1/x.cote)} de chances de gagner.`,
       `${T(x.W)} a déjoué les pronostics en ${ext?`s'imposant ${chez(x.L)}`:`battant ${T(x.L)}`} (${sc(m)})${por}. Une victoire qui n'avait que ${fmtP(1/x.cote)} de chances avant le coup d'envoi.`]); gen=s.startsWith("La"); }
     else if(!x.w){ s=pick([`${T(m.home)} et ${T(m.away)} se sont quittés dos à dos (${sc(m)}).`,`Pas de vainqueur entre ${T(m.home)} et ${T(m.away)} (${sc(m)}).`,`${T(m.home)} et ${T(m.away)} se sont neutralisés (${sc(m)}).`]); gen=s.startsWith("Pas"); }
