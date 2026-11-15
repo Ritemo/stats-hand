@@ -1,0 +1,1 @@
+Le robot s'est arrêté : APIError : APIError: [500]: Internal error encountered.
