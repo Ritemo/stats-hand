@@ -274,6 +274,20 @@ main>h2:first-child,main>.seg+h2,.fold h2{margin-top:6px}
 .fold>summary::-webkit-details-marker{display:none}.fold>summary h2{margin:0;flex:1}.fold>summary .fs{font-size:14px;color:var(--muted);white-space:nowrap}
 .fold>summary::after{content:"";width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin:0 6px 4px}
 .fold[open]>summary::after{transform:rotate(-135deg);margin-bottom:-4px}
+.sv p{margin:0 0 8px;font-size:15.5px;line-height:1.45}.sv-n{background:none;border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:5px 14px;font-family:inherit;font-weight:600;font-size:13px;cursor:pointer}
+.pr p{margin:0 0 8px}.pr-tot{display:flex;justify-content:space-between;align-items:center;font-size:15px;margin-bottom:8px}.pr-tot b{font-family:"Barlow Condensed",sans-serif;font-size:26px;margin-left:4px}
+.pr-vs{font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.pr-last{font-size:13.5px;color:var(--muted)}.pr-m{font-size:15px}
+.pr-sc{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:6px 0}.pr-sc small{display:block;text-align:center;color:var(--muted);font-size:13px;margin-bottom:4px}
+.pr-st{display:flex;align-items:center;justify-content:center;gap:12px}.pr-st b{font-family:"Barlow Condensed",sans-serif;font-size:34px;min-width:44px;text-align:center}
+.pr-st button{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:22px;line-height:1;cursor:pointer}
+.pr-w{text-align:center;font-weight:700;color:var(--orange-t)}.pr-q{font-weight:600;margin-top:10px!important}
+.pr-b{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}.pr-b button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:6px 12px;font-family:inherit;font-weight:600;font-size:13.5px;cursor:pointer}
+.pr-b button[aria-pressed="true"]{background:var(--orange);border-color:var(--orange);color:#1a1a1a}
+.btn-main{width:100%;border:0;border-radius:12px;padding:12px;background:var(--orange);color:#1a1a1a;font-family:inherit;font-weight:700;font-size:15px;cursor:pointer}
+.fx{position:fixed;inset:0;pointer-events:none;z-index:90;overflow:hidden}.fx i{position:absolute;top:-20px;width:8px;height:12px;border-radius:2px;animation:fxc linear forwards}
+.fx.pluie i{width:2px;height:16px;border-radius:1px;animation-name:fxp;opacity:.8}
+@keyframes fxc{to{transform:translateY(105vh) rotate(720deg)}}@keyframes fxp{to{transform:translateY(105vh)}}
+.logo.spin{animation:spin .8s cubic-bezier(.3,1.4,.5,1)}@keyframes spin{to{transform:rotate(360deg)}}
 .tip-i{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;margin-left:6px;padding:0;border-radius:50%;border:1.5px solid var(--muted);background:transparent;color:var(--muted);font:italic 700 12.5px/1 Georgia,serif;vertical-align:3px;cursor:pointer;flex:none}
 h2 .tip-i{vertical-align:4px}.note-t{display:flex;justify-content:flex-end;margin:6px 2px 14px}
 .tip-b{position:absolute;z-index:80;background:var(--ink);color:var(--bg);font-size:13.5px;line-height:1.45;padding:10px 12px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
@@ -675,7 +689,7 @@ function pHome(){
   return `<header class="top slim">${IC.court}<div class="bar-top">
       <div class="brand">${logoHTML(MY_TEAM,40)}<span><b>${APP.marque[0]} <em>${APP.marque[1]}</em></b><small>${APP.marque[2]}</small></span></div>${refreshBtn}</div></header>
   <main>
-    ${nc}${ld}
+    ${nc}${(()=>{ try{ return pronoCard(); }catch(e){ return ; } })()}${ld}${(()=>{ try{ return saviezCard(); }catch(e){ return ; } })()}
     ${!nc&&!ld?`<div class="empty">Ajoute l'onglet Calendrier au fichier pour voir le prochain match et les derniers résultats.</div>`:""}
     <button class="more ntfy-b" data-notif>${IC.bell}Être prévenu des résultats</button>
     ${stamp()}
@@ -801,6 +815,7 @@ function render(){
   const dot=p=>p==="une"&&uneJs().some(uneNew)?'<i class="tb-dot"></i>':"";
   document.getElementById("tabbar").innerHTML=`<div class="in${tabs.length>5?" t6":""}">${tabs.map(([p,l,ic])=>`<button data-go="${p==="home"?"":p}" data-tab ${(p===tab||(tab==="general"&&p==="classement"))?'aria-current="page"':""}>${ic}${dot(p)}<span>${l}</span></button>`).join("")}</div>`;
   app.querySelectorAll(".chips").forEach(cs=>{const c=cs.querySelector('[aria-pressed="true"]'); if(c) cs.scrollLeft=c.offsetLeft-cs.clientWidth/2+c.clientWidth/2;});
+  try{ surprises(); }catch(e){}
 }
 
 /* ============ CALENDRIER, DUELS, RECORDS ============ */
@@ -2303,6 +2318,139 @@ function noteSheet(m,p){
   h+=`${noteTip(`${NOTE_AVERT}`)}${w.attr?`<button class="more" ${w.attr}>Fiche complète</button>`:""}`;
   openSheet(h);
 }
+
+
+/* ============ UN PEU DE FUN : « Le saviez-vous ? », « Bats l'appli », petites surprises ============ */
+const LS_={ get:(k,d)=>{ try{ const v=localStorage.getItem(APP.id+"-"+k); return v==null?d:JSON.parse(v); }catch(e){ return d; } },
+  set:(k,v)=>{ try{ localStorage.setItem(APP.id+"-"+k,JSON.stringify(v)); }catch(e){} } };
+const myMatches=()=>D.cal.filter(m=>m.res&&(m.home===MY_TEAM||m.away===MY_TEAM)).sort((a,b)=>a.j-b.j);
+const isG_=e=>e.c==="B"||e.c==="P";
+
+// ---- « Le saviez-vous ? » : des stats vraies mais inattendues, recalculées à chaque ouverture
+function saviezVous(){
+  const F=[], ms=myMatches(), T=MY_TEAM, sT=shortClub(T); if(!ms.length) return F;
+  const side=m=>m.home===T?"h":"a", adv=m=>shortClub(m.home===T?m.away:m.home);
+  let pire=0, serie=null, fast=null, late=0, maxBut=null, drought=null;
+  ms.forEach(m=>{ const ev=((m.info&&m.info.ev)||[]).filter(isG_).sort((a,b)=>a.t-b.t), s=side(m); if(!ev.length) return;
+    let my=0,op=0,run={s:null,n:0,t0:0,t1:0}, lastMine=0;
+    ev.forEach(e=>{ if(e.s===s){ my++; if(e.t-lastMine>((drought&&drought.d)||0)&&my>1) drought={d:e.t-lastMine,m,t0:lastMine,t1:e.t}; lastMine=e.t; } else op++;
+      pire=Math.min(pire,my-op);
+      run=run.s===e.s?{...run,n:run.n+1,t1:e.t}:{s:e.s,n:1,t0:e.t,t1:e.t};
+      if(run.s===s&&(!serie||run.n>serie.n)) serie={n:run.n,m,t0:run.t0,t1:run.t1};
+      if(e.s===s&&e.n&&(!fast||e.t<fast.t)) fast={t:e.t,n:e.n,m};
+      if(e.s===s&&e.t>=3300) late++; });
+    const tot=m.res.h+m.res.a; if(!maxBut||tot>maxBut.tot) maxBut={tot,m}; });
+  if(pire>-4) F.push(pire===0?`${sT} n'a jamais été mené au score cette saison. Pas une seule fois.`:`${sT} n'a jamais été mené de plus de ${-pire} but${pire<-1?"s":""} cette saison. Les adversaires ont à peine eu le temps d'y croire.`);
+  if(serie&&serie.n>=5) F.push(`Plus belle série de la saison : ${serie.n}-0 contre ${esc(adv(serie.m))} (J${serie.m.j}), en ${Math.max(1,Math.round((serie.t1-serie.t0)/60))} minutes. ${esc(adv(serie.m))} cherche encore le ballon.`);
+  if(fast&&fast.t<=90) F.push(`But le plus rapide de la saison : ${esc(nmFull(fast.n))}, après ${fast.t} secondes contre ${esc(adv(fast.m))}. Certains n'avaient pas fini de lacer leurs chaussures.`);
+  if(late>=5) F.push(`${late} buts de ${sT} dans les 5 dernières minutes des matchs cette saison. L'équipe aime finir fort.`);
+  if(maxBut) F.push(`Match le plus prolifique de ${sT} : ${maxBut.tot} buts contre ${esc(adv(maxBut.m))} (J${maxBut.m.j}). Le tableau d'affichage a demandé une pause.`);
+  if(drought&&drought.d>=420) F.push(`Plus longue disette de ${sT} : ${Math.round(drought.d/60)} minutes sans marquer contre ${esc(adv(drought.m))} (J${drought.m.j}). Le ballon devait être en vacances.`);
+  // un joueur décisif : quand il marque beaucoup, on ne perd pas
+  D.players.filter(p=>p.club===T&&p.m>=3).forEach(p=>{
+    const L=ms.map(m=>{ const pj=D.evo&&D.evo.pj[T+"|"+p.name]; const b=pj?pj.b[m.j-1]:null; return b==null?null:{b,w:(side(m)==="h"?m.res.h-m.res.a:m.res.a-m.res.h)}; }).filter(Boolean);
+    if(L.length<3) return; const seuil=[...L.map(x=>x.b)].sort((a,b)=>b-a)[Math.min(2,L.length-1)];
+    const top=L.filter(x=>x.b>=seuil), reste=L.filter(x=>x.b<seuil); if(seuil>=5&&top.length>=3&&top.every(x=>x.w>0)&&reste.some(x=>x.w<=0)&&F.filter(f=>f.startsWith("Quand ")).length<1) F.push(`Quand ${esc(nmFull(p.name))} marque ${seuil} buts ou plus, ${sT} gagne : ${top.length} sur ${top.length} cette saison.`);
+  });
+  const k=D.keepers.filter(x=>x.club===T).sort((a,b)=>b.arrets-a.arrets)[0];
+  if(k&&k.arrets>=30&&k.matchs) F.push(`${esc(nmFull(k.name))} a déjà fait ${k.arrets} arrêts cette saison : un arrêt toutes les ${Math.round(60*k.matchs/k.arrets)} minutes de jeu en moyenne. Les attaquants adverses commencent à le connaître.`);
+  return F;
+}
+function saviezCard(){
+  const F=saviezVous(); if(!F.length) return ""; if(ui.sv==null) ui.sv=Math.floor(Math.random()*F.length);
+  return `<h2>Le saviez-vous ?</h2><div class="card sv"><p>${F[ui.sv%F.length]}</p>${F.length>1?`<button class="sv-n" data-sv>Une autre</button>`:""}</div>`;
+}
+
+// ---- « Bats l'appli » : ton pronostic contre celui de l'appli, sur les matchs de Rioz
+const PR_PTS={vainqueur:3,ecart:2,exact:3,bonus:2};
+function kickoff(m){ if(m.info&&m.info.dt) return m.info.dt; if(m.date){ const d=new Date(m.date); d.setHours(20,0,0,0); return d; } return null; }
+const myScorers=()=>D.players.filter(p=>p.club===MY_TEAM&&p.m>0).sort((a,b)=>b.buts-a.buts).slice(0,5);
+const evOf=m=>(m.info&&m.info.ev)||[];
+function bonusQ(m){
+  const s=m.home===MY_TEAM?"h":"a", sT=shortClub(MY_TEAM), Q=[
+    { q:`Qui sera le meilleur buteur de ${sT} ?`, opts:myScorers().map(p=>nmFull(p.name)),
+      check:()=>{ const c={}; evOf(m).filter(e=>isG_(e)&&e.s===s&&e.n).forEach(e=>c[e.n]=(c[e.n]||0)+1); const mx=Math.max(0,...Object.values(c)); if(!mx) return null; return myScorers().map(p=>nmFull(p.name)).filter(n=>Object.keys(c).some(k=>c[k]===mx&&nnP(k)===nnP(n))); },
+      app:()=>myScorers()[0]&&nmFull(myScorers()[0].name) },
+    { q:`${sT} mène-t-il à la mi-temps ?`, opts:["Oui","Non"],
+      check:()=>m.info&&m.info.mt?[(s==="h"?m.info.mt[0]-m.info.mt[1]:m.info.mt[1]-m.info.mt[0])>0?"Oui":"Non"]:null,
+      app:()=>{ const o=oddsOf(m); return o&&(s==="h"?o.d:-o.d)>0?"Oui":"Non"; } },
+    { q:`Les ${G_("gardiens","gardiennes")} de ${sT} passent-${G_("ils","elles")} la barre des 10 arrêts ?`, opts:["Oui","Non"],
+      check:()=>{ const n=evOf(m).filter(e=>e.c==="A"&&e.s===s).length; return evOf(m).length?[n>=10?"Oui":"Non"]:null; },
+      app:()=>{ const c=D.clubs.find(x=>x.name===MY_TEAM), n=clubData(MY_TEAM).n||1; return c&&c.arrets/n>=10?"Oui":"Non"; } },
+    { q:`Combien d'exclusions de 2 min pour ${sT} ?`, opts:["0 ou 1","2","3 ou plus"],
+      check:()=>{ if(!evOf(m).length) return null; const n=evOf(m).filter(e=>e.c==="X"&&e.s===s).length; return [n<=1?"0 ou 1":n===2?"2":"3 ou plus"]; },
+      app:()=>{ const c=D.clubs.find(x=>x.name===MY_TEAM), n=clubData(MY_TEAM).n||1, x=c?c.excl/n:2; return x<1.5?"0 ou 1":x<2.5?"2":"3 ou plus"; } },
+    { q:"Le match se termine-t-il avec 10 buts d'écart ou plus ?", opts:["Oui","Non"],
+      check:()=>[Math.abs(m.res.h-m.res.a)>=10?"Oui":"Non"], app:()=>{ const o=oddsOf(m); return o&&Math.abs(o.d)>=10?"Oui":"Non"; } },
+  ];
+  const q=Q[m.j%Q.length]; return q.opts.length>=2?q:Q[1];
+}
+function pronoApp(m){ const o=oddsOf(m), sp=scorePrevu(m); if(!o||!sp) return null;
+  return { w:sp.h>sp.a?"h":sp.h<sp.a?"a":"n", h:sp.h, a:sp.a, b:bonusQ(m).app() }; }
+function pointsProno(m,p){
+  if(!p||!m.res) return null; const r=m.res, w=r.h>r.a?"h":r.h<r.a?"a":"n", det=[]; let pts=0;
+  if(p.w===w){ pts+=PR_PTS.vainqueur; det.push("vainqueur"); if(p.h-p.a===r.h-r.a){ pts+=PR_PTS.ecart; det.push("écart"); } if(p.h===r.h&&p.a===r.a){ pts+=PR_PTS.exact; det.push("score exact"); } }
+  const ok=bonusQ(m).check(); if(ok&&p.b&&ok.includes(p.b)){ pts+=PR_PTS.bonus; det.push("bonus"); }
+  return {pts,det};
+}
+function pronoCard(){
+  const P=LS_.get("pronos",{}), next=nextMatch(MY_TEAM);
+  const joues=myMatches().filter(m=>P[m.j]&&P[m.j].moi);
+  let moi=0, app=0; joues.forEach(m=>{ moi+=(pointsProno(m,P[m.j].moi)||{pts:0}).pts; app+=(pointsProno(m,P[m.j].app)||{pts:0}).pts; });
+  const last=joues[joues.length-1];
+  let h=`<h2>Bats l'appli${tipI(`Avant chaque match de ${shortClub(MY_TEAM)}, donne ton pronostic : ${PR_PTS.vainqueur} points pour le bon vainqueur, ${PR_PTS.ecart} de plus pour le bon écart, ${PR_PTS.exact} de plus pour le score exact, et ${PR_PTS.bonus} pour la question bonus. L'appli joue aussi avec ses propres pronostics. Ton pronostic est gardé sur ce téléphone et se verrouille au coup d'envoi.`)}</h2><div class="card pr">`;
+  if(joues.length) h+=`<div class="pr-tot"><span>Toi <b>${moi}</b></span><span class="pr-vs">${moi>app?"tu mènes":moi<app?"l'appli mène":"égalité"}</span><span>L'appli <b>${app}</b></span></div>`;
+  if(last){ const a=pointsProno(last,P[last.j].moi), b=pointsProno(last,P[last.j].app);
+    h+=`<p class="pr-last">J${last.j} (${last.res.h}-${last.res.a}) : toi ${a.pts} pt${a.pts>1?"s":""}${a.det.length?" ("+a.det.join(", ")+")":""}, l'appli ${b.pts} pt${b.pts>1?"s":""}.</p>`; }
+  if(next){
+    const ko=kickoff(next), locked=ko&&Date.now()>=ko.getTime(), mine=P[next.j]&&P[next.j].moi, q=bonusQ(next);
+    const hs=shortClub(next.home), as=shortClub(next.away);
+    if(locked) h+=`<p>J${next.j} : ${mine?`ton pronostic ${mine.h}-${mine.a} est verrouillé. Verdict après le match !`:"le match a commencé, trop tard pour pronostiquer."}</p>`;
+    else if(mine&&!ui.prEdit) h+=`<p><b>J${next.j}, ${esc(hs)} - ${esc(as)}</b> : ton pronostic <b>${mine.h}-${mine.a}</b>, bonus « ${esc(mine.b||"aucun")} ».</p><button class="sv-n" data-pr-edit>Modifier</button>`;
+    else { const sp=scorePrevu(next)||{h:28,a:28}; const d=ui.pr&&ui.pr.j===next.j?ui.pr:(ui.pr={j:next.j,h:mine?mine.h:sp.h,a:mine?mine.a:sp.a,b:mine?mine.b:null});
+      const w=d.h>d.a?"h":d.h<d.a?"a":"n";
+      h+=`<p class="pr-m"><b>J${next.j}</b> ${esc(hs)} - ${esc(as)}</p>
+        <div class="pr-sc"><div><small>${esc(hs)}</small><div class="pr-st"><button data-pr-s="h-1" aria-label="moins">−</button><b>${d.h}</b><button data-pr-s="h1" aria-label="plus">+</button></div></div>
+        <div><small>${esc(as)}</small><div class="pr-st"><button data-pr-s="a-1" aria-label="moins">−</button><b>${d.a}</b><button data-pr-s="a1" aria-label="plus">+</button></div></div></div>
+        <p class="pr-w">${w==="n"?"Match nul":"Victoire de "+esc(w==="h"?hs:as)}</p>
+        <p class="pr-q">Bonus : ${esc(q.q)}</p><div class="pr-b">${q.opts.map(o=>`<button data-pr-b="${esc(o)}" aria-pressed="${d.b===o}">${esc(o)}</button>`).join("")}</div>
+        <button class="btn-main" data-pr-ok>Valider mon pronostic</button>`; }
+  }
+  return h+`</div>`;
+}
+function pronoClick(t){
+  const P=LS_.get("pronos",{}), next=nextMatch(MY_TEAM); if(!next) return false;
+  const s=t.closest("[data-pr-s]"), b=t.closest("[data-pr-b]"), ok=t.closest("[data-pr-ok]"), ed=t.closest("[data-pr-edit]");
+  if(ed){ ui.prEdit=true; ui.pr=null; render(); return true; }
+  if(!ui.pr||ui.pr.j!==next.j) return false;
+  if(s){ const v=s.dataset.prS, k=v[0], d=+v.slice(1); ui.pr[k]=Math.max(0,Math.min(70,ui.pr[k]+d)); render(); return true; }
+  if(b){ ui.pr.b=b.dataset.prB; render(); return true; }
+  if(ok){ const ko=kickoff(next); if(ko&&Date.now()>=ko.getTime()){ ui.prEdit=false; render(); return true; }
+    const d=ui.pr, w=d.h>d.a?"h":d.h<d.a?"a":"n";
+    P[next.j]={moi:{w,h:d.h,a:d.a,b:d.b,at:Date.now()},app:pronoApp(next)}; LS_.set("pronos",P); ui.prEdit=false; ui.pr=null; render(); return true; }
+  return false;
+}
+
+// ---- petites surprises
+const calme=()=>{ try{ return matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){ return false; } };
+function fete(kind){
+  if(calme()) return; const box=document.createElement("div"); box.className="fx "+kind; box.setAttribute("aria-hidden","true");
+  const cols=kind==="pluie"?["#7aa7d9","#a9c6e8"]:["#FF6D00","#ffcf5a","#fff","#1fd17a","var(--team,#3D6BF2)"];
+  for(let i=0;i<(kind==="pluie"?60:90);i++){ const p=document.createElement("i"); p.style.left=Math.random()*100+"%"; p.style.background=cols[i%cols.length];
+    p.style.animationDelay=(Math.random()*0.9)+"s"; p.style.animationDuration=(kind==="pluie"?0.9+Math.random()*0.6:1.8+Math.random()*1.4)+"s"; box.appendChild(p); }
+  document.body.appendChild(box); setTimeout(()=>box.remove(),4200);
+}
+function surprises(){
+  const {page,arg}=route(), last=myMatches().pop(); if(!last) return;
+  if(page==="home"){ const vu=LS_.get("fete",0); if(vu!==last.j){ LS_.set("fete",last.j); const s=last.home===MY_TEAM?"h":"a", d=s==="h"?last.res.h-last.res.a:last.res.a-last.res.h; if(d>0) fete("confettis"); else if(d<0) fete("pluie"); } }
+  if(page==="duel"){ const m=D.cal.find(x=>String(x.j)===String(arg)&&x.res&&(x.home===MY_TEAM||x.away===MY_TEAM)); if(m&&!ui["vib"+m.j]){ ui["vib"+m.j]=1; const s=m.home===MY_TEAM?"h":"a", d=s==="h"?m.res.h-m.res.a:m.res.a-m.res.h; if(d===1&&navigator.vibrate&&!calme()) navigator.vibrate([70,50,70,50,140]); } }
+}
+document.addEventListener("click",e=>{
+  const t=e.target; if(!t.closest) return;
+  if(t.closest("[data-sv]")){ ui.sv=(ui.sv||0)+1; render(); return; }
+  if(t.closest("[data-pr-s],[data-pr-b],[data-pr-ok],[data-pr-edit]")){ if(pronoClick(t)) { e.preventDefault(); } return; }
+  const lg=t.closest(".top .logo, .brand .logo"); if(lg&&!calme()){ lg.classList.remove("spin"); void lg.offsetWidth; lg.classList.add("spin"); }
+});
 
 /* ============ ÉVÉNEMENTS ============ */
 document.addEventListener("click",e=>{

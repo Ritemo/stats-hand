@@ -25,6 +25,7 @@ Appli (GitHub Pages)  ──►  téléphones des joueurs, parents, supporters
 1. Après chaque match, la table de marque publie la **feuille de match** sur le site de la fédération.
 2. Le **robot** la lit : score, buteurs, tirs, arrêts, exclusions, déroulé minute par minute. Il écrit tout dans le Google Sheets de l'équipe concernée, puis envoie les notifications.
 3. L'**appli** relit le Google Sheets à chaque ouverture. Les débriefs, articles, pronostics (chances de gagner en %) et projections sont calculés directement dans l'appli, à partir de ces données.
+   Pour le plaisir : « Le saviez-vous ? » (stats étonnantes recalculées à chaque ouverture), « Bats l'appli » (pronostic du match de Rioz contre celui de l'appli, gardé sur le téléphone) et quelques surprises (confettis après une victoire, logo qui tourne quand on le touche).
    Parmi ces calculs : le **bilan discipline** (buts gagnés ou perdus quand les effectifs sont inégaux, réel et théorique d'après le nombre d'exclusions provoquées et subies) et les **notes sur 10** des joueurs (d'après les feuilles de match seulement, sans la défense ni les passes ; buts légèrement pondérés par la défense adverse, gardiens comparés au % attendu légèrement ajusté à cet adversaire, bonus de victoire et malus de défaite modérés de 0,2).
 
 ## 2. Où sont les choses
