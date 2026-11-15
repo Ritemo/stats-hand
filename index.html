@@ -1396,7 +1396,7 @@ function keeperSheet(k){
     <div class="stat"><div class="num">${rk?ordM(rk):"-"}</div><div class="l">${cap1(g)} du championnat</div></div>
     <div class="stat"><div class="num">${k.matchs}</div><div class="l">Matchs</div></div>
     ${best?`<div class="stat"><div class="num">${best.sv}</div><div class="l">Meilleur match (J${best.j})</div></div>`:""}
-    ${(()=>{ const o=noteMoy(k.club,k.name); return o?`<div class="stat"><div class="num">${fmt1(o.avg)}</div><div class="l">Note moyenne (${o.n} match${o.n>1?"s":""})</div></div>`:""; })()}
+    ${(()=>{ const o=noteMoy(k.club,k.name); return o?`<div class="stat"><div class="num">${fmt1(o.sai)}</div><div class="l">Note de saison (${o.n} match${o.n>1?"s":""})${tipI(`Moitié moyenne des notes (${fmt1(o.avg)}), pour que les très bons et très mauvais matchs comptent, moitié note médiane (${fmt1(o.med)}), pour récompenser la régularité.`)}</div></div>`:""; })()}
     ${pctAll!=null?`<div class="stat"><div class="num">${fmtPct(pctAll)}</div><div class="l">Arrêts sur tirs cadrés${solo.length<L.length?` (${solo.length} match${solo.length>1?"s":""} où les buts encaissés ${DEB_F?"par elle":"par lui"} sont connus)`:""}</div></div>`:""}
   </div>${L.length?`<div class="chart" style="margin-top:14px"><h3>Match par match</h3><div class="pm">${rows}</div>
     <div class="legend"><span>Arrêts d'après le déroulé des feuilles de match. % d'arrêts : arrêts / (arrêts + buts encaissés), seulement quand ${DEB_F?"elle était seule":"il était seul"} dans le but.</span></div></div>`
@@ -2071,7 +2071,7 @@ function playerSheet(p){
     <div class="stat"><div class="num">${fmtPct(pct(p.buts,mates.reduce((s,x)=>s+x.buts,0)))}</div><div class="l">Part des buts de l'équipe</div></div>
     ${D.hasM?`<div class="stat"><div class="num">${p.b7}</div><div class="l">Buts sur 7 m</div></div>`:""}${p.red?`<div class="stat"><div class="num">${p.red}</div><div class="l">Carton${p.red>1?"s":""} rouge${p.red>1?"s":""}</div></div>`:""}
     ${p.m?`<div class="stat"><div class="num">${p.m}</div><div class="l">Matchs joués</div></div><div class="stat"><div class="num">${fmt1(p.buts/p.m)}</div><div class="l">Buts par match</div></div>`:""}
-    ${(()=>{ const o=noteMoy(p.club,p.name); return o?`<div class="stat"><div class="num">${fmt1(o.avg)}</div><div class="l">Note moyenne (${o.n} match${o.n>1?"s":""})</div></div>`:""; })()}
+    ${(()=>{ const o=noteMoy(p.club,p.name); return o?`<div class="stat"><div class="num">${fmt1(o.sai)}</div><div class="l">Note de saison (${o.n} match${o.n>1?"s":""})${tipI(`Moitié moyenne des notes (${fmt1(o.avg)}), pour que les très bons et très mauvais matchs comptent, moitié note médiane (${fmt1(o.med)}), pour récompenser la régularité.`)}</div></div>`:""; })()}
   </div>${shotsHTML(p)}${evoPlayerHTML(p)}${playerMatchesHTML(p)}${noteTip(`Stats individuelles hors journées non détaillées.`)}`);
 }
 
@@ -2231,7 +2231,9 @@ function notesSaison(){
     ["h","a"].forEach(s=>n[s].forEach(p=>{ if(p.note==null) return; const k=p.club+"|"+nnP(p.name);
       if(!by.has(k)) by.set(k,{club:p.club,name:p.name,gk:0,L:[]}); const o=by.get(k); o.L.push({j:m.j,m,note:p.note,p}); if(p.gk) o.gk++; })); });
   const all=[...by.values()].map(o=>{ const sum=o.L.reduce((s,x)=>s+x.note,0);
-    return {...o,gk:o.gk*2>o.L.length,n:o.L.length,avg:sum/o.L.length,idx:(sum+5.5*2)/(o.L.length+2)}; });   // idx : pour classer, peu de matchs = moyenne ramenée vers 5,5
+    // note de saison : moitié moyenne (les très bons et très mauvais matchs comptent), moitié médiane (la régularité compte)
+    const v=o.L.map(x=>x.note).sort((a,b)=>a-b), k=v.length, med=k%2?v[(k-1)/2]:(v[k/2-1]+v[k/2])/2, avg=sum/k, sai=(avg+med)/2;
+    return {...o,gk:o.gk*2>k,n:k,avg,med,sai,idx:(sai*k+5.5*2)/(k+2)}; });   // idx : pour classer, peu de matchs = note ramenée vers 5,5
   const r={all,nJ:Js.size,js:[...Js].sort((a,b)=>a-b),min:Math.max(1,Math.min(3,Math.ceil(Js.size/2)))}; C.set("saison",r); return r;
 }
 function noteDe(club,name,j){ const m=D.cal.find(x=>x.j===j&&x.res&&(x.home===club||x.away===club)); if(!m) return null;
@@ -2242,8 +2244,8 @@ function noteRow(o,{rank=null,showClub=true,tag=true}={}){
   return `<button class="row${showClub&&o.club===MY_TEAM?" mine":""}" ${w.attr}>${rank!=null?`<span class="rank ${rank===1?"p1":""}">${rank}</span>`:""}
     <span class="who"><span class="n">${nameHTML(w.name)}${tag&&o.gk?` <small class="gk-t">${G_("gardien","gardienne")}</small>`:""}</span>
     <span class="c">${showClub?esc(shortClub(o.club))+", ":""}${o.n} match${o.n>1?"s":""} ${o.n>1?"notés":"noté"}, meilleure note ${fmtN(Math.max(...o.L.map(x=>x.note)))}</span>
-    <span class="meter"><i style="width:${Math.round(10*o.avg)}%"></i></span></span>
-    <span class="val"><span class="num">${fmt1(o.avg)}</span><span class="s">moyenne</span></span></button>`;
+    <span class="meter"><i style="width:${Math.round(10*o.sai)}%"></i></span></span>
+    <span class="val"><span class="num">${fmt1(o.sai)}</span><span class="s">saison</span></span></button>`;
 }
 function septRow(p){
   const w=noteWho(p), m=p.m, adv=m.home===p.club?m.away:m.home;
@@ -2261,8 +2263,8 @@ function pNotes(){
   if(!S.nJ) return pageHead(G_("Joueurs","Joueuses"),false)+`<main>${h}<div class="empty">Les notes apparaîtront avec les premières feuilles de match détaillées.</div>${stamp()}</main>`;
   const GB=G_("Gardiens","Gardiennes"), CH=G_("Joueurs de champ","Joueuses de champ");
   h+=chips("notes",[["top",CH],["gb",GB],["club","Par club"],["sept","Les 7 de la journée"]]);
-  const pool=S.all.filter(o=>o.n>=S.min), srt=(a,b)=>b.idx-a.idx||b.avg-a.avg, fC=pool.filter(o=>!o.gk), fG=pool.filter(o=>o.gk);
-  const crit=`Moyenne des notes de la saison, ${S.min>1?`${G_("notés","notées")} sur au moins ${S.min} matchs`:G_("notés","notées")}.`;
+  const pool=S.all.filter(o=>o.n>=S.min), srt=(a,b)=>b.idx-a.idx||b.sai-a.sai, fC=pool.filter(o=>!o.gk), fG=pool.filter(o=>o.gk);
+  const crit=`Note de saison : moitié moyenne des notes (les très bons et très mauvais matchs comptent), moitié note médiane (la régularité compte). Avec peu de matchs, le classement la ramène un peu vers 5,5. ${S.min>1?`${cap1(G_("joueurs","joueuses"))} ${G_("notés","notées")} sur au moins ${S.min} matchs.`:""}`;
   if(ui.notes==="top"||ui.notes==="gb"){
     const gb=ui.notes==="gb", top=ranked((gb?fG:fC).sort(srt).slice(0,gb?12:20),o=>o.idx.toFixed(3));
     h+=`<h2>${gb?`Top ${top.length} ${GB.toLowerCase()}`:`Top 20 ${CH.toLowerCase()}`}</h2>${top.length?`<div class="list">${top.map(o=>noteRow(o,{rank:o.rank,tag:false})).join("")}</div>`:`<div class="empty">Pas encore assez de matchs notés.</div>`}${noteTip(`${crit}${gb?` Les ${GB.toLowerCase()} sont ${G_("notés","notées")} sur leurs arrêts comparés à la moyenne du championnat, pas comparables directement aux ${CH.toLowerCase()}.`:""}`)}`;
