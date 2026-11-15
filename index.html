@@ -2088,7 +2088,7 @@ function playerSheet(p){
    adverse ou entretient la sienne ; une exclusion pendant laquelle l'équipe encaisse coûte davantage. */
 const NOTE_CACHE=new Map(); let NOTE_AT=null;
 function ncache(){ if(NOTE_AT!==D.at){ NOTE_CACHE.clear(); NOTE_AT=D.at; } return NOTE_CACHE; }   // vidé à chaque rechargement des données
-const NOTE_P={fb:4.8,fa:4.8,fs:6,gb:5.25,ga:4.4,gs:5,gv:3.4,cap:25};   // cap : au-delà de 25 tirs (un match normal), plus de tirs ne rapporte plus rien ;   // gv : gardiens notés sur le % d'arrêts (15/11/2026, avant : arrêts au-dessus de la moyenne, qui avantageait les gardiens très sollicités)   // base, amplitude et douceur de l'échelle (champ, gardiens)
+const NOTE_P={fb:4.8,fa:4.8,fs:6,gb:5.25,ga:4.4,gs:5,gv:3.4,cap:25,rv:0.3};   // cap : au-delà de 25 tirs (un match normal), plus de tirs ne rapporte plus rien ;   // gv : gardiens notés sur le % d'arrêts (15/11/2026, avant : arrêts au-dessus de la moyenne, qui avantageait les gardiens très sollicités)   // base, amplitude et douceur de l'échelle (champ, gardiens)
 function noteArrondi(x){ return Math.round(Math.max(2,Math.min(9.5,x))*2)/2; }
 function moyArretsChamp(){
   if(ncache().has("pct")) return ncache().get("pct");
@@ -2147,7 +2147,7 @@ function notesMatch(m){
   const pct=moyArretsChamp();
   ["h","a"].forEach(s=>{
     const club=s==="h"?m.home:m.away, my=s==="h"?m.res.h:m.res.a, op=s==="h"?m.res.a:m.res.h;
-    const res=0;      // plus de bonus de victoire : le résultat est collectif (15/11/2026)
+    const res=my>op?NOTE_P.rv:my<op?-NOTE_P.rv:0;      // bonus de victoire / malus de défaite, volontairement modéré
     const force=0, adv=s==="h"?m.away:m.home, cD=coefDefAdv(adv), pA=pctAttendu(adv,pct);   // force de l'adversaire : coefficient sur les buts, % d'arrêts attendu
     // ---- gardiens : buts encaissés attribués au gardien en place
     const gk=new Map(); const svs=ev.filter(e=>e.c==="A"&&e.s===s&&e.n);
