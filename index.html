@@ -2088,7 +2088,7 @@ function playerSheet(p){
    adverse ou entretient la sienne ; une exclusion pendant laquelle l'équipe encaisse coûte davantage. */
 const NOTE_CACHE=new Map(); let NOTE_AT=null;
 function ncache(){ if(NOTE_AT!==D.at){ NOTE_CACHE.clear(); NOTE_AT=D.at; } return NOTE_CACHE; }   // vidé à chaque rechargement des données
-const NOTE_P={fb:4.8,fa:4.8,fs:6,gb:5.25,ga:4.4,gs:5,gv:3.4,cap:25,rv:0.3};   // cap : au-delà de 25 tirs (un match normal), plus de tirs ne rapporte plus rien ;   // gv : gardiens notés sur le % d'arrêts (15/11/2026, avant : arrêts au-dessus de la moyenne, qui avantageait les gardiens très sollicités)   // base, amplitude et douceur de l'échelle (champ, gardiens)
+const NOTE_P={fb:4.8,fa:4.8,fs:6,gb:5.25,ga:4.4,gs:5,gv:3.4,cap:25,rv:0.2};   // cap : au-delà de 25 tirs (un match normal), plus de tirs ne rapporte plus rien ;   // gv : gardiens notés sur le % d'arrêts (15/11/2026, avant : arrêts au-dessus de la moyenne, qui avantageait les gardiens très sollicités)   // base, amplitude et douceur de l'échelle (champ, gardiens)
 function noteArrondi(x){ return Math.round(Math.max(2,Math.min(9.5,x))*2)/2; }
 function moyArretsChamp(){
   if(ncache().has("pct")) return ncache().get("pct");
