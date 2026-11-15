@@ -2354,6 +2354,54 @@ function saviezVous(){
     if(L.length<3) return; const seuil=[...L.map(x=>x.b)].sort((a,b)=>b-a)[Math.min(2,L.length-1)];
     const top=L.filter(x=>x.b>=seuil), reste=L.filter(x=>x.b<seuil); if(seuil>=5&&top.length>=3&&top.every(x=>x.w>0)&&reste.some(x=>x.w<=0)&&F.filter(f=>f.startsWith("Quand ")).length<1) F.push(`Quand ${esc(nmFull(p.name))} marque ${seuil} buts ou plus, ${sT} gagne : ${top.length} sur ${top.length} cette saison.`);
   });
+  // ---- encore des vignettes : d'abord Rioz, puis toute la poule
+  const pj=(D.evo&&D.evo.pj)||{}, J=(m,c,n)=>{ const d=pj[c+"|"+n]; return d?{b:d.b[m.j-1],t:d.t[m.j-1]}:null; };
+  const allRes=D.cal.filter(m=>m.res), adv2=(m,c)=>shortClub(m.home===c?m.away:m.home);
+  const myGoals=ms.reduce((a,m)=>a+(side(m)==="h"?m.res.h:m.res.a),0), myConc=ms.reduce((a,m)=>a+(side(m)==="h"?m.res.a:m.res.h),0);
+  // plus large victoire
+  const big=ms.map(m=>({m,d:side(m)==="h"?m.res.h-m.res.a:m.res.a-m.res.h})).sort((a,b)=>b.d-a.d)[0];
+  if(big&&big.d>=8) F.push(`Plus large victoire de ${sT} : +${big.d} contre ${esc(adv(big.m))} (${big.m.res.h}-${big.m.res.a}, J${big.m.j}). Un match à oublier très vite, côté ${esc(adv(big.m))}.`);
+  // un but toutes les ... minutes
+  if(myGoals>=40) { const sec=Math.round(ms.length*3600/myGoals); F.push(`${sT} marque en moyenne un but toutes les ${Math.floor(sec/60)} min ${String(sec%60).padStart(2,"0")}. Le temps d'aller chercher un café, et le score a déjà changé.`); }
+  // nombre de buteurs différents
+  const buteurs=D.players.filter(p=>p.club===T&&p.buts>0); if(buteurs.length>=8) F.push(`${buteurs.length} ${G_("joueurs différents ont","joueuses différentes ont")} déjà marqué pour ${sT} cette saison. Difficile de savoir qui surveiller.`);
+  // record individuel sur un match, et match parfait au tir
+  let rec=null, parfait=null; ms.forEach(m=>D.players.filter(p=>p.club===T).forEach(p=>{ const x=J(m,T,p.name); if(!x||x.b==null) return;
+    if(!rec||x.b>rec.b) rec={b:x.b,p,m}; if(x.t&&x.t>=6&&x.b===x.t&&(!parfait||x.b>parfait.b)) parfait={b:x.b,p,m}; }));
+  if(rec&&rec.b>=8) F.push(`Record individuel de ${sT} sur un match : ${esc(nmFull(rec.p.name))}, ${rec.b} buts contre ${esc(adv(rec.m))} (J${rec.m.j}). Ce soir-là, il fallait ${G_("le","la")} marquer à deux.`);
+  if(parfait) F.push(`Match parfait : ${esc(nmFull(parfait.p.name))}, ${parfait.b} tirs, ${parfait.b} buts contre ${esc(adv(parfait.m))} (J${parfait.m.j}). 100 % de réussite, zéro excuse pour ${G_("le gardien","la gardienne")} d'en face.`);
+  // meilleur pourcentage au tir sur la saison
+  const adroit=D.players.filter(p=>p.club===T&&p.tirs>=25).sort((a,b)=>b.buts/b.tirs-a.buts/a.tirs)[0];
+  if(adroit) F.push(`${G_("Le plus adroit","La plus adroite")} de ${sT} : ${esc(nmFull(adroit.name))}, ${Math.round(100*adroit.buts/adroit.tirs)} % de réussite (${adroit.buts} buts sur ${adroit.tirs} tirs). Quand ${G_("il","elle")} tire, ça rentre.`);
+  // abonnés du banc
+  const exc=D.players.filter(p=>p.club===T&&p.excl>=3).sort((a,b)=>b.excl-a.excl);
+  if(exc.length) F.push(`${G_("Les abonnés","Les abonnées")} du banc des pénalités : ${exc.slice(0,2).map(p=>`${esc(nmFull(p.name))} (${p.excl} exclusions)`).join(" et ")}. Le chrono des 2 minutes ${exc.length>1?"les":G_("le","la")} connaît par cœur.`);
+  else if(ms.length>=4) F.push(`Aucun ${G_("joueur","joueuse")} de ${sT} n'a encore pris plus de 2 exclusions cette saison. Les arbitres s'ennuient.`);
+  // mi-temps : quand ça se joue
+  let mt1=0, mt2=0; ms.forEach(m=>{ if(m.info&&m.info.mt){ const s=side(m), a=s==="h"?m.info.mt[0]:m.info.mt[1], tot=s==="h"?m.res.h:m.res.a; mt1+=a; mt2+=tot-a; } });
+  if(mt1+mt2>=60&&Math.abs(mt1-mt2)>=0.08*(mt1+mt2)) F.push(mt2>mt1?`${sT} marque davantage après la pause : ${mt2} buts en 2e mi-temps contre ${mt1} en 1re. Le discours à la mi-temps doit être bon.`:`${sT} frappe d'entrée : ${mt1} buts en 1re mi-temps contre ${mt2} en 2e. Les adversaires sont souvent cuits avant la pause.`);
+  // série en cours
+  const sk=streak(T); if(sk&&sk.last==="V"&&sk.same>=3) F.push(`${sk.same} victoires de suite pour ${sT}. La dernière défaite commence à dater.`);
+  // avance au classement
+  const st=D.standings, me=st.find(x=>x.club===T);
+  if(me&&me.rank===1&&st[1]) F.push(`${sT} est en tête avec ${me.pts-st[1].pts} point${me.pts-st[1].pts>1?"s":""} d'avance sur ${esc(shortClub(st[1].club))}. Et le meilleur goal average de la poule : ${me.diff>0?"+":""}${me.diff}.`);
+  // supériorité numérique
+  const C=D.clubs.find(x=>x.name===T); if(C&&C.num&&C.num.sup.n>=8){ const d=C.num.sup.gf-C.num.sup.ga; F.push(`À ${G_("un de plus","une de plus")}, ${sT} fait ${d>=0?"+":""}${d} en ${C.num.sup.n} supériorités numériques. ${d>0?"Chaque exclusion adverse se paie.":"Il reste du travail sur les supériorités."}`); }
+  // le pronostic
+  const pr=ms.map(m=>{ const o=oddsOf(m); return o?(side(m)==="h"?o.p1:o.p2):null; }).filter(x=>x!=null);
+  if(pr.length>=4){ const moy=pr.reduce((a,x)=>a+x,0)/pr.length; F.push(`Avant ses matchs, l'appli donnait en moyenne ${Math.round(moy*100)} % de chances de victoire à ${sT}. Résultat : ${ms.filter(m=>(side(m)==="h"?m.res.h-m.res.a:m.res.a-m.res.h)>0).length} victoire${ms.length>1?"s":""} en ${ms.length} matchs.`); }
+  // ---- toute la poule
+  const top=[...D.players].filter(p=>p.m>0).sort((a,b)=>b.buts-a.buts)[0];
+  if(top) F.push(`${top.club===T?`${G_("Le meilleur buteur","La meilleure buteuse")} de la poule joue à ${sT}`:`${G_("Meilleur buteur","Meilleure buteuse")} de la poule`} : ${esc(nmFull(top.name))}${top.club===T?"":` (${esc(shortClub(top.club))})`}, ${top.buts} buts en ${top.m} matchs.`);
+  let recL=null; allRes.forEach(m=>[m.home,m.away].forEach(c=>D.players.filter(p=>p.club===c).forEach(p=>{ const x=J(m,c,p.name); if(x&&x.b!=null&&(!recL||x.b>recL.b)) recL={b:x.b,p,m,c}; })));
+  if(recL&&recL.b>=10&&!(rec&&recL.p===rec.p&&recL.m===rec.m)) F.push(`Record de buts sur un match dans la poule : ${esc(nmFull(recL.p.name))} (${esc(shortClub(recL.c))}), ${recL.b} buts contre ${esc(adv2(recL.m,recL.c))} (J${recL.m.j}).`);
+  const dom=allRes.filter(m=>m.res.h>m.res.a).length, nul=allRes.filter(m=>m.res.h===m.res.a).length;
+  if(allRes.length>=20) F.push(`Dans la poule, l'équipe qui reçoit gagne ${Math.round(100*dom/allRes.length)} % des matchs.${nul?` Et seulement ${nul} match${nul>1?"s":""} nul${nul>1?"s":""} en ${allRes.length} rencontres : ici, on ne partage pas.`:" Aucun match nul : ici, on ne partage pas."}`);
+  const fou=[...allRes].sort((a,b)=>(b.res.h+b.res.a)-(a.res.h+a.res.a))[0]; if(fou&&!(maxBut&&fou===maxBut.m)) F.push(`Match le plus fou de la poule : ${esc(shortClub(fou.home))} - ${esc(shortClub(fou.away))}, ${fou.res.h}-${fou.res.a} (J${fou.j}). ${fou.res.h+fou.res.a} buts, ${G_("les gardiens","les gardiennes")} s'en souviennent.`);
+  const surp=allRes.filter(m=>m.j>=3).map(m=>{ const o=oddsOf(m); if(!o) return null; const w=m.res.h>m.res.a?o.p1:m.res.h<m.res.a?o.p2:null; return w==null?null:{m,p:w}; }).filter(Boolean).sort((a,b)=>a.p-b.p)[0];
+  if(surp&&surp.p<0.3){ const w=surp.m.res.h>surp.m.res.a?surp.m.home:surp.m.away; F.push(`Plus grosse surprise de la saison : ${esc(shortClub(w))}, vainqueur avec seulement ${Math.round(surp.p*100)} % de chances selon l'appli (J${surp.m.j}, ${surp.m.res.h}-${surp.m.res.a}). Les pronostics, ça reste des pronostics.`); }
+  const mur=[...D.keepers].filter(x=>x.matchs>=3).sort((a,b)=>b.arrets/b.matchs-a.arrets/a.matchs)[0];
+  if(mur&&mur.club!==T) F.push(`${G_("Le gardien","La gardienne")} le plus ${G_("sollicité","sollicitée")} de la poule : ${esc(nmFull(mur.name))} (${esc(shortClub(mur.club))}), ${fmt1(mur.arrets/mur.matchs)} arrêts par match. ${G_("Il","Elle")} ne doit pas s'ennuyer.`);
   const k=D.keepers.filter(x=>x.club===T).sort((a,b)=>b.arrets-a.arrets)[0];
   if(k&&k.arrets>=30&&k.matchs) F.push(`${esc(nmFull(k.name))} a déjà fait ${k.arrets} arrêts cette saison : un arrêt toutes les ${Math.round(60*k.matchs/k.arrets)} minutes de jeu en moyenne. ${G_("Les attaquants adverses commencent à le connaître","Les attaquantes adverses commencent à la connaître")}.`);
   return F;
