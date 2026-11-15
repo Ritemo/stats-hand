@@ -1,1 +1,1 @@
-14/11/2026 23:04 |  |  | RIEN À FAIRE | mode reel, aucune nouvelle feuille
+15/11/2026 06:35 |  |  | ERREUR | onglet _Matchs : APIError: [429]: Quota exceeded for quota metric 'Read requests' and limit 'Read requests per minute per user' of service 'sheets.googleapis.com' for consumer 'project_number:561063519407'.
