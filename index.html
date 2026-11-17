@@ -2255,8 +2255,11 @@ function notesSaison(){
     const isGk=o.gk*2>k; let saiF=sai, cum=null;
     if(isGk){ const sv=o.L.reduce((a,x)=>a+(x.p.sv||0),0), ti=o.L.reduce((a,x)=>a+(x.p.sv||0)+(x.p.conc||0),0);
       if(ti){ const pts=NOTE_P.gv*(sv/ti-moyArretsChamp())*Math.sqrt(Math.min(ti,NOTE_P.cap||25)); cum={sv,ti,note:NOTE_P.gb+NOTE_P.ga*Math.tanh(pts/NOTE_P.gs)}; saiF=(sai+cum.note)/2; } }   // gardiens : le % cumulé est plus fiable qu'une moyenne de matchs
-    const adj=(saiF*k+5.5*2)/(k+2);   // note de saison affichée : ajustée au nombre de matchs (comme si on ajoutait 2 matchs à 5,5), moins significative avec peu de matchs
-    return {...o,gk:isGk,n:k,avg,med,brut:saiF,sai:adj,cum,idx:adj}; });
+    return {...o,gk:isGk,n:k,avg,med,brut:saiF,cum}; });
+  // note de saison affichée : ajustée au nombre de matchs (comme si on ajoutait 2 matchs à 5,5), moins significative avec peu de matchs.
+  // Gardiens : les matchs comptent par rapport au gardien qui en a joué le plus (un gardien ne joue presque jamais tous les matchs).
+  const maxCh=Math.max(1,...all.filter(o=>!o.gk).map(o=>o.n)), maxGk=Math.max(1,...all.filter(o=>o.gk).map(o=>o.n));
+  all.forEach(o=>{ o.nEff=o.gk?Math.min(maxCh,o.n*maxCh/maxGk):o.n; o.sai=(o.brut*o.nEff+5.5*2)/(o.nEff+2); o.idx=o.sai; });
   const r={all,nJ:Js.size,js:[...Js].sort((a,b)=>a-b),min:Math.max(1,Math.min(3,Math.ceil(Js.size/2)))}; C.set("saison",r); return r;
 }
 function noteDe(club,name,j){ const m=D.cal.find(x=>x.j===j&&x.res&&(x.home===club||x.away===club)); if(!m) return null;
