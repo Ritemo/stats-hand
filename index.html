@@ -1413,7 +1413,7 @@ function keeperSheet(k){
     <div class="stat"><div class="num">${rk?ordM(rk):"-"}</div><div class="l">${cap1(g)} du championnat</div></div>
     <div class="stat"><div class="num">${k.matchs}</div><div class="l">Matchs</div></div>
     ${best?`<div class="stat"><div class="num">${best.sv}</div><div class="l">Meilleur match (J${best.j})</div></div>`:""}
-    ${(()=>{ const o=noteMoy(k.club,k.name); return o?`<div class="stat"><div class="num">${fmt1(o.sai)}</div><div class="l">Note de saison (${o.n} match${o.n>1?"s":""})${tipI(`Moitié moyenne des notes (${fmt1(o.avg)}), pour que les très bons et très mauvais matchs comptent, moitié note médiane (${fmt1(o.med)}), pour récompenser la régularité.`)}</div></div>`:""; })()}
+    ${(()=>{ const o=noteMoy(k.club,k.name); return o?`<div class="stat"><div class="num">${fmt1(o.sai)}</div><div class="l">Note de saison (${o.n} match${o.n>1?"s":""})${tipI(o.cum?`Moitié notes des matchs (moyenne ${fmt1(o.avg)}, médiane ${fmt1(o.med)}), moitié pourcentage d'arrêts cumulé sur la saison (${fmtPct(o.cum.sv/o.cum.ti)}, ${o.cum.sv} arrêts sur ${o.cum.ti} tirs), plus fiable qu'une moyenne de matchs.`:`Moitié moyenne des notes (${fmt1(o.avg)}), moitié note médiane (${fmt1(o.med)}).`)}</div></div>`:""; })()}
     ${pctAll!=null?`<div class="stat"><div class="num">${fmtPct(pctAll)}</div><div class="l">Arrêts sur tirs cadrés${solo.length<L.length?` (${solo.length} match${solo.length>1?"s":""} où les buts encaissés ${DEB_F?"par elle":"par lui"} sont connus)`:""}</div></div>`:""}
   </div>${L.length?`<div class="chart" style="margin-top:14px"><h3>Match par match</h3><div class="pm">${rows}</div>
     <div class="legend"><span>Arrêts d'après le déroulé des feuilles de match. % d'arrêts : arrêts / (arrêts + buts encaissés), seulement quand ${DEB_F?"elle était seule":"il était seul"} dans le but.</span></div></div>`
@@ -1900,7 +1900,7 @@ function shotsHTML(p){
    Note de force par équipe = moindres carrés sur les écarts de buts, adversaire pris en compte,
    tirée vers la moyenne en début de saison. Écart prévu = note dom. - note ext. + avantage domicile.
    L'écart réel varie autour de la prévision (loi normale) : on en tire les probabilités 1 / N / 2. */
-const ODDS={home:1.5,shrink:1.5,sigmaMin:5.5,margin:1};   // margin 1 : cote = 1 / probabilité, sans marge de bookmaker (1,07 jusqu'au 09/11/2026)   // shrink 4 jusqu'au 09/11/2026 : écarts prévus trop prudents (audit J6)
+const ODDS={home:1.5,shrink:1.5,sigmaMin:5.5,margin:1,nul:0.6};   // nul 0.6 (17/11/2026) : nuls trop probables avant (5 % prévus, 1 sur 72 observé)   // margin 1 : cote = 1 / probabilité, sans marge de bookmaker (1,07 jusqu'au 09/11/2026)   // shrink 4 jusqu'au 09/11/2026 : écarts prévus trop prudents (audit J6)
 const oddsCache={};
 function modelBefore(j){
   if(oddsCache[j]) return oddsCache[j];
@@ -1923,7 +1923,7 @@ function oddsOf(m){
   const M=modelBefore(m.j); if(!M) return null;
   const d=(M.r[m.home]||0)-(M.r[m.away]||0)+ODDS.home, s=M.sigma;
   // planchers : même un gros favori perd parfois (1 surprise sur 28 matchs avec un favori à plus de 80 % sur le début de saison)
-  let p1=Math.max(0.03,1-Phi((0.5-d)/s)), pn=Math.max(0.02,Phi((0.5-d)/s)-Phi((-0.5-d)/s)), p2=Math.max(0.03,Phi((-0.5-d)/s));
+  let p1=Math.max(0.03,1-Phi((0.5-d)/s)), pn=Math.max(0.01,(ODDS.nul??1)*(Phi((0.5-d)/s)-Phi((-0.5-d)/s))), p2=Math.max(0.03,Phi((-0.5-d)/s));
   const T=p1+pn+p2; p1/=T; pn/=T; p2/=T;
   const c=p=>Math.max(1.01,1/(p*ODDS.margin));
   return {d,p1,pn,p2,c1:c(p1),cn:c(pn),c2:c(p2),fav:p1>=p2?"h":"a"};
@@ -2110,7 +2110,7 @@ function noteArrondi(x){ return Math.round(Math.max(2,Math.min(9.5,x))*2)/2; }
 function moyArretsChamp(){
   if(ncache().has("pct")) return ncache().get("pct");
   let a=0,b=0; D.cal.filter(m=>m.res&&m.info&&m.info.ev).forEach(m=>{ const ev=m.info.ev;
-    ["h","a"].forEach(s=>{ const sv=ev.filter(e=>e.c==="A"&&e.s===s&&e.n).length; if(sv){ a+=sv; b+=sv+(s==="h"?m.res.a:m.res.h); } }); });
+    ["h","a"].forEach(s=>{ const sv=ev.filter(e=>e.c==="A"&&e.s===s).length; if(sv&&ev.some(e=>e.n)){ a+=sv; b+=sv+(s==="h"?m.res.a:m.res.h); } }); });
   const p=b?a/b:0.3; ncache().set("pct",p); return p;
 }
 function forceEquipes(){
@@ -2118,7 +2118,7 @@ function forceEquipes(){
   const T={}; const t=c=>T[c]||(T[c]={m:0,gf:0,ga:0,cadF:0,butsF:0});
   D.cal.filter(m=>m.res).forEach(m=>{ const ev=(m.info&&m.info.ev)||[], named=ev.some(e=>e.n);
     [["h",m.home,m.res.h,m.res.a],["a",m.away,m.res.a,m.res.h]].forEach(([s,c,f,a])=>{ const x=t(c); x.m++; x.gf+=f; x.ga+=a;
-      if(named){ const svAdv=ev.filter(e=>e.c==="A"&&e.s!==s&&e.n).length; x.butsF+=f; x.cadF+=f+svAdv; } }); });
+      if(named){ const svAdv=ev.filter(e=>e.c==="A"&&e.s!==s).length; x.butsF+=f; x.cadF+=f+svAdv; } }); });
   const L=Object.values(T), gaL=L.reduce((a,x)=>a+x.ga,0)/Math.max(1,L.reduce((a,x)=>a+x.m,0));
   const conv=L.reduce((a,x)=>a+x.butsF,0)/Math.max(1,L.reduce((a,x)=>a+x.cadF,0));
   const r={T,gaL,conv}; C.set("force",r); return r;
@@ -2168,11 +2168,13 @@ function notesMatch(m){
     const force=0, adv=s==="h"?m.away:m.home, cD=coefDefAdv(adv), pA=pctAttendu(adv,pct);   // force de l'adversaire : coefficient sur les buts, % d'arrêts attendu
     // ---- gardiens : buts encaissés attribués au gardien en place
     const gk=new Map(); const svs=ev.filter(e=>e.c==="A"&&e.s===s&&e.n);
-    svs.forEach(e=>{ const n=nnP(e.n); if(!gk.has(n)) gk.set(n,{name:e.n,sv:0,conc:0}); gk.get(n).sv++; });
+    svs.forEach(e=>{ const n=nnP(e.n); if(!gk.has(n)) gk.set(n,{name:e.n,sv:0,conc:0,est:0}); gk.get(n).sv++; });
+    // arrêts sans nom sur la feuille : attribués au gardien qui était dans le but (celui de l'arrêt nommé le plus proche)
+    if(svs.length) ev.filter(e=>e.c==="A"&&e.s===s&&!e.n).forEach(u=>{ let best=null,dt=1e9; svs.forEach(e=>{ const d=Math.abs(e.t-u.t); if(d<dt){dt=d;best=e;} }); if(best){ const g=gk.get(nnP(best.n)); g.sv++; g.est++; } });
     const conc=ev.filter(e=>isG(e)&&e.s!==s);
     // correction manuelle (config.js, relaisGardiens) : gardien entré en cours de match, sans arrêt sur la feuille
     const rl=(APP.relaisGardiens||[]).find(r=>r.j===m.j&&(r.club||MY_TEAM)===club), rlN=rl?nnP(rl.nom):null, rlT=rl?rl.minute*60:0;
-    if(rl&&!gk.has(rlN)) gk.set(rlN,{name:rl.nom,sv:0,conc:0,relais:true});
+    if(rl&&!gk.has(rlN)) gk.set(rlN,{name:rl.nom,sv:0,conc:0,est:0,relais:true});
     if(gk.size){
       conc.forEach(g=>{
         if(rl&&g.t>=rlT){ gk.get(rlN).conc++; return; }
@@ -2182,10 +2184,10 @@ function notesMatch(m){
         const tirs=g.sv+g.conc, ecartPct=tirs?NOTE_P.gv*(g.sv/tirs-pA)*Math.sqrt(NOTE_P.cap?Math.min(tirs,NOTE_P.cap):tirs):0, pts=ecartPct+(gkImp.get(s+"|"+n)||0);   // % d'arrêts comparé à la moyenne ; le nombre de tirs ne fait que rendre ce % plus ou moins fiable
         const act=NOTE_P.ga*Math.tanh(pts/NOTE_P.gs), raw=NOTE_P.gb+act+res+force, note=noteArrondi(raw), gi=gkImp.get(s+"|"+n)||0;
         const why=[["Base",NOTE_P.gb,1],
-          [`${fmtPct(tirs?g.sv/tirs:0)} d'arrêts (${g.sv} sur ${tirs} tirs), contre ${fmtPct(pA)} attendus face à ${shortClub(adv)} (moyenne du championnat ${fmtPct(pct)}, légèrement ajustée à la réussite au tir de cet adversaire)`,ecartPct,0]];
+          [`${fmtPct(tirs?g.sv/tirs:0)} d'arrêts (${g.sv} sur ${tirs} tirs${g.est?`, dont ${g.est} arrêt${g.est>1?"s":""} sans nom sur la feuille, attribué${g.est>1?"s":""} au gardien en place`:""}), contre ${fmtPct(pA)} attendus face à ${shortClub(adv)} (moyenne du championnat ${fmtPct(pct)}, légèrement ajustée à la réussite au tir de cet adversaire)`,ecartPct,0]];
         if(gi) why.push(["Arrêts dans les moments chauds ou qui coupent une série adverse",gi,0]);
         why.push(["Bilan des arrêts, ramené sur la note",act,1]);
-        out[s].push({name:g.name,club,gk:true,note,sv:g.sv,conc:g.conc,pct:tirs?g.sv/tirs:null,why:noteWhyEnd(why,res,force,raw)}); });
+        out[s].push({name:g.name,club,gk:true,note,sv:g.sv,est:g.est||0,conc:g.conc,pct:tirs?g.sv/tirs:null,why:noteWhyEnd(why,res,force,raw)}); });
     }
     // ---- joueurs de champ
     Object.entries(pj).forEach(([key,d])=>{
@@ -2250,7 +2252,10 @@ function notesSaison(){
   const all=[...by.values()].map(o=>{ const sum=o.L.reduce((s,x)=>s+x.note,0);
     // note de saison : moitié moyenne (les très bons et très mauvais matchs comptent), moitié médiane (la régularité compte)
     const v=o.L.map(x=>x.note).sort((a,b)=>a-b), k=v.length, med=k%2?v[(k-1)/2]:(v[k/2-1]+v[k/2])/2, avg=sum/k, sai=(avg+med)/2;
-    return {...o,gk:o.gk*2>k,n:k,avg,med,sai,idx:(sai*k+5.5*2)/(k+2)}; });   // idx : pour classer, peu de matchs = note ramenée vers 5,5
+    const isGk=o.gk*2>k; let saiF=sai, cum=null;
+    if(isGk){ const sv=o.L.reduce((a,x)=>a+(x.p.sv||0),0), ti=o.L.reduce((a,x)=>a+(x.p.sv||0)+(x.p.conc||0),0);
+      if(ti){ const pts=NOTE_P.gv*(sv/ti-moyArretsChamp())*Math.sqrt(Math.min(ti,NOTE_P.cap||25)); cum={sv,ti,note:NOTE_P.gb+NOTE_P.ga*Math.tanh(pts/NOTE_P.gs)}; saiF=(sai+cum.note)/2; } }   // gardiens : le % cumulé est plus fiable qu'une moyenne de matchs
+    return {...o,gk:isGk,n:k,avg,med,sai:saiF,cum,idx:(saiF*k+5.5*2)/(k+2)}; });   // idx : pour classer, peu de matchs = note ramenée vers 5,5
   const r={all,nJ:Js.size,js:[...Js].sort((a,b)=>a-b),min:Math.max(1,Math.min(3,Math.ceil(Js.size/2)))}; C.set("saison",r); return r;
 }
 function noteDe(club,name,j){ const m=D.cal.find(x=>x.j===j&&x.res&&(x.home===club||x.away===club)); if(!m) return null;
