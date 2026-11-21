@@ -4,6 +4,8 @@
   "poule_url": "https://www.ffhandball.fr/competitions/saison-2026-2027-22/regional/m003-honneur-masculine-32524/poule-191000/",
   "journees": 22,
   "notre_equipe": "Pays Riolais HB",
+  "coupe_club": "2426",
+  "coupe_genre": "MASCULIN",
   "app_url": "https://ritemo.github.io/stats-hand/",
   "ntfy_topic": "prhb-honneur-r7k2q",
   "ntfy_topic_tous": "prhb-honneur-tous-r7k2q",

@@ -646,6 +646,11 @@ def main(cfg_path):
             maj_matchs(book, cfg, matchs, pdf_cache, now, journal)
         except Exception as e:
             journal.append([now, "", "", "ERREUR", f"onglet {MATCH_TAB} : {e}"])
+        try:      # matchs de coupe de Rioz : onglet à part, hors stats du championnat (voir coupes.py)
+            import coupes
+            coupes.maj_coupes(book, cfg, mode, ici, now, journal, fetch, fdm_url, parse_fdm, parse_deroule, salle_rencontre, notifier)
+        except Exception as e:
+            journal.append([now, "", "", "ERREUR", f"onglet _Coupes : {e}"])
         book.ensure(LIC_TAB, ["Licence", "Onglet", "Type", "Ligne", "Nom"]); book.append(LIC_TAB, new_lic)
     else:
         book.ensure(CTRL_TAB, ctrl_head); book.replace(CTRL_TAB, [ctrl_head] + ctrl)

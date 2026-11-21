@@ -1,30 +1,15 @@
-import re, json, html, requests, unicodedata
-UA = {"User-Agent": "Mozilla/5.0"}
-B = "https://www.ffhandball.fr/competitions/saison-2026-2027-22/"
-def comps(t):
-    for m in re.finditer(r'<smartfire-component([^>]*?)attributes="([^"]*)"', t):
-        n = re.search(r"name='([^']*)'", m.group(1))
-        try: yield (n.group(1) if n else "?"), json.loads(html.unescape(m.group(2)))
-        except Exception: pass
-def slug(s):
-    s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode().lower()
-    return re.sub(r"[^a-z0-9]+", "-", s).strip("-")
-t = requests.get(B + "coupe-de-france/", headers=UA, timeout=30).text
-menu = next(d for n, d in comps(t) if n == "competitions---competition-main-menu")
-for c in menu["competitions"]:
-    url = B + f"coupe-de-france/{slug(c['libelle'])}-{c['ext_competitionId']}/"
-    r = requests.get(url, headers=UA, timeout=30)
-    eqs = []; poules = []
-    for n, d in comps(r.text):
-        if n == "competitions---calendar-button": eqs = [e for e in d.get("equipes", []) if "RIOLAIS" in e.get("libelle", "").upper()]
-        if n == "competitions---poule-selector": poules = d.get("poules", [])
-    print("##", c["libelle"], r.status_code, url, "RIOZ:", eqs)
-    if not eqs: continue
-    for p in poules:
-        pu = url + f"poule-{p['ext_pouleId']}/"
-        t2 = requests.get(pu + "journee-1/", headers=UA, timeout=30).text
-        for n, d in comps(t2):
-            if n == "competitions---rencontre-list":
-                for x in d.get("rencontres", []):
-                    if "RIOLAIS" in (x["equipe1Libelle"] + x["equipe2Libelle"]).upper():
-                        print("  ", p["libelle"], pu, x["equipe1Libelle"], x.get("equipe1Score"), "-", x.get("equipe2Score"), x["equipe2Libelle"], x["date"], x.get("fdmCode"), x.get("ext_rencontreId"))
+import sys, os, json, datetime
+sys.path.insert(0, "robot-fdm/robot"); os.environ["NTFY_OFF"] = "1"
+import robot, coupes
+class FakeBook:
+    def __init__(s): s.t = {}
+    def read_all(s, tab): return s.t.get(tab)
+    def ensure(s, tab, h): s.t.setdefault(tab, [h])
+    def replace(s, tab, rows, raw=False): s.t[tab] = [[str(x) for x in r] for r in rows]
+for cfgp in ["config_honneur.json", "config_n3f.json"]:
+    cfg = json.load(open("robot-fdm/robot/" + cfgp)); b = FakeBook(); j = []
+    ici = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+    for passe in (1, 2):
+        coupes.maj_coupes(b, cfg, "reel", ici, ici.strftime("%d/%m/%Y %H:%M"), j, robot.fetch, robot.fdm_url, robot.parse_fdm, robot.parse_deroule, robot.salle_rencontre, robot.notifier)
+    print("####", cfgp, j)
+    for r in b.t["_Coupes"]: print(" ROW", r)
