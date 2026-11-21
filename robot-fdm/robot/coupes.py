@@ -39,7 +39,7 @@ def nom_coupe(lib):
 def nom_tour(phase, poule):
     """Phase « CDF REG MAS (3° TOUR) » et poule « TOURNOI 2 » -> « 3e tour (tournoi 2) »."""
     def norm(s):
-        s = re.sub(r"(\d+)\s*(°|ER|EME|E)\b", lambda m: m.group(1) + ("er" if m.group(1) == "1" else "e"), s.upper())
+        s = re.sub(r"(\d+)\s*(?:°|ER\b|EME\b|E\b)", lambda m: m.group(1) + ("er" if m.group(1) == "1" else "e"), s.upper())
         return s.lower().strip()
     m = re.search(r"\(([^)]*TOUR[^)]*)\)", phase or "")
     p = norm(poule or "")

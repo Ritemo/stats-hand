@@ -1,8 +1,0 @@
-name: Exploration (temporaire)
-on: { workflow_dispatch: {} }
-jobs:
-  x:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - run: pip install -r robot-fdm/robot/requirements.txt && python robot-fdm/explore/explore.py
