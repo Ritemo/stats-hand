@@ -106,6 +106,11 @@ Dépôt **stats-hand** > **Actions** > « Robot feuilles de match » > **Run wor
 ### Corriger une donnée
 Corriger directement dans le Google Sheets, dans l'onglet du club. Le robot n'écrit jamais dans une journée déjà remplie pour un club : une correction manuelle n'est pas écrasée. L'appli la prend en compte à la prochaine ouverture (Google met environ 5 minutes à republier).
 
+### Matchs de coupe (écran « Coupe »)
+Les matchs de coupe de Rioz (Coupe de France régionale, etc.) sont rangés à part, dans l'onglet `_Coupes` de chaque Sheets, rempli par le robot. Ils ne comptent dans **aucune** stat du championnat (classements, buteurs, notes, records). Dans l'appli, on les trouve au bout des pastilles du Calendrier (J1, J2... puis « Coupe ») : liste des tours, puis pour chaque match le score, la courbe du score, nos buteurs, nos gardiens et les meilleurs buteurs adverses.
+- Le robot trouve seul les coupes où le club est engagé (réglages `coupe_club`, numéro du club sur le site de la fédération, et `coupe_genre` dans les fichiers `config_*.json`). Il fait une recherche complète au plus toutes les 12 heures et, entre deux, ne relit que les matchs de Rioz en cours. Une notification part au résultat.
+- L'appli lit l'onglet grâce à son numéro `gid.coupes` dans `config.js` (le robot l'écrit dans son journal GitHub : « onglet _Coupes : ... gid ... »). Sans ce numéro, l'écran Coupe n'apparaît pas.
+
 ### Audit des cotes (chaque lundi)
 Le lundi matin, le workflow « Audit des cotes » compare les prévisions des deux applis aux résultats (vainqueur trouvé, écart prévu et écart réel) et envoie un résumé sur `prhb-alerte-r7k2q`. Il ne modifie rien. Si le résumé dit « À revoir », demander à Claude d'ajuster le réglage du modèle (`ODDS` dans `index.html`). Le même bilan est visible dans l'appli, onglet Projection, section « Fiabilité des prévisions ».
 
@@ -150,7 +155,7 @@ Coller l'adresse de l'appli sur pwabuilder.com, puis *Package for stores > Andro
 2. Pour chaque équipe, créer le nouveau Sheets : Fichier > Créer une copie du Sheets de la saison précédente, puis effacer les chiffres des onglets clubs, `_Matchs`, `_Robot_Journal`, `_Licences` et `_Import_Controle`. Renommer les onglets clubs selon les nouvelles équipes de la poule.
 3. Partager chaque nouveau Sheets avec le compte du robot (`robot-fdm@...`) en **éditeur**.
 4. Publier chaque Sheets sur le web : Fichier > Partager > Publier sur le web > format CSV. Noter l'adresse publiée et le numéro (`gid`) de chaque onglet lu par l'appli (il apparaît dans l'adresse quand on ouvre l'onglet).
-5. Dans chaque dépôt, mettre à jour `config.js` : `sheet`, `gid`, `marque`, `championnat`.
+5. Dans chaque dépôt, mettre à jour `config.js` : `sheet`, `gid`, `marque`, `championnat`. Vider aussi l'onglet `_Coupes`, et mettre à jour l'adresse de la saison dans `robot-fdm/robot/coupes.py` (ligne `B = ...`).
 6. Dans `robot-fdm/robot/`, mettre à jour `config_honneur.json` et `config_n3f.json` : `sheet_id`, `poule_url` (adresse de la nouvelle poule sur le site de la fédération), `journees`, et la liste `equipes` (nom sur le site de la fédération > nom de l'onglet).
 7. Ajouter les logos des nouveaux clubs dans `logos/` (voir `logos/LISTE-LOGOS.txt` pour le nom des fichiers).
 8. Lancer le robot en mode `controle`, vérifier `_Import_Controle`, puis repasser en `reel`.

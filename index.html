@@ -226,6 +226,9 @@ main>h2:first-child,main>.seg+h2,.fold h2{margin-top:6px}
 .deb-c{display:block;width:100%;margin-top:4px;padding:10px;border-radius:10px;border:1px solid var(--orange);background:transparent;color:var(--orange-t);font-weight:700;font-size:14px;cursor:pointer}
 .mrow{position:relative}
 .nv{position:absolute;top:3px;left:50%;transform:translateX(-50%);font-size:10px;line-height:14px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:var(--orange);color:#fff;border-radius:7px;padding:0 6px;pointer-events:none}
+.chip.cup{display:inline-flex;align-items:center;gap:5px;color:var(--muted)}.chip.cup svg{width:14px;height:14px}
+.cup-c{display:flex;align-items:center;gap:8px;justify-content:center;color:var(--muted);font-size:13.5px;margin:2px 0 14px}.cup-c svg{width:16px;height:16px;flex:none}
+.cup-mt{text-align:center;color:var(--muted);font-size:13.5px;margin:-6px 0 14px}
 .fdm-l{display:block;text-align:center;margin:-10px 0 22px;padding:11px;border:1px solid var(--line);border-radius:10px;color:var(--ink);font-weight:600;font-size:14px;text-decoration:none;background:var(--surface)}
 .swipe-h{text-align:center;color:var(--muted);font-size:13px;margin:-6px 0 14px}
 .deb-more[hidden]{display:none}
@@ -620,14 +623,14 @@ async function load(spin){
   setSpin(spin);
   try{
     const opt=g=>g?fetchCSV(g).catch(()=>null):Promise.resolve(null);
-    const [joueurs,gardiens,clubs,journees,joueursJ,calendrier,matchs]=await Promise.all([fetchCSV(GID.joueurs),fetchCSV(GID.gardiens),fetchCSV(GID.clubs),opt(GID.journees),opt(GID.joueursJ),opt(GID.calendrier),opt(GID.matchs)]);
-    const raw={joueurs,gardiens,clubs,journees,joueursJ,calendrier,matchs},built=build(raw);
+    const [joueurs,gardiens,clubs,journees,joueursJ,calendrier,matchs,coupes]=await Promise.all([fetchCSV(GID.joueurs),fetchCSV(GID.gardiens),fetchCSV(GID.clubs),opt(GID.journees),opt(GID.joueursJ),opt(GID.calendrier),opt(GID.matchs),opt(GID.coupes)]);
+    const raw={joueurs,gardiens,clubs,journees,joueursJ,calendrier,matchs,coupes},built=build(raw);
     if(!built.clubs.length) throw new Error("format");
     for(const k in oddsCache) delete oddsCache[k];
-    D={...built,at:Date.now(),offline:false}; store.set(APP.cache,{raw,at:D.at});
+    D={...built,coupes:buildCoupes(raw.coupes,built.clubs),at:Date.now(),offline:false}; store.set(APP.cache,{raw,at:D.at});
   }catch(e){
     const c=store.get(APP.cache);
-    if(c) D={...build(c.raw),at:c.at,offline:true}; else D=null;
+    if(c){ const b=build(c.raw); D={...b,coupes:buildCoupes(c.raw.coupes,b.clubs),at:c.at,offline:true}; } else D=null;
   }
   loading=false; setSpin(false); render();
 }
@@ -809,10 +812,10 @@ function render(){
   if(!D){ document.getElementById("tabbar").innerHTML=""; app.innerHTML=`<header class="top">${IC.court}<div class="bar-top"><div class="t"><div class="page-title">Stats Hand</div></div>${refreshBtn}</div></header>
     <main>${loading?`<div class="empty">Chargement des stats…</div>`:`<div class="error"><b>Impossible de charger les stats</b>Vérifie ta connexion internet, puis appuie sur le bouton d'actualisation.</div>`}</main>`; return; }
   const {page,arg,arg2}=route();
-  try{ app.innerHTML=({home:pHome,classement:pClassement,buteurs:pButeurs,gardiens:pGardiens,club:()=>pClub(arg),general:pGeneral,journees:()=>pJournees(arg),duel:()=>pDuel(arg,arg2),equipes:pEquipes,une:()=>pUne(arg),projection:pProjection,notes:pNotes}[page]||pHome)(); }
+  try{ app.innerHTML=({home:pHome,classement:pClassement,buteurs:pButeurs,gardiens:pGardiens,club:()=>pClub(arg),general:pGeneral,journees:()=>pJournees(arg),duel:()=>pDuel(arg,arg2),equipes:pEquipes,une:()=>pUne(arg),projection:pProjection,notes:pNotes,coupe:()=>pCoupe(arg)}[page]||pHome)(); }
   catch(err){ console.error(err);      // une page qui plante ne doit pas bloquer l'appli : message clair, les autres onglets restent utilisables
     app.innerHTML=`<header class="top">${IC.court}<div class="bar-top"><div class="t"><div class="page-title">Oups</div></div>${refreshBtn}</div></header><main><div class="error"><b>Cette page n'a pas pu s'afficher</b>Les autres onglets fonctionnent. Envoie une capture de cet écran à la personne qui gère l'appli.<br><small>${esc(String(err&&err.message||err))}</small></div></main>`; }
-  const tab={journees:"journees",duel:"journees",general:"general",classement:"general",buteurs:"buteurs",gardiens:"buteurs",notes:"buteurs",equipes:"equipes",club:"equipes",une:"une",projection:"general"}[page]||"home";
+  const tab={journees:"journees",duel:"journees",general:"general",classement:"general",buteurs:"buteurs",gardiens:"buteurs",notes:"buteurs",equipes:"equipes",club:"equipes",une:"une",projection:"general",coupe:"journees"}[page]||"home";
   const tabs=[["home","Accueil",IC.home],...(D.cal.some(m=>m.res)?[["une","À la une",IC.news]]:[]),...(D.cal.length?[["journees","Calendrier",IC.cal]]:[]),[D.standings.length?"general":"classement","Classement",IC.trophy],["buteurs",G_("Joueurs","Joueuses"),IC.ball],["equipes","Équipes",IC.teams]];
   const dot=p=>p==="une"&&uneJs().some(uneNew)?'<i class="tb-dot"></i>':"";
   document.getElementById("tabbar").innerHTML=`<div class="in${tabs.length>5?" t6":""}">${tabs.map(([p,l,ic])=>`<button data-go="${p==="home"?"":p}" data-tab ${(p===tab||(tab==="general"&&p==="classement"))?'aria-current="page"':""}>${ic}${dot(p)}<span>${l}</span></button>`).join("")}</div>`;
@@ -945,10 +948,74 @@ function pJournees(arg){
   const j=+ui.jour||+arg||info.next||info.last||info.Js[0];
   const ms=D.cal.filter(m=>m.j===j), d=ms.find(m=>m.date)?.date, played=ms.filter(m=>m.res).length;
   return pageHead("Calendrier",false)+`<main>
-    <div class="chips">${info.Js.map(x=>`<button class="chip" data-seg="jour" data-v="${x}" aria-pressed="${x===j}">J${x}</button>`).join("")}</div>
+    <div class="chips">${info.Js.map(x=>`<button class="chip" data-seg="jour" data-v="${x}" aria-pressed="${x===j}">J${x}</button>`).join("")}${(D.coupes||[]).length?`<button class="chip cup" data-go="coupe">${IC.trophy}Coupe</button>`:""}</div>
     <h2>Journée ${j}${d?` <span class="h2s">${wkLabel(d)}</span>`:""}</h2>
     <div class="list">${ms.map(m=>matchRow(m,{scorersLine:true,odds:true,deb:true})).join("")}</div>
     ${noteTip(`${played?`Sous chaque score, ${G_("le meilleur buteur","la meilleure buteuse")} de chaque équipe. `:""}Touchez une rencontre pour ouvrir le face-à-face. Les pronostics sont indicatifs.`)}${oddsReport(j)}${stamp()}</main>`;
+}
+/* ============ COUPES (onglet _Coupes) : à part, hors de toutes les stats du championnat ============
+   Le robot y range les matchs de coupe de Rioz. Rien ici n'alimente D.cal, les classements, les notes ou les records. */
+const CUP_SIGLES=/^(US|HB|HBC|AS|ASC|ASL|CA|CS|JA|SC|ES|AL|FC|AC|SA|HC|EHB|HBV|AHB|ACHB|ESM|SCHB|ASPTT|FO|USM|CSM)$/;
+function cupTeam(n,names){
+  if(/riolais/i.test(n)) return MY_TEAM;
+  const f=(names||[]).find(x=>norm(x)===norm(n)); if(f) return f;
+  return n.toLowerCase().split(/(\s+|-)/).map((w,i)=>{const u=w.toUpperCase(); if(CUP_SIGLES.test(u)) return u; if(i&&/^(de|du|des|la|le|les|et|sur)$/.test(w)) return w;
+    return w.replace(/^(l'|d')?(.)/,(m,a,c)=>(a?(i?a:a.toUpperCase()):"")+c.toUpperCase());}).join("");
+}
+function buildCoupes(rows,clubs){
+  const names=(clubs||[]).map(c=>c.name);
+  return rowsWithHeader(rows,"competition").filter(o=>o["competition"]&&o["competition"]!=="_scan"&&o["rid"]).map(o=>{
+    const sc=v=>/^\d+$/.test(v)?+v:null, h=sc(o["score dom"]), a=sc(o["score ext"]);
+    const ff=o["score dom"]&&h==null?"h":o["score ext"]&&a==null?"a":"";          // « FO » : forfait
+    const dt=/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(o["date"])?new Date(o["date"]):null;
+    const der=(o["deroule"]||"").split(" ").map(x=>x.match(/^(\d+):(\d+)-(\d+)$/)).filter(Boolean).map(x=>[+x[1],+x[2],+x[3]]);
+    const joueurs=(o["joueurs"]||"").split("|").map(x=>x.match(/^([DE]):(.+)=(\d*),(\d*),(\d*),(\d*),(\d*)$/)).filter(Boolean)
+      .map(x=>({side:x[1]==="D"?"home":"away",name:x[2],b:+x[3]||0,t:+x[4]||0,x:+x[5]||0,arr:x[6]===""?null:+x[6],p7:+x[7]||0}));
+    const mtd=sc(o["mt dom"]),mte=sc(o["mt ext"]);
+    return {rid:o["rid"],comp:o["competition"],tour:o["tour"],home:cupTeam(o["domicile"],names),away:cupTeam(o["exterieur"],names),dt,
+      res:ff?{h:ff==="h"?0:h||0,a:ff==="a"?0:a||0,ff}:(h!=null&&a!=null?{h,a}:null),
+      info:{dt,salle:o["salle"],adresse:o["adresse"],lat:o["lat"],lng:o["lng"],fdm:o["fdm"],der:der.length?der:null,mt:mtd!=null&&mte!=null?[mtd,mte]:null},joueurs,j:"c"+o["rid"]};
+  }).sort((x,y)=>(x.dt||0)-(y.dt||0));
+}
+function cupRow(m){
+  const r=m.res, hw=r&&r.h>r.a, aw=r&&r.a>r.h;
+  const when=m.dt?m.dt.toLocaleDateString("fr-FR",{day:"numeric",month:"short"}):"";
+  return `<button class="mrow" data-go="coupe/${m.rid}">
+    <span class="mr-l"><span class="mr-n${hw?" w":""}">${esc(shortClub(m.home))}</span>${logoHTML(m.home,32)}</span>
+    <span class="mr-s">${r?`${r.h}<i>-</i>${r.a}`:`<small>vs</small>${m.dt?`<small class="hr">${fmtDay(m.dt)}</small>`:""}`}</span>
+    <span class="mr-r">${logoHTML(m.away,32)}<span class="mr-n${aw?" w":""}">${esc(shortClub(m.away))}</span></span>
+    <span class="mr-t">${esc(cap1(m.tour))}${when?`, ${when}`:""}${r&&r.ff?`, forfait`:""}</span></button>`;
+}
+function pCoupe(rid){
+  const C=D.coupes||[];
+  if(!rid){
+    if(!C.length) return pageHead("Coupe")+`<main><div class="empty">Pas encore de match de coupe cette saison.</div></main>`;
+    const comps=[...new Set(C.map(m=>m.comp))];
+    return pageHead("Coupe")+`<main>${comps.map(c=>`<h2>${esc(c)}</h2><div class="list">${C.filter(m=>m.comp===c).slice().reverse().map(cupRow).join("")}</div>`).join("")}
+      ${noteTip("Matchs de coupe à part : ils ne comptent dans aucun classement, aucune stat et aucune note de l'appli.")}${stamp()}</main>`;
+  }
+  const m=C.find(x=>x.rid===rid);
+  if(!m) return pageHead("Coupe")+`<main><div class="empty">Ce match de coupe est introuvable.</div></main>`;
+  const r=m.res, nous=m.home===MY_TEAM?"home":"away", eux=nous==="home"?"away":"home";
+  const side=n=>`<div class="dh-t">${logoHTML(n,64)}<span>${esc(shortClub(n))}</span></div>`;
+  let h=`<header class="top">${IC.court}<div class="bar-top">${backBtn}<div class="t"><div class="page-title">${esc(cap1(m.tour))}</div></div>${refreshBtn}</div>
+    <div class="duel-head">${side(m.home)}<div class="dh-s">${r?`<span class="num">${r.h}-${r.a}</span>`:`<span class="vs">VS</span>`}<small>${m.dt?fmtDT(m.dt):""}</small></div>${side(m.away)}</div></header><main>`;
+  h+=`<p class="cup-c">${IC.trophy}<span>${esc(m.comp)}, hors championnat</span></p>`;
+  if(!r){ if(m.info.salle) h+=`<h2>Lieu</h2>${routeHTML(m)}`; return h+stamp()+`</main>`; }
+  if(r.ff){ const f=r.ff==="h"?m.home:m.away; return h+`<div class="empty">${f===MY_TEAM?"Forfait de Rioz.":`Qualification sur tapis vert : forfait de ${esc(shortClub(f))}.`}</div>${stamp()}</main>`; }
+  if(m.info.mt&&!m.info.der) h+=`<p class="cup-mt">Mi-temps : ${m.info.mt[0]}-${m.info.mt[1]}</p>`;
+  try{ h+=momentumHTML(m); }catch(e){}
+  const J=s=>m.joueurs.filter(p=>p.side===s);
+  const field=s=>J(s).filter(p=>p.arr==null&&(p.b||p.t||p.x)).sort((a,b)=>b.b-a.b||(b.t?b.b/b.t:0)-(a.t?a.b/a.t:0));
+  const gks=s=>J(s).filter(p=>p.arr!=null&&p.arr>0).sort((a,b)=>b.arr-a.arr);
+  const list=(arr,f)=>`<div class="list mini">${arr.length?arr.map(p=>`<div class="mini-row"><span>${esc(pName(p.name))}</span><b>${f(p)}</b></div>`).join(""):`<div class="mini-row"><span>Pas de détail sur la feuille</span></div>`}</div>`;
+  const encN=nous==="home"?r.a:r.h, arrN=gks(nous).reduce((s,p)=>s+p.arr,0);
+  h+=`<h2>${G_("Nos buteurs","Nos buteuses")}</h2>${list(field(nous),p=>`${p.b}${p.t?` <small>/ ${p.t} tirs</small>`:""}${p.x?` <small>· ${p.x}×2 min</small>`:""}`)}`;
+  if(gks(nous).length) h+=`<h2>${G_("Nos gardiens","Nos gardiennes")} <span class="h2s">${arrN} arrêts, ${Math.round(100*arrN/(arrN+encN))} %</span></h2>${list(gks(nous),p=>`${p.arr} <small>arrêts</small>`)}`;
+  const top=field(eux).slice(0,5);
+  if(top.length) h+=`<h2>En face <span class="h2s">${esc(shortClub(m[eux]))}</span></h2>${list(top,p=>`${p.b}`)}`;
+  if(/^[A-Z]{4}/.test(m.info.fdm||"")) h+=`<a class="fdm-l" style="margin-top:14px" href="${fdmUrl(m.info.fdm)}" target="_blank" rel="noopener">Voir la feuille de match officielle (PDF)</a>`;
+  return h+stamp()+`</main>`;
 }
 function clubData(name){
   const c=D.clubs.find(x=>x.name===name)||{name,marques:0,encaisses:0,pctTir:null,pctArret:null,excl:0,arrets:0};
