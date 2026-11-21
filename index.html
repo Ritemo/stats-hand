@@ -980,6 +980,7 @@ function buildCoupes(rows,clubs){
       info:{dt,salle:o["salle"],adresse:o["adresse"],lat:o["lat"],lng:o["lng"],fdm:o["fdm"],der:der.length?der:null,mt:mtd!=null&&mte!=null?[mtd,mte]:null,ev:evParse(o["evts"]),m7},joueurs,j:"c"+o["rid"]};
   }).sort((x,y)=>(x.dt||0)-(y.dt||0));
 }
+const cupPlusFort=n=>(APP.coupePlusForts||[]).some(x=>norm(n).includes(norm(x)));   // adversaires de coupe d'une division au-dessus
 function cupRow(m){
   const r=m.res, hw=r&&r.h>r.a, aw=r&&r.a>r.h;
   const when=m.dt?m.dt.toLocaleDateString("fr-FR",{day:"numeric",month:"short"}):"";
@@ -2169,15 +2170,15 @@ function playerSheet(p){
    La défense, les passes et le temps de jeu ne figurent pas sur les feuilles : un joueur avec trop peu d'actions
    n'est pas noté (« nn »), plutôt que de recevoir une note qui ne voudrait rien dire.
    Joueurs de champ : base 5, + buts (un 7 m compte moins), - tirs manqués, + buts dans les moments chauds
-   (10 dernières minutes avec 3 buts d'écart ou moins), - exclusions et carton rouge, petit bonus selon le résultat.
+   (15 dernières minutes avec 3 buts d'écart ou moins), - exclusions et carton rouge, petit bonus selon le résultat.
    Gardiens : % d'arrêts comparé à la moyenne du championnat (plus il y a de tirs, plus ce % compte, jusqu'à 25 tirs, un match normal ; au-delà, aucun bonus au volume).
    Avec le déroulé, chaque but encaissé est attribué au gardien qui était dans le but à ce moment-là ;
    Déroulé : bonus pour un but qui fait passer devant ou égaliser (plus fort en fin de match), qui casse une série
    adverse ou entretient la sienne ; une exclusion pendant laquelle l'équipe encaisse coûte davantage. */
 const NOTE_CACHE=new Map(); let NOTE_AT=null;
 function ncache(){ if(NOTE_AT!==D.at){ NOTE_CACHE.clear(); NOTE_AT=D.at; } return NOTE_CACHE; }   // vidé à chaque rechargement des données
-const NOTE_P={fb:4.8,fa:4.8,fs:6,gb:5.25,ga:4.4,gs:5,gv:3.4,cap:25,rv:0.2};   // cap : au-delà de 25 tirs (un match normal), plus de tirs ne rapporte plus rien ;   // gv : gardiens notés sur le % d'arrêts (15/11/2026, avant : arrêts au-dessus de la moyenne, qui avantageait les gardiens très sollicités)   // base, amplitude et douceur de l'échelle (champ, gardiens)
-function noteArrondi(x){ return Math.round(Math.max(2,Math.min(9.5,x))*2)/2; }
+const NOTE_P={fb:4.8,fa:5.4,fs:5.6,gb:5.25,ga:4.8,gs:3.88,gv:3.4,cap:25,rv:0.2};   // 22/11/2026 : haut de l'échelle ouvert (gardien : 30 % ≈ 5,5 ; 40 % ≈ 7,5 ; 50 % ≈ 8,5-9 ; 60 % et plus ≈ 9,5-10)   // cap : au-delà de 25 tirs (un match normal), plus de tirs ne rapporte plus rien ;   // gv : gardiens notés sur le % d'arrêts (15/11/2026, avant : arrêts au-dessus de la moyenne, qui avantageait les gardiens très sollicités)   // base, amplitude et douceur de l'échelle (champ, gardiens)
+function noteArrondi(x){ return Math.round(Math.max(2,Math.min(10,x))*2)/2; }
 function moyArretsChamp(){
   if(ncache().has("pct")) return ncache().get("pct");
   let a=0,b=0; D.cal.filter(m=>m.res&&m.info&&m.info.ev).forEach(m=>{ const ev=m.info.ev;
@@ -2214,7 +2215,7 @@ function notesMatch(m){
   const gkImp=new Map(), exImp=new Map();
   let sc={h:0,a:0}, run={s:null,n:0};
   ev.forEach(e=>{
-    const o=e.s==="h"?"a":"h", w=Math.max(0.25,e.t/3600), late=e.t>=3000&&Math.abs(sc.h-sc.a)<=3;
+    const o=e.s==="h"?"a":"h", w=Math.max(0.25,e.t/3600), late=e.t>=2700&&Math.abs(sc.h-sc.a)<=3;   // les 15 dernières minutes d'un match serré
     if(isG(e)){
       if(e.n){ const key=e.s+"|"+nnP(e.n), d=sc[e.s]-sc[o]; let v=0;
         if(d===0){ v+=0.35*w; add(tag,key+"|dev",1); }             // passe devant
@@ -2236,7 +2237,7 @@ function notesMatch(m){
   ["h","a"].forEach(s=>{
     const club=s==="h"?m.home:m.away, my=s==="h"?m.res.h:m.res.a, op=s==="h"?m.res.a:m.res.h;
     const res=my>op?NOTE_P.rv:my<op?-NOTE_P.rv:0;      // bonus de victoire / malus de défaite, volontairement modéré
-    const force=0, adv=s==="h"?m.away:m.home, cD=coefDefAdv(adv), pA=pctAttendu(adv,pct);   // force de l'adversaire : coefficient sur les buts, % d'arrêts attendu
+    const force=0, adv=s==="h"?m.away:m.home, sup=m.cup&&cupPlusFort(adv), cD=sup?1.1:coefDefAdv(adv), pA=pctAttendu(adv,pct)-(sup?0.03:0);   // coupe : adversaire d'une division au-dessus (config.js, coupePlusForts)   // force de l'adversaire : coefficient sur les buts, % d'arrêts attendu
     // ---- gardiens : buts encaissés attribués au gardien en place
     const gk=new Map(); const svs=ev.filter(e=>e.c==="A"&&e.s===s&&e.n);
     svs.forEach(e=>{ const n=nnP(e.n); if(!gk.has(n)) gk.set(n,{name:e.n,sv:0,conc:0,est:0}); gk.get(n).sv++; });
@@ -2255,7 +2256,7 @@ function notesMatch(m){
         const tirs=g.sv+g.conc, ecartPct=tirs?NOTE_P.gv*(g.sv/tirs-pA)*Math.sqrt(NOTE_P.cap?Math.min(tirs,NOTE_P.cap):tirs):0, pts=ecartPct+(gkImp.get(s+"|"+n)||0);   // % d'arrêts comparé à la moyenne ; le nombre de tirs ne fait que rendre ce % plus ou moins fiable
         const act=NOTE_P.ga*Math.tanh(pts/NOTE_P.gs), raw=NOTE_P.gb+act+res+force, note=noteArrondi(raw), gi=gkImp.get(s+"|"+n)||0;
         const why=[["Base",NOTE_P.gb,1],
-          [`${fmtPct(tirs?g.sv/tirs:0)} d'arrêts (${g.sv} sur ${tirs} tirs${g.est?`, dont ${g.est} arrêt${g.est>1?"s":""} sans nom sur la feuille, attribué${g.est>1?"s":""} au gardien en place`:""}), contre ${fmtPct(pA)} attendus face à ${shortClub(adv)} (moyenne du championnat ${fmtPct(pct)}, légèrement ajustée à la réussite au tir de cet adversaire)`,ecartPct,0]];
+          [`${fmtPct(tirs?g.sv/tirs:0)} d'arrêts (${g.sv} sur ${tirs} tirs${g.est?`, dont ${g.est} arrêt${g.est>1?"s":""} sans nom sur la feuille, attribué${g.est>1?"s":""} au gardien en place`:""}), contre ${fmtPct(pA)} attendus face à ${shortClub(adv)} (${sup?`moyenne du championnat ${fmtPct(pct)}, moins 3 points : adversaire d'une division au-dessus`:`moyenne du championnat ${fmtPct(pct)}, légèrement ajustée à la réussite au tir de cet adversaire`})`,ecartPct,0]];
         if(gi) why.push(["Arrêts dans les moments chauds ou qui coupent une série adverse",gi,0]);
         why.push(["Bilan des arrêts, ramené sur la note",act,1]);
         out[s].push({name:g.name,club,gk:true,note,sv:g.sv,est:g.est||0,conc:g.conc,pct:tirs?g.sv/tirs:null,why:noteWhyEnd(why,res,force,raw)}); });
@@ -2280,11 +2281,11 @@ function notesMatch(m){
       const why=[["Base",NOTE_P.fb,1]], pl=(n,w)=>n+" "+w+(n>1?"s":"");
       if(bb-p7) why.push([pl(bb-p7,"but")+(p7?" dans le jeu":""),0.45*(bb-p7),0]);
       if(p7) why.push([pl(p7,"but")+" sur 7 m",0.25*p7,0]);
-      if(cD!==1&&bb) why.push([`Défense de ${shortClub(adv)} ${cD>1?"plus solide":"plus faible"} que la moyenne : buts comptés à ${Math.round(cD*100)} %`,(cD-1)*(0.45*(bb-p7)+0.25*p7),0]);
+      if(cD!==1&&bb) why.push([sup?`${shortClub(adv)} joue une division au-dessus : buts comptés à ${Math.round(cD*100)} %`:`Défense de ${shortClub(adv)} ${cD>1?"plus solide":"plus faible"} que la moyenne : buts comptés à ${Math.round(cD*100)} %`,(cD-1)*(0.45*(bb-p7)+0.25*p7),0]);
       if(miss) why.push([pl(miss,"tir")+" "+(miss>1?"manqués":"manqué")+(sansTirs?" (estimés : tirs absents de la feuille, réussite moyenne de 60 % supposée)":""),-0.2*miss,0]);
       if(eff) why.push([`Réussite au tir de ${fmtPct(bb/tt)} sur ${tt} tirs (référence 60 %)`,eff,0]);
       const ig=(imp.get(kk)||0)-(exImp.get(kk)||0), ix=exImp.get(kk)||0;
-      if(ig){ const d=[tg("dev")&&pl(tg("dev"),"but")+" qui fait passer devant",tg("ega")&&pl(tg("ega"),"but")+" "+(tg("ega")>1?"égalisateurs":"égalisateur"),tg("stop")&&pl(tg("stop"),"but")+" qui casse une série adverse",tg("chaud")&&pl(tg("chaud"),"but")+" dans les 10 dernières minutes serrées"].filter(Boolean);
+      if(ig){ const d=[tg("dev")&&pl(tg("dev"),"but")+" qui fait passer devant",tg("ega")&&pl(tg("ega"),"but")+" "+(tg("ega")>1?"égalisateurs":"égalisateur"),tg("stop")&&pl(tg("stop"),"but")+" qui casse une série adverse",tg("chaud")&&pl(tg("chaud"),"but")+" dans les 15 dernières minutes serrées"].filter(Boolean);
         why.push(["Déroulé : "+(d.length?d.join(", "):"buts qui entretiennent une série"),ig,0]); }
       else if(bb) why.push(["Déroulé : aucun but décisif (pas d'égalisation, pas de passage devant, pas de fin de match serrée)",0,0]);
       if(ix) why.push(["Exclusion pendant laquelle l'équipe encaisse ou en fin de match serrée",ix,0]);
@@ -2395,7 +2396,7 @@ function noteSheet(m,p){
   if(p.note==null) h+=`<p class="note">Pas de note : trop peu d'actions sur la feuille de match.${tipI("Moins de 2 actions sur la feuille de match (tirs, exclusions). Ce qui s'est passé en défense ou à la passe n'y figure pas : une note ne voudrait rien dire.")}</p>`;
   else if(p.why){ const R=p.why.rows;
     h+=`<h2>Pourquoi cette note</h2><div class="list">${R.map(([l,v,c])=>`<div class="mini-row nx${c?"":" sub"}"><span>${esc(l)}</span><b>${c&&l==="Base"?fmtN(Math.round(v*100)/100):fmtSg(v)}</b></div>`).join("")}
-      <div class="mini-row nx tot"><span>Total ${String(Math.round(p.why.raw*100)/100).replace(".",",")}, arrondi au demi-point${p.why.raw<2||p.why.raw>9.5?" et borné entre 2 et 9,5":""}</span><b>${fmtN(p.note)}</b></div></div>
+      <div class="mini-row nx tot"><span>Total ${String(Math.round(p.why.raw*100)/100).replace(".",",")}, arrondi au demi-point${p.why.raw<2||p.why.raw>10?" et borné entre 2 et 10":""}</span><b>${fmtN(p.note)}</b></div></div>
       ${noteTip(`Les lignes en retrait sont des points d'action : leur somme est ramenée sur la note par une échelle qui s'adoucit aux extrêmes (beaucoup d'actions ne font pas monter la note sans fin).`)}`; }
   h+=`${noteTip(`${NOTE_AVERT}`)}${w.attr?`<button class="more" ${w.attr}>Fiche complète</button>`:""}`;
   openSheet(h);

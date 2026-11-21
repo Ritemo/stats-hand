@@ -18,6 +18,7 @@ self.APP = {
   // Notes : gardien entré en cours de match sans arrêt sur la feuille (les buts encaissés à partir de cette minute sont pour lui)
   entete: "#13234F",                // couleur de l'en-tête et des barres du téléphone (bleu nuit : garçons)
   accent: "#3D6BF2",                 // accent décoratif (traits des cartes) ; l'orange reste pour Rioz
+  coupePlusForts: ["Val de l'Ognon"],   // coupe : adversaires d'une division au-dessus (notes ajustées, comme face à une meilleure équipe)
   relaisGardiens: [
     { j: 5, nom: "HILAIRE GINDRO Jules", minute: 40 }   // à Doubs Central : Jules entre juste après le dernier arrêt de Mathieu (39'34)
   ]
