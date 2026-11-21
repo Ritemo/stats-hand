@@ -5,4 +5,4 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - run: pip install requests && python robot-fdm/explore/explore.py | head -300
+      - run: pip install -r robot-fdm/robot/requirements.txt && python robot-fdm/explore/explore.py
