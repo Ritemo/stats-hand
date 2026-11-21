@@ -10,15 +10,21 @@ def slug(s):
     s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode().lower()
     return re.sub(r"[^a-z0-9]+", "-", s).strip("-")
 t = requests.get(B + "coupe-de-france/", headers=UA, timeout=30).text
-print("HREF", sorted(set(re.findall(r'[^"\s]*3266[12][^"\s]*', t)))[:10])
-lib = "COUPE DE FRANCE CAISSE D'EPARGNE REGIONALE MASCULINE 2026-2027"
-for u in [f"coupe-de-france/017-{slug(lib)}-32662/", f"coupe-de-france/{slug(lib)}-32662/", f"coupe-de-france/017-{slug(lib.replace(chr(39),''))}-32662/"]:
-    r = requests.get(B + u, headers=UA, timeout=30); print("TRY", u, r.status_code)
-    if r.status_code == 200:
-        for n, d in comps(r.text):
-            if n.startswith("competitions---") and n not in ("competitions---bottom-bar", "competitions---search-bar", "competitions---saison-selector"):
-                print(" C", n, list(d.keys())); s = json.dumps(d, ensure_ascii=False)
-                for k in ("poules", "phases", "tours", "rencontres"):
-                    if k in d: print("  ", k, s[s.find('"%s"' % k):][:1500])
-                i = s.find("IOLAIS"); print("  RIOZ", s[max(0, i-600):i+400] if i >= 0 else "-")
-        break
+menu = next(d for n, d in comps(t) if n == "competitions---competition-main-menu")
+for c in menu["competitions"]:
+    url = B + f"coupe-de-france/{slug(c['libelle'])}-{c['ext_competitionId']}/"
+    r = requests.get(url, headers=UA, timeout=30)
+    eqs = []; poules = []
+    for n, d in comps(r.text):
+        if n == "competitions---calendar-button": eqs = [e for e in d.get("equipes", []) if "RIOLAIS" in e.get("libelle", "").upper()]
+        if n == "competitions---poule-selector": poules = d.get("poules", [])
+    print("##", c["libelle"], r.status_code, url, "RIOZ:", eqs)
+    if not eqs: continue
+    for p in poules:
+        pu = url + f"poule-{p['ext_pouleId']}/"
+        t2 = requests.get(pu + "journee-1/", headers=UA, timeout=30).text
+        for n, d in comps(t2):
+            if n == "competitions---rencontre-list":
+                for x in d.get("rencontres", []):
+                    if "RIOLAIS" in (x["equipe1Libelle"] + x["equipe2Libelle"]).upper():
+                        print("  ", p["libelle"], pu, x["equipe1Libelle"], x.get("equipe1Score"), "-", x.get("equipe2Score"), x["equipe2Libelle"], x["date"], x.get("fdmCode"), x.get("ext_rencontreId"))
