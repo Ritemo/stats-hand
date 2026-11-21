@@ -228,6 +228,7 @@ main>h2:first-child,main>.seg+h2,.fold h2{margin-top:6px}
 .nv{position:absolute;top:3px;left:50%;transform:translateX(-50%);font-size:10px;line-height:14px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:var(--orange);color:#fff;border-radius:7px;padding:0 6px;pointer-events:none}
 .chip.cup{display:inline-flex;align-items:center;gap:5px;color:var(--muted)}.chip.cup svg{width:14px;height:14px}
 .cup-c{display:flex;align-items:center;gap:8px;justify-content:center;color:var(--muted);font-size:13.5px;margin:2px 0 14px}.cup-c svg{width:16px;height:16px;flex:none}
+.mini-row small.tr{font-weight:500;color:var(--muted)}
 .cup-mt{text-align:center;color:var(--muted);font-size:13.5px;margin:-6px 0 14px}
 .fdm-l{display:block;text-align:center;margin:-10px 0 22px;padding:11px;border:1px solid var(--line);border-radius:10px;color:var(--ink);font-weight:600;font-size:14px;text-decoration:none;background:var(--surface)}
 .swipe-h{text-align:center;color:var(--muted);font-size:13px;margin:-6px 0 14px}
@@ -862,7 +863,7 @@ function homonymes(){ if(HOMO&&HOMO.d===D) return HOMO.set; const firsts={};
 const pName=n=>{const s=splitName(n); if(!s.first) return s.last; return (homonymes().has(homoKey(s))?s.first+" ":s.first[0]+". ")+s.last;};
 function scorers(club,j){
   const pj=D.evo?D.evo.pj:{};
-  return Object.entries(pj).filter(([k,d])=>k.startsWith(club+"|")&&d.b[j-1]>0).map(([k,d])=>({name:k.slice(club.length+1),b:d.b[j-1]}))
+  return Object.entries(pj).filter(([k,d])=>k.startsWith(club+"|")&&d.b[j-1]>0).map(([k,d])=>({name:k.slice(club.length+1),b:d.b[j-1],t:d.t[j-1]}))
     .filter(x=>norm(x.name)!==PLACEHOLDER).sort((a,b)=>b.b-a.b);
 }
 function streak(club){
@@ -1039,8 +1040,8 @@ function pDuel(js,hs){
   if(r){ try{ h+=debriefHTML(m); }catch(e){} if(m.info&&/^[A-Z]{4}/.test(m.info.fdm||"")) h+=`<a class="fdm-l" href="${fdmUrl(m.info.fdm)}" target="_blank" rel="noopener">Voir la feuille de match officielle (PDF)</a>`; markSeen(m); }
   if(!r) h+=oddsBlock(m);
   if(r){
-    const col2=n=>{const s=scorers(n,j);return `<div class="list mini">${s.length?s.map(x=>`<div class="mini-row"><span>${esc(pName(x.name))}</span><b>${x.b}</b></div>`).join(""):`<div class="mini-row"><span>Pas de détail</span></div>`}</div>`;};
-    h+=`<h2>${G_("Buteurs","Buteuses")} du match</h2><div class="two">${col2(m.home)}${col2(m.away)}</div>`;
+    const col2=n=>{const s=scorers(n,j);return `<div class="list mini">${s.length?s.map(x=>`<div class="mini-row"><span>${esc(pName(x.name))}</span><b>${x.b}${x.t?`<small class="tr"> / ${x.t}</small>`:""}</b></div>`).join(""):`<div class="mini-row"><span>Pas de détail</span></div>`}</div>`;};
+    h+=`<h2>${G_("Buteurs","Buteuses")} du match${tipI("Buts, puis tirs tentés (quand la feuille de match les donne).")}</h2><div class="two">${col2(m.home)}${col2(m.away)}</div>`;
     try{ h+=gardiensMatchHTML(m); }catch(e){}
     h+=momentumHTML(m);
     try{ h+=notesMatchHTML(m); }catch(e){}
