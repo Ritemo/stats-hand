@@ -9,11 +9,12 @@ Pour ménager le site de la fédération :
   - entre deux, seuls les matchs de Rioz commencés et pas encore terminés sont relus (une page chacun).
 """
 import re, json, html, datetime, unicodedata
+from fdm import parse_events, evenements
 
 B = "https://www.ffhandball.fr/competitions/saison-2026-2027-22/coupe-de-france/"
 TAB = "_Coupes"
 HEAD = ["Competition", "Tour", "Date", "Domicile", "Extérieur", "Score dom", "Score ext", "MT dom", "MT ext", "Nous",
-        "Salle", "Adresse", "Lat", "Lng", "FDM", "Joueurs", "Deroule", "Poule", "Rid", "Equipement", "Notif", "Mise a jour"]
+        "Salle", "Adresse", "Lat", "Lng", "FDM", "Joueurs", "Deroule", "Poule", "Rid", "Equipement", "Notif", "Mise a jour", "Evts"]
 NIVEAU = {"NATIONALE": "nationale", "FEDERALE": "fédérale", "REGIONALE": "régionale", "DEPARTEMENTALE": "départementale"}
 
 
@@ -120,7 +121,7 @@ def maj_coupes(book, cfg, mode, ici, now, journal, fetch, fdm_url, parse_fdm, pa
                 if dates and not (ici - datetime.timedelta(days=150) <= max(dates) and min(dates) <= ici + datetime.timedelta(days=30)): continue
                 pu = f"{url}poule-{p['ext_pouleId']}/"
                 connus = [d for d in rows.values() if d.get("Poule") == pu]
-                if connus and all(joue(d) and d.get("Joueurs") for d in connus): continue    # tour déjà complet chez nous
+                if connus and all(joue(d) and d.get("Joueurs") and d.get("Evts") for d in connus): continue    # tour déjà complet chez nous
                 for x in _rencontres(fetch, pu, len(js)):
                     if _nous(x, 1, ids) or _nous(x, 2, ids):
                         x = {**x, "equipe1Id": str(x["equipe1Id"]), "equipe2Id": str(x["equipe2Id"])}
@@ -147,7 +148,7 @@ def maj_coupes(book, cfg, mode, ici, now, journal, fetch, fdm_url, parse_fdm, pa
             s = salle_rencontre(d["Poule"], rid)
             if s: d.update({"Salle": s["salle"], "Adresse": s["adresse"], "Lat": s["lat"], "Lng": s["lng"]})
         # feuille de match : joueurs, déroulé ; score lu sur la feuille si le site ne l'affiche pas encore
-        if not d.get("FDM") or (joue(d) and d.get("Joueurs")): continue
+        if not d.get("FDM") or (joue(d) and d.get("Joueurs") and d.get("Evts")): continue
         if not joue(d) and not (t and t + datetime.timedelta(minutes=80) <= ici <= t + datetime.timedelta(days=30)): continue
         data = fetch(fdm_url(d["FDM"]), binary=True); n_fdm += 1
         if not data: continue
@@ -160,6 +161,7 @@ def maj_coupes(book, cfg, mode, ici, now, journal, fetch, fdm_url, parse_fdm, pa
                                     f"{p['buts']},{p['tirs']},{p['excl']},{'' if p['arrets'] is None else p['arrets']},{p['7m']}"
                                     for i, e in enumerate(f["equipes"]) for p in e["joueurs"])
             d["Deroule"] = " ".join(f"{s}:{h}-{a}" for s, h, a in parse_deroule(data)) or "ND"
+            d["Evts"] = evenements(f, parse_events(data)) or "ND"      # déroulé détaillé : sert aux notes du match
         except Exception as e:
             journal.append([now, "", f"Coupe {d['Domicile']} - {d['Extérieur']}", "ERREUR", f"feuille de match illisible : {e}"])
 

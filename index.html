@@ -972,9 +972,11 @@ function buildCoupes(rows,clubs){
     const joueurs=(o["joueurs"]||"").split("|").map(x=>x.match(/^([DE]):(.+)=(\d*),(\d*),(\d*),(\d*),(\d*)$/)).filter(Boolean)
       .map(x=>({side:x[1]==="D"?"home":"away",name:x[2],b:+x[3]||0,t:+x[4]||0,x:+x[5]||0,arr:x[6]===""?null:+x[6],p7:+x[7]||0}));
     const mtd=sc(o["mt dom"]),mte=sc(o["mt ext"]);
-    return {rid:o["rid"],comp:o["competition"],tour:o["tour"],home:cupTeam(o["domicile"],names),away:cupTeam(o["exterieur"],names),dt,
+    const home=cupTeam(o["domicile"],names), away=cupTeam(o["exterieur"],names), pj={}, m7=[];
+    joueurs.filter(p=>p.arr==null).forEach(p=>{ const c=p.side==="home"?home:away; pj[c+"|"+p.name]={b:[p.b],t:[p.t||null]}; if(p.p7) m7.push({club:c,nom:p.name,n:p.p7}); });
+    return {rid:o["rid"],comp:o["competition"],tour:o["tour"],home,away,dt,cup:true,pj,
       res:ff?{h:ff==="h"?0:h||0,a:ff==="a"?0:a||0,ff}:(h!=null&&a!=null?{h,a}:null),
-      info:{dt,salle:o["salle"],adresse:o["adresse"],lat:o["lat"],lng:o["lng"],fdm:o["fdm"],der:der.length?der:null,mt:mtd!=null&&mte!=null?[mtd,mte]:null},joueurs,j:"c"+o["rid"]};
+      info:{dt,salle:o["salle"],adresse:o["adresse"],lat:o["lat"],lng:o["lng"],fdm:o["fdm"],der:der.length?der:null,mt:mtd!=null&&mte!=null?[mtd,mte]:null,ev:evParse(o["evts"]),m7},joueurs,j:"c"+o["rid"]};
   }).sort((x,y)=>(x.dt||0)-(y.dt||0));
 }
 function cupRow(m){
@@ -1005,6 +1007,7 @@ function pCoupe(rid){
   if(r.ff){ const f=r.ff==="h"?m.home:m.away; return h+`<div class="empty">${f===MY_TEAM?"Forfait de Rioz.":`Qualification sur tapis vert : forfait de ${esc(shortClub(f))}.`}</div>${stamp()}</main>`; }
   if(m.info.mt&&!m.info.der) h+=`<p class="cup-mt">Mi-temps : ${m.info.mt[0]}-${m.info.mt[1]}</p>`;
   try{ h+=momentumHTML(m); }catch(e){}
+  try{ h+=notesMatchHTML(m); }catch(e){}
   const J=s=>m.joueurs.filter(p=>p.side===s);
   const field=s=>J(s).filter(p=>p.arr==null&&(p.b||p.t||p.x)).sort((a,b)=>b.b-a.b||(b.t?b.b/b.t:0)-(a.t?a.b/a.t:0));
   const gks=s=>J(s).filter(p=>p.arr!=null&&p.arr>0).sort((a,b)=>b.arr-a.arr);
@@ -2202,7 +2205,7 @@ function noteWhyEnd(why,res,force,raw){   // détail d'une note : [libellé, val
 function notesMatch(m){
   if(!m||!m.res) return null;
   const k="m|"+m.j+"|"+m.home; if(ncache().has(k)) return ncache().get(k);
-  const I=m.info||{}, ev=(I.ev||[]).slice().sort((x,y)=>x.t-y.t), named=ev.some(e=>e.n), pj=D.evo?D.evo.pj:{}, out={h:[],a:[]};
+  const I=m.info||{}, ev=(I.ev||[]).slice().sort((x,y)=>x.t-y.t), named=ev.some(e=>e.n), pj=m.cup?m.pj:D.evo?D.evo.pj:{}, ji=m.cup?0:m.j-1, out={h:[],a:[]};   // coupe : stats du match lues sur sa feuille (m.pj), hors championnat
   const isG=e=>e.c==="B"||e.c==="P";
   // ---- déroulé : poids de chaque but selon le moment et le score
   // passer devant, égaliser, casser une série adverse, prolonger sa propre série, marquer dans le money time
@@ -2260,12 +2263,12 @@ function notesMatch(m){
     Object.entries(pj).forEach(([key,d])=>{
       if(!key.startsWith(club+"|")) return; const name=key.slice(club.length+1);
       if(norm(name)===PLACEHOLDER) return;
-      const b=d.b[m.j-1], t=d.t[m.j-1]; if(b==null&&t==null) return;
+      const b=d.b[ji], t=d.t[ji]; if(b==null&&t==null) return;
       const n=nnP(name); if(out[s].some(x=>x.gk&&nnP(x.name)===n)) return;
       const evs=ev.filter(e=>e.s===s&&e.n&&nnP(e.n)===n);
       const p7=(I.m7||[]).filter(x=>x.club===club&&nnP(x.nom)===n).reduce((a,x)=>a+x.n,0);
       const ex=evs.filter(e=>e.c==="X").length, red=evs.some(e=>e.c==="R");
-      const sansTirs=t==null&&b>0&&!Object.entries(pj).some(([k2,d2])=>k2.startsWith(club+"|")&&d2.t[m.j-1]!=null);   // feuille sans les tirs de l'équipe
+      const sansTirs=t==null&&b>0&&!Object.entries(pj).some(([k2,d2])=>k2.startsWith(club+"|")&&d2.t[ji]!=null);   // feuille sans les tirs de l'équipe
       const bb=b||0, tt=t&&t>=bb?t:null, miss=tt!=null?tt-bb:sansTirs?Math.round(bb/0.6)-bb:0, kk=s+"|"+n;
       const actions=(tt!=null?tt:bb)+ex+(red?1:0);
       if(actions<2) { out[s].push({name,club,note:null,b:bb,t:tt,ex}); return; }
@@ -2305,7 +2308,7 @@ const NOTE_AVERT=`Note sur 10 calculée uniquement à partir des feuilles de mat
 const fmtN=x=>x==null?"nn":String(Math.round(x*10)/10).replace(".",",");
 const ntB=x=>`<span class="nt${x==null?" nn":x>=7.5?" hi":x<=4?" lo":""}">${fmtN(x)}</span>`;
 function noteWho(p){
-  if(p.gk){ const k=D.keepers.find(k=>k.club===p.club&&nnP(k.name)===nnP(p.name)); return k?{attr:`data-keeper="${esc(k.club+"|"+k.name)}"`,name:k.name}:{attr:"",name:nmFull(p.name)}; }
+  if(p.gk){ const k=D.keepers.find(k=>k.club===p.club&&nnP(k.name)===nnP(p.name)); return k?{attr:`data-keeper="${esc(k.club+"|"+k.name)}"`,name:k.name}:{attr:"",name:p.name}; }
   const q=D.players.find(x=>x.club===p.club&&x.name===p.name)||D.players.find(x=>x.club===p.club&&nnP(x.name)===nnP(p.name));
   return q?{attr:`data-player="${esc(q.club+"|"+q.name)}"`,name:q.name}:{attr:"",name:p.name};
 }
@@ -2386,7 +2389,7 @@ function notesMatchHTML(m){
 const fmtSg=x=>(x>0.004?"+":x<-0.004?"−":"")+String(Math.abs(Math.round(x*100)/100)).replace(".",",");
 function noteSheet(m,p){
   const w=noteWho(p), adv=m.home===p.club?m.away:m.home, my=m.home===p.club?m.res.h:m.res.a, op=m.home===p.club?m.res.a:m.res.h;
-  let h=`<h3>${nameHTML(w.name)}</h3><p class="c">${esc(shortClub(p.club))} ${m.home===p.club?"contre":"à"} ${esc(shortClub(adv))}, J${m.j}, ${my}-${op}</p>
+  let h=`<h3>${nameHTML(w.name)}</h3><p class="c">${esc(shortClub(p.club))} ${m.home===p.club?"contre":"à"} ${esc(shortClub(adv))}, ${m.cup?esc(m.tour)+" de coupe":"J"+m.j}, ${my}-${op}</p>
     <div class="stats"><div class="stat"><div class="num">${fmtN(p.note)}</div><div class="l">Note sur 10</div></div><div class="stat"><div class="num">${p.gk?p.sv:p.b}</div><div class="l">${noteDet(p).replace(/^\d+ /,"")}</div></div></div>`;
   if(p.note==null) h+=`<p class="note">Pas de note : trop peu d'actions sur la feuille de match.${tipI("Moins de 2 actions sur la feuille de match (tirs, exclusions). Ce qui s'est passé en défense ou à la passe n'y figure pas : une note ne voudrait rien dire.")}</p>`;
   else if(p.why){ const R=p.why.rows;
@@ -2609,7 +2612,7 @@ document.addEventListener("click",e=>{
   if(t.closest("[data-refresh]")){load(true);return;}
   if(t.closest("[data-back]")){ if(depth>0){depth--;history.back();} else location.hash="#/"; return; }
   const s=t.closest("[data-seg]"); if(s){ui[s.dataset.seg]=s.dataset.v;render();return;}
-  const nx=t.closest("[data-ntx]"); if(nx){ const [j,home,s,i]=nx.dataset.ntx.split("|"), m=D.cal.find(x=>x.j===+j&&x.home===home), n=m&&notesMatch(m), q=n&&n[s][+i]; if(q) noteSheet(m,q); return; }
+  const nx=t.closest("[data-ntx]"); if(nx){ const [j,home,s,i]=nx.dataset.ntx.split("|"), m=D.cal.find(x=>x.j===+j&&x.home===home)||(D.coupes||[]).find(x=>x.j===j&&x.home===home), n=m&&notesMatch(m), q=n&&n[s][+i]; if(q) noteSheet(m,q); return; }
   const p=t.closest("[data-player]"); if(p){const q=D.players.find(x=>x.club+"|"+x.name===p.dataset.player); if(q) playerSheet(q); return;}
   const kp=t.closest("[data-keeper]"); if(kp){const k=D.keepers.find(x=>x.club+"|"+x.name===kp.dataset.keeper); if(k) keeperSheet(k); return;}
   if(t.closest("[data-notif]")){notifSheet();return;}
