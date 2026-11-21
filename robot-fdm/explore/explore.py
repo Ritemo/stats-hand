@@ -1,15 +1,16 @@
 import re, json, html, requests
 UA = {"User-Agent": "Mozilla/5.0"}
-B = "https://www.ffhandball.fr"
-for c in ["/competitions/saison-2026-2027-22/regional/", "/competitions/saison-2026-2027-22/departemental/"]:
-    t = requests.get(B + c, headers=UA, timeout=30).text
+B = "https://www.ffhandball.fr/competitions/saison-2026-2027-22/"
+def menu(path):
+    t = requests.get(B + path, headers=UA, timeout=30).text
     for m in re.finditer(r'<smartfire-component([^>]*?)attributes="([^"]*)"', t):
-        n = re.search(r"name='([^']*)'", m.group(1)); n = n.group(1) if n else "?"
-        if n in ("competitions---competition-main-menu", "competitions---search-bar"):
-            d = json.loads(html.unescape(m.group(2)))
-            s = json.dumps(d, ensure_ascii=False)
-            print("##", c, n, len(s)); print("  keys", list(d.keys()))
-            # compétitions de coupe ou de la ligue BFC / Haute-Saône
-            for x in re.finditer(r'\{[^{}]*(?:[Cc]oupe|COUPE)[^{}]*\}', s): print("  C", x.group(0)[:400])
-            print("  head", s[:1500])
-    js = sorted(set(re.findall(r'https?://[^"\s\']*(?:api|json)[^"\s\']*', t)))[:20]; print("  api", js)
+        if "competition-main-menu" in m.group(1): return json.loads(html.unescape(m.group(2))), t
+    return None, t
+d, _ = menu("regional/")
+us = d.get("url_structures"); print("URLS_T", type(us).__name__, json.dumps(us, ensure_ascii=False)[:600])
+print("STRUCT", json.dumps(d.get("structure"), ensure_ascii=False)[:300])
+print("COMPS", json.dumps(d.get("competitions"), ensure_ascii=False)[:800])
+for p in ["coupe-de-france/", "coupe_de_france/"]:
+    d2, t = menu(p)
+    if d2: print("##", p, "STRUCT", json.dumps(d2.get("structure"), ensure_ascii=False)[:200]); print("  COMPS", json.dumps(d2.get("competitions"), ensure_ascii=False)[:2500]); print("  US", json.dumps(d2.get("url_structures"), ensure_ascii=False)[:600])
+    else: print("##", p, "pas de menu", len(t))
