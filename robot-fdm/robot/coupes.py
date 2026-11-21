@@ -149,6 +149,7 @@ def maj_coupes(book, cfg, mode, ici, now, journal, fetch, fdm_url, parse_fdm, pa
             if s: d.update({"Salle": s["salle"], "Adresse": s["adresse"], "Lat": s["lat"], "Lng": s["lng"]})
         # feuille de match : joueurs, déroulé ; score lu sur la feuille si le site ne l'affiche pas encore
         if not d.get("FDM") or (joue(d) and d.get("Joueurs") and d.get("Evts")): continue
+        if joue(d) and not (str(d["Score dom"]).isdigit() and str(d["Score ext"]).isdigit()): continue     # forfait : pas de feuille de match
         if not joue(d) and not (t and t + datetime.timedelta(minutes=80) <= ici <= t + datetime.timedelta(days=30)): continue
         data = fetch(fdm_url(d["FDM"]), binary=True); n_fdm += 1
         if not data: continue
