@@ -2580,7 +2580,7 @@ function fete(kind){
 function surprises(){
   const {page,arg}=route(), last=myMatches().pop(); if(!last) return;
   if(page==="home"){ const vu=LS_.get("fete",0); if(vu!==last.j){ LS_.set("fete",last.j); const s=last.home===MY_TEAM?"h":"a", d=s==="h"?last.res.h-last.res.a:last.res.a-last.res.h; if(d>0) fete("confettis"); else if(d<0) fete("pluie"); } }
-  if(page==="duel"){ const m=D.cal.find(x=>String(x.j)===String(arg)&&x.res&&(x.home===MY_TEAM||x.away===MY_TEAM)); if(m&&!ui["vib"+m.j]){ ui["vib"+m.j]=1; const s=m.home===MY_TEAM?"h":"a", d=s==="h"?m.res.h-m.res.a:m.res.a-m.res.h; if(d===1&&navigator.vibrate&&!calme()) navigator.vibrate([70,50,70,50,140]); } }
+  if(page==="duel"){ const m=D.cal.find(x=>String(x.j)===String(arg)&&x.res&&(x.home===MY_TEAM||x.away===MY_TEAM)); if(m&&!ui["vib"+m.j]){ ui["vib"+m.j]=1; const s=m.home===MY_TEAM?"h":"a", d=s==="h"?m.res.h-m.res.a:m.res.a-m.res.h; if(d===1&&navigator.vibrate&&!calme()) navigator.vibrate(20); } }
 }
 document.addEventListener("input",e=>{
   const i=e.target.closest&&e.target.closest("[data-pr-in]"); if(!i||!ui.pr) return;
