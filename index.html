@@ -2178,7 +2178,7 @@ function playerSheet(p){
 const NOTE_CACHE=new Map(); let NOTE_AT=null;
 function ncache(){ if(NOTE_AT!==D.at){ NOTE_CACHE.clear(); NOTE_AT=D.at; } return NOTE_CACHE; }   // vidé à chaque rechargement des données
 const NOTE_P={fb:4.8,fa:5.4,fs:5.6,gb:5.25,ga:4.8,gs:3.88,gv:3.4,cap:25,rv:0.2};   // 22/11/2026 : haut de l'échelle ouvert (gardien : 30 % ≈ 5,5 ; 40 % ≈ 7,5 ; 50 % ≈ 8,5-9 ; 60 % et plus ≈ 9,5-10)   // cap : au-delà de 25 tirs (un match normal), plus de tirs ne rapporte plus rien ;   // gv : gardiens notés sur le % d'arrêts (15/11/2026, avant : arrêts au-dessus de la moyenne, qui avantageait les gardiens très sollicités)   // base, amplitude et douceur de l'échelle (champ, gardiens)
-function noteArrondi(x){ return Math.round(Math.max(2,Math.min(10,x))*2)/2; }
+function noteArrondi(x){ return Math.round(Math.max(2,Math.min(10,x))*10)/10; }   // au dixième
 function moyArretsChamp(){
   if(ncache().has("pct")) return ncache().get("pct");
   let a=0,b=0; D.cal.filter(m=>m.res&&m.info&&m.info.ev).forEach(m=>{ const ev=m.info.ev;
@@ -2396,7 +2396,7 @@ function noteSheet(m,p){
   if(p.note==null) h+=`<p class="note">Pas de note : trop peu d'actions sur la feuille de match.${tipI("Moins de 2 actions sur la feuille de match (tirs, exclusions). Ce qui s'est passé en défense ou à la passe n'y figure pas : une note ne voudrait rien dire.")}</p>`;
   else if(p.why){ const R=p.why.rows;
     h+=`<h2>Pourquoi cette note</h2><div class="list">${R.map(([l,v,c])=>`<div class="mini-row nx${c?"":" sub"}"><span>${esc(l)}</span><b>${c&&l==="Base"?fmtN(Math.round(v*100)/100):fmtSg(v)}</b></div>`).join("")}
-      <div class="mini-row nx tot"><span>Total ${String(Math.round(p.why.raw*100)/100).replace(".",",")}, arrondi au demi-point${p.why.raw<2||p.why.raw>10?" et borné entre 2 et 10":""}</span><b>${fmtN(p.note)}</b></div></div>
+      <div class="mini-row nx tot"><span>Total ${String(Math.round(p.why.raw*100)/100).replace(".",",")}, arrondi au dixième${p.why.raw<2||p.why.raw>10?" et borné entre 2 et 10":""}</span><b>${fmtN(p.note)}</b></div></div>
       ${noteTip(`Les lignes en retrait sont des points d'action : leur somme est ramenée sur la note par une échelle qui s'adoucit aux extrêmes (beaucoup d'actions ne font pas monter la note sans fin).`)}`; }
   h+=`${noteTip(`${NOTE_AVERT}`)}${w.attr?`<button class="more" ${w.attr}>Fiche complète</button>`:""}`;
   openSheet(h);
