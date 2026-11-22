@@ -34,7 +34,7 @@
   }
 }
 *{box-sizing:border-box;margin:0;padding:0}
-:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root{--ease-out:cubic-bezier(.23,1,.32,1);--ease-drawer:cubic-bezier(.32,.72,0,1);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{font-family:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);font-size:16px;line-height:1.45;-webkit-tap-highlight-color:transparent;min-height:100vh}
 .num,h1,h2,h3,.seg button,.chip,.tile b,.club-card span{font-family:"Barlow Condensed","Arial Narrow",sans-serif}
@@ -104,7 +104,7 @@ main>h2:first-child,main>.seg+h2,.fold h2{margin-top:6px}
 .seg button[aria-pressed="true"]{background:var(--black);color:#fff}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .seg button[aria-pressed="true"]{background:var(--orange);color:#1C1C1C}}
 .chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;scrollbar-width:none}
-.chip{white-space:nowrap;padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:var(--surface);font-size:15px;font-weight:600;color:var(--muted)}
+.chip{white-space:nowrap;min-height:40px;display:inline-flex;align-items:center;padding:6px 14px;border-radius:20px;border:1px solid var(--line);background:var(--surface);font-size:15px;font-weight:600;color:var(--muted)}
 .chip[aria-pressed="true"]{border-color:var(--orange);color:var(--orange-t);background:var(--orange-soft)}
 
 .list{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
@@ -152,9 +152,9 @@ main>h2:first-child,main>.seg+h2,.fold h2{margin-top:6px}
 .stamp{font-size:12px;color:var(--muted);text-align:center;margin-top:18px}
 
 /* ---------- Fiche joueur ---------- */
-.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:10}
-.sheet-bg.open{display:block}
-.sheet{position:fixed;left:0;right:0;bottom:0;max-height:85%;overflow:auto;background:var(--surface);border-radius:18px 18px 0 0;padding:10px 18px calc(22px + env(safe-area-inset-bottom,0px));transform:translateY(100%);transition:transform .25s ease;z-index:11;max-width:640px;margin:0 auto}
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10;opacity:0;visibility:hidden;transition:opacity .22s var(--ease-out),visibility 0s .22s}
+.sheet-bg.open{opacity:1;visibility:visible;transition:opacity .3s var(--ease-out)}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-height:85%;overflow:auto;background:var(--surface);border-radius:18px 18px 0 0;padding:10px 18px calc(22px + env(safe-area-inset-bottom,0px));transform:translateY(100%);transition:transform .32s var(--ease-drawer);z-index:11;max-width:640px;margin:0 auto}
 .sheet.open{transform:none}
 .grip{width:40px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 14px}
 .sheet h3{font-size:26px;font-weight:700;line-height:1.1}
@@ -398,7 +398,10 @@ body{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
 #qres:empty{display:none}
 
 /* ---------- Finitions d'ergonomie ---------- */
-button:active,.route:active{opacity:.72}
+button,.route{transition:transform 160ms var(--ease-out)}
+button:active{transform:scale(.97)}
+button.row:active,button.mrow:active,.route:active{transform:scale(.985)}
+.tip-i{position:relative}.tip-i::before{content:"";position:absolute;inset:-12px}
 .tabbar button{font-size:11.5px;min-width:0}
 .tabbar button span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mr-n{overflow-wrap:anywhere}
@@ -416,7 +419,7 @@ button:active,.route:active{opacity:.72}
 .board .ttl{font-size:16px}.board .num{font-size:36px;line-height:1.1}.board .lbl{line-height:1.25}
 .club-head h1{font-size:26px}.club-head{margin-top:8px}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .avatar{background:#3A3A3A}}
-@media (prefers-reduced-motion:reduce){.sheet{transition:none}.icon-btn.spin svg{animation:none}}
+@media (prefers-reduced-motion:reduce){.sheet,.sheet-bg,button,.route{transition:none}button:active,.route:active{transform:none;opacity:.8}.icon-btn.spin svg{animation:none}}
 </style>
 </head>
 <body>
@@ -2577,7 +2580,7 @@ function fete(kind){
 function surprises(){
   const {page,arg}=route(), last=myMatches().pop(); if(!last) return;
   if(page==="home"){ const vu=LS_.get("fete",0); if(vu!==last.j){ LS_.set("fete",last.j); const s=last.home===MY_TEAM?"h":"a", d=s==="h"?last.res.h-last.res.a:last.res.a-last.res.h; if(d>0) fete("confettis"); else if(d<0) fete("pluie"); } }
-  if(page==="duel"){ const m=D.cal.find(x=>String(x.j)===String(arg)&&x.res&&(x.home===MY_TEAM||x.away===MY_TEAM)); if(m&&!ui["vib"+m.j]){ ui["vib"+m.j]=1; const s=m.home===MY_TEAM?"h":"a", d=s==="h"?m.res.h-m.res.a:m.res.a-m.res.h; if(d===1&&navigator.vibrate&&!calme()) navigator.vibrate([70,50,70,50,140]); } }
+  if(page==="duel"){ const m=D.cal.find(x=>String(x.j)===String(arg)&&x.res&&(x.home===MY_TEAM||x.away===MY_TEAM)); if(m&&!ui["vib"+m.j]){ ui["vib"+m.j]=1; const s=m.home===MY_TEAM?"h":"a", d=s==="h"?m.res.h-m.res.a:m.res.a-m.res.h; if(d===1&&navigator.vibrate&&!calme()) navigator.vibrate(20); } }
 }
 document.addEventListener("input",e=>{
   const i=e.target.closest&&e.target.closest("[data-pr-in]"); if(!i||!ui.pr) return;
