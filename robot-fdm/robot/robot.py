@@ -245,8 +245,16 @@ class GBook:
         from google.oauth2.service_account import Credentials
         info = json.loads(os.environ["GOOGLE_CREDENTIALS"])
         creds = Credentials.from_service_account_info(info, scopes=["https://www.googleapis.com/auth/spreadsheets"])
-        self.sh = gspread.authorize(creds).open_by_key(sheet_id)
-        self._ws = {ws.title: ws for ws in self.sh.worksheets()}
+        client = gspread.authorize(creds)
+        for essai in range(4):          # Google indisponible un instant (503, 429...) : on réessaie avant de crier au problème
+            try:
+                self.sh = client.open_by_key(sheet_id)
+                self._ws = {ws.title: ws for ws in self.sh.worksheets()}
+                break
+            except Exception as e:
+                if essai == 3 or not TRANSITOIRE.search(str(e)): raise
+                print(f"Google Sheets indisponible ({e}), nouvel essai dans {30 * (essai + 1)} s")
+                time.sleep(30 * (essai + 1))
 
     def tabs(self): return list(self._ws)
 
